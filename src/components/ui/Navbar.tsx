@@ -2,183 +2,335 @@
 
 import { Button } from "@base-ui/react";
 import Link from "next/link";
-import React, { useState } from "react";
-import { FaGraduationCap, FaBars, FaTimes, FaSignInAlt } from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useState } from "react";
+import {
+  FaBars,
+  FaChevronRight,
+  FaGraduationCap,
+  FaSignInAlt,
+  FaTimes,
+  FaGlobe,
+  FaSun,
+  FaMoon,
+} from "react-icons/fa";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useTheme } from "next-themes";
+import { useLanguage } from "@/src/context/LanguageContext";
+
+const navigationItems = [
+  { href: "/", bnLabel: "হোম", enLabel: "Home" },
+  { href: "#about", bnLabel: "আমাদের সম্পর্কে", enLabel: "About Us" },
+  { href: "#notices", bnLabel: "নোটিশ বোর্ড", enLabel: "Notice Board" },
+  { href: "#teachers", bnLabel: "শিক্ষক মণ্ডলী", enLabel: "Teachers" },
+  { href: "/admission", bnLabel: "অনলাইন ভর্তি", enLabel: "Online Admission", accent: true },
+];
+
+const springConfig = {
+  type: "spring" as const,
+  stiffness: 400,
+  damping: 30,
+  mass: 0.8,
+};
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState("/");
+  const [mounted, setMounted] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
-  // Navigation items for better maintainability
-  const navItems = [
-    { label: "Home", href: "/" },
-    { label: "About Us", href: "#about" },
-    { label: "Notice Board", href: "#notices" },
-    { label: "Teachers", href: "#teachers" },
-    { label: "Online Admission", href: "/admission", active: true },
-  ];
+  const { theme, setTheme } = useTheme();
+  const { language, toggleLanguage, t } = useLanguage();
+
+  useEffect(() => {
+    setMounted(true);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 16);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setActiveSection(window.location.pathname);
+    }
+  }, []);
+
+  const closeMenu = () => setIsOpen(false);
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Escape") {
+      closeMenu();
+    }
+  };
+
+  const isActive = (href: string) => {
+    if (href === "/") return activeSection === "/";
+    return activeSection?.startsWith(href);
+  };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/98 backdrop-blur-sm border-b border-slate-200/50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-[72px] lg:h-20">
-          {/* Logo & Brand Name */}
+    <header
+      onKeyDown={handleKeyDown}
+      className={`sticky top-0 z-50 transition-shadow duration-300 ${
+        scrolled
+          ? "border-b border-[#1a1a1a]/10 dark:border-white/10 bg-white/98 dark:bg-slate-900/98 shadow-[0_2px_12px_-4px_rgba(16,16,24,0.08),0_1px_3px_-1px_rgba(16,16,24,0.04)] backdrop-blur-sm"
+          : "border-b border-[#1a1a1a]/5 dark:border-white/5 bg-white/95 dark:bg-slate-900/95"
+      }`}
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-[4.5rem] items-center justify-between sm:h-[5rem]">
+          {/* Logo */}
           <Link
             href="/"
-            className="flex items-center gap-3 group"
-            aria-label="Al-Iman School Home"
+            aria-label="Al-Iman School home"
+            className="group flex min-w-0 items-center gap-3 outline-none rounded-xl focus-visible:ring-2 focus-visible:ring-[#B8860B] focus-visible:ring-offset-2"
+            onClick={() => setActiveSection("/")}
           >
-            <motion.div
-              className="relative p-2.5 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl text-white shadow-md shadow-indigo-200/50 transition-shadow hover:shadow-indigo-300/70"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <FaGraduationCap className="text-2xl" />
-              <motion.div
-                className="absolute inset-0 rounded-2xl bg-white/10"
-                animate={{
-                  opacity: [0.3, 0.6, 0.3],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
+            <span className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] text-white shadow-[0_4px_16px_-6px_rgba(16,16,24,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-300 ease-out group-hover:-translate-y-0.5 group-hover:shadow-[0_8px_24px_-8px_rgba(16,16,24,0.6),inset_0_1px_1px_rgba(255,255,255,0.15)] group-focus-visible:-translate-y-0.5 sm:h-12 sm:w-12">
+              <img
+                src="Image/logo aliman.jpg"
+                alt="Al-Iman School Logo"
+                loading="lazy"
+                className="h-full w-full object-cover"
               />
-            </motion.div>
-            <div className="leading-tight">
-              <span className="text-xl font-extrabold text-slate-900 tracking-tight block">
-                Al-Iman School
+            </span>
+
+            <span className="min-w-0">
+              <span className="block truncate text-[1.1rem] font-bold tracking-[-0.04em] text-[#1a1a1a] dark:text-white sm:text-xl">
+                {t("আল-ঈমান স্কুল", "Al-Iman School")}
               </span>
-              <span className="text-[11px] font-medium text-slate-500 block -mt-0.5 tracking-wide uppercase">
-                Management ERP System
-              </span>
-            </div>
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1 lg:gap-2" aria-label="Main navigation">
-            {navItems.map((item) => (
+          <nav
+            aria-label="Primary navigation"
+            className="hidden items-center gap-1 md:flex"
+          >
+            {navigationItems.map(({ href, bnLabel, enLabel, accent }) => (
               <Link
-                key={item.label}
-                href={item.href}
-                className={`relative px-3 lg:px-4 py-2 text-sm font-medium transition-all duration-200 
-                  ${
-                    item.active
-                      ? "text-indigo-600"
-                      : "text-slate-600 hover:text-indigo-600"
-                  }`}
+                key={href}
+                href={href}
+                onClick={() => setActiveSection(href)}
+                aria-current={isActive(href) ? "page" : undefined}
+                className={`group relative rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] focus-visible:ring-offset-2 ${
+                  accent
+                    ? "text-[#B8860B] hover:text-[#9a6f0a]"
+                    : isActive(href)
+                    ? "text-[#1a1a1a] dark:text-white"
+                    : "text-[#4a4a52] dark:text-slate-300 hover:text-[#1a1a1a] dark:hover:text-white"
+                }`}
               >
-                {item.label}
-                {item.active && (
-                  <motion.span
-                    className="absolute inset-x-3 bottom-0 h-0.5 bg-gradient-to-r from-indigo-500 to-indigo-700 rounded-full"
-                    layoutId="activeNav"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-                {!item.active && (
-                  <motion.span
-                    className="absolute inset-x-3 bottom-0 h-0.5 bg-indigo-500 rounded-full opacity-0"
-                    whileHover={{ opacity: 1 }}
-                    transition={{ duration: 0.15 }}
-                  />
-                )}
+                {t(bnLabel, enLabel)}
+                <span
+                  className={`absolute inset-x-3 bottom-0.5 h-[2px] origin-left rounded-full transition-transform duration-300 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100 ${
+                    isActive(href) ? "scale-x-100" : "scale-x-0"
+                  } ${accent ? "bg-[#B8860B]" : "bg-[#1a1a1a] dark:bg-white"}`}
+                />
               </Link>
             ))}
           </nav>
 
-          {/* Action Buttons */}
-          <div className="hidden md:flex items-center">
-            <Link href="/login" aria-label="Portal Login">
-              <Button className="group relative bg-gradient-to-br from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-xl px-5 py-2.5 shadow-md shadow-indigo-200/50 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-300/70 flex items-center gap-2 overflow-hidden">
-                <motion.span
-                  className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  initial={false}
+          {/* Desktop Controls (Language, Theme, CTA) */}
+          <div className="hidden items-center gap-3 md:flex">
+            {/* Language Toggle Button */}
+            <button
+              onClick={toggleLanguage}
+              type="button"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#1a1a1a]/15 dark:border-white/15 text-xs font-bold text-[#1a1a1a] dark:text-white hover:bg-[#1a1a1a]/5 dark:hover:bg-white/10 transition-colors"
+              title="Switch Language"
+            >
+              <FaGlobe className="text-[#B8860B] text-sm" />
+              <span>{language === "bn" ? "ENG" : "বাংলা"}</span>
+            </button>
+
+            {/* Theme Toggle Button */}
+            {mounted && (
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                type="button"
+                className="grid h-10 w-10 place-items-center rounded-xl border border-[#1a1a1a]/15 dark:border-white/15 text-[#1a1a1a] dark:text-amber-400 hover:bg-[#1a1a1a]/5 dark:hover:bg-white/10 transition-colors"
+                aria-label="Toggle Theme"
+              >
+                {theme === "dark" ? (
+                  <FaSun className="text-base" />
+                ) : (
+                  <FaMoon className="text-base" />
+                )}
+              </button>
+            )}
+
+            {/* Login CTA */}
+            <Link
+              href="/login"
+              onClick={() => setActiveSection("/login")}
+              className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] focus-visible:ring-offset-2"
+            >
+              <Button className="group flex h-11 items-center gap-2 rounded-xl bg-[#1a1a1a] dark:bg-[#B8860B] px-5 text-sm font-semibold text-white dark:text-slate-950 shadow-[0_4px_16px_-8px_rgba(16,16,24,0.6),inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#2d2d2d] dark:hover:bg-[#a0750a] hover:shadow-[0_8px_24px_-10px_rgba(16,16,24,0.7),inset_0_1px_1px_rgba(255,255,255,0.15)] active:translate-y-0 active:shadow-[0_2px_8px_-4px_rgba(16,16,24,0.5)]">
+                <FaSignInAlt
+                  aria-hidden="true"
+                  className="transition-transform duration-200 group-hover:translate-x-0.5"
                 />
-                <FaSignInAlt className="text-sm" />
-                <span className="font-medium">Portal Login</span>
-                <motion.span
-                  className="absolute -inset-full bg-gradient-to-r from-transparent via-white/10 to-transparent"
-                  initial={{ x: "-100%" }}
-                  whileHover={{ x: "100%" }}
-                  transition={{ duration: 0.8 }}
-                />
+                {t("পোর্টাল লগইন", "Portal Login")}
               </Button>
             </Link>
           </div>
 
-          {/* Mobile Menu Toggle */}
-          <motion.button
-            onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 text-slate-600 hover:text-indigo-600 text-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg transition-colors"
-            aria-label={isOpen ? "Close menu" : "Open menu"}
-            aria-expanded={isOpen}
-            whileTap={{ scale: 0.9 }}
-          >
-            {isOpen ? <FaTimes /> : <FaBars />}
-          </motion.button>
+          {/* Mobile Actions & Menu Toggle */}
+          <div className="flex items-center gap-2 md:hidden">
+            {/* Mobile Language Switcher */}
+            <button
+              onClick={toggleLanguage}
+              type="button"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#1a1a1a]/15 dark:border-white/15 text-xs font-bold text-[#1a1a1a] dark:text-white"
+            >
+              <FaGlobe className="text-[#B8860B]" />
+              <span>{language === "bn" ? "ENG" : "বাংলা"}</span>
+            </button>
+
+            {/* Mobile Theme Toggle */}
+            {mounted && (
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                type="button"
+                className="grid h-9 w-9 place-items-center rounded-lg border border-[#1a1a1a]/15 dark:border-white/15 text-[#1a1a1a] dark:text-amber-400"
+                aria-label="Toggle Theme"
+              >
+                {theme === "dark" ? <FaSun /> : <FaMoon />}
+              </button>
+            )}
+
+            {/* Mobile Menu Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setIsOpen((open) => !open)}
+              aria-expanded={isOpen}
+              aria-controls="mobile-navigation"
+              aria-label={
+                isOpen ? "Close navigation menu" : "Open navigation menu"
+              }
+              className="grid h-10 w-10 place-items-center rounded-xl border border-[#1a1a1a]/15 dark:border-white/15 bg-white dark:bg-slate-800 text-lg text-[#4a4a52] dark:text-white transition-all duration-200 hover:border-[#B8860B]/40 hover:bg-[#B8860B]/5 hover:text-[#B8860B] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] focus-visible:ring-offset-2 active:scale-95"
+            >
+              {isOpen ? (
+                <FaTimes aria-hidden="true" />
+              ) : (
+                <FaBars aria-hidden="true" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      <AnimatePresence mode="wait">
+      {/* Mobile Navigation Drawer */}
+      <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{
-              duration: 0.3,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-            className="md:hidden overflow-hidden border-b border-slate-200/50 bg-white/98"
+            id="mobile-navigation"
+            initial={
+              prefersReducedMotion
+                ? { opacity: 1 }
+                : { height: 0, opacity: 0 }
+            }
+            animate={{ height: "auto", opacity: 1 }}
+            exit={
+              prefersReducedMotion
+                ? { opacity: 0 }
+                : { height: 0, opacity: 0 }
+            }
+            transition={
+              prefersReducedMotion ? { duration: 0.15 } : springConfig
+            }
+            className="border-t border-[#1a1a1a]/10 dark:border-white/10 bg-white dark:bg-slate-900 md:hidden"
+            aria-hidden={false}
           >
-            <div className="px-4 py-4 space-y-1">
-              {navItems.map((item, index) => (
-                <motion.div
-                  key={item.label}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{
-                    delay: index * 0.05,
-                    duration: 0.25,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                >
-                  <Link
-                    href={item.href}
-                    onClick={() => setIsOpen(false)}
-                    className={`block px-3 py-3 rounded-xl transition-all duration-200 text-base font-medium
-                      ${
-                        item.active
-                          ? "text-indigo-600 bg-indigo-50/80"
-                          : "text-slate-700 hover:text-indigo-600 hover:bg-slate-50"
-                      }`}
-                  >
-                    {item.label}
-                  </Link>
-                </motion.div>
-              ))}
+            <nav
+              aria-label="Mobile navigation"
+              className="mx-auto max-w-7xl px-4 py-4 sm:px-6"
+            >
+              <div className="space-y-1">
+                {navigationItems.map(
+                  ({ href, bnLabel, enLabel, accent }, index) => (
+                    <motion.div
+                      key={href}
+                      initial={
+                        prefersReducedMotion
+                          ? { opacity: 1 }
+                          : { opacity: 0, y: 8 }
+                      }
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={
+                        prefersReducedMotion
+                          ? { duration: 0 }
+                          : { delay: index * 0.05, ...springConfig }
+                      }
+                    >
+                      <Link
+                        href={href}
+                        onClick={() => {
+                          closeMenu();
+                          setActiveSection(href);
+                        }}
+                        aria-current={isActive(href) ? "page" : undefined}
+                        className={`group flex items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] active:scale-[0.98] ${
+                          accent
+                            ? "bg-[#B8860B]/10 text-[#9a6f0a] dark:text-[#B8860B] hover:bg-[#B8860B]/15"
+                            : isActive(href)
+                            ? "bg-[#1a1a1a]/5 dark:bg-white/10 text-[#1a1a1a] dark:text-white"
+                            : "text-[#4a4a52] dark:text-slate-300 hover:bg-[#1a1a1a]/5 dark:hover:bg-white/5 hover:text-[#1a1a1a] dark:hover:text-white"
+                        }`}
+                      >
+                        {t(bnLabel, enLabel)}
+                        <FaChevronRight
+                          aria-hidden="true"
+                          className={`text-xs transition-transform duration-200 group-hover:translate-x-0.5 ${
+                            accent
+                              ? "text-[#B8860B]"
+                              : isActive(href)
+                              ? "text-[#1a1a1a] dark:text-white"
+                              : "text-[#4a4a52]/40 dark:text-white/40"
+                          }`}
+                        />
+                      </Link>
+                    </motion.div>
+                  )
+                )}
+              </div>
 
               <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{
-                  delay: navItems.length * 0.05,
-                  duration: 0.25,
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-                className="pt-3 mt-2 border-t border-slate-200/50"
+                initial={
+                  prefersReducedMotion
+                    ? { opacity: 1 }
+                    : { opacity: 0, y: 8 }
+                }
+                animate={{ opacity: 1, y: 0 }}
+                transition={
+                  prefersReducedMotion
+                    ? { duration: 0 }
+                    : {
+                        delay: navigationItems.length * 0.05 + 0.1,
+                        ...springConfig,
+                      }
+                }
+                className="mt-4 border-t border-[#1a1a1a]/10 dark:border-white/10 pt-4"
               >
-                <Link href="/login" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full bg-gradient-to-br from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-xl px-4 py-3 flex items-center justify-center gap-2 shadow-md shadow-indigo-200/50 transition-all duration-200">
-                    <FaSignInAlt className="text-sm" />
-                    <span className="font-medium">Portal Login</span>
+                <Link
+                  href="/login"
+                  onClick={() => {
+                    closeMenu();
+                    setActiveSection("/login");
+                  }}
+                  className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] focus-visible:ring-offset-2"
+                >
+                  <Button className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1a1a1a] dark:bg-[#B8860B] text-sm font-semibold text-white dark:text-slate-950 shadow-[0_4px_16px_-8px_rgba(16,16,24,0.6)] transition-all duration-200 hover:bg-[#2d2d2d] dark:hover:bg-[#a0750a] active:scale-[0.98]">
+                    <FaSignInAlt aria-hidden="true" />
+                    {t("পোর্টাল লগইন", "Portal Login")}
                   </Button>
                 </Link>
               </motion.div>
-            </div>
+            </nav>
           </motion.div>
         )}
       </AnimatePresence>
