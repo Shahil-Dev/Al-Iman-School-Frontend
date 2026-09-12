@@ -170,8 +170,9 @@ const MergedAboutRoute = memo(() => {
 
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // YouTube Video Embed ID
-  const youtubeVideoId = "YOUR_YOUTUBE_VIDEO_ID";
+  // Vercel Blob Video Direct Link
+  const videoUrl =
+    "https://1oqjksglzypzmr3c.public.blob.vercel-storage.com/video%20-shayekh.mp4";
 
   const rise = reduceMotion ? reducedVariants : riseVariants;
   const row = reduceMotion ? reducedVariants : rowVariants;
@@ -363,21 +364,19 @@ const MergedAboutRoute = memo(() => {
             <motion.div variants={rise} className="lg:col-span-8">
               <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
                 {isPlaying ? (
-                  <iframe
-                    className="h-full w-full border-0"
-                    src={`Image/video -shayekh.mp4`}
-                    title={`${t.principalName} - Video Speech`}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
+                  <video
+                    className="h-full w-full object-cover"
+                    src={videoUrl}
+                    controls
+                    autoPlay
+                    playsInline
+                    preload="metadata"
+                  >
+                    Your browser does not support the video tag.
+                  </video>
                 ) : (
                   <div className="group relative flex h-full w-full flex-col items-center justify-center bg-gradient-to-tr from-black/80 via-black/50 to-transparent p-6 text-center text-white">
-                    <div
-                      className="absolute inset-0 -z-10 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                      style={{
-                        backgroundImage: `url('https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg')`,
-                      }}
-                    />
+                    <div className="absolute inset-0 -z-10 bg-slate-900 transition-transform duration-700 group-hover:scale-105" />
                     <div className="absolute inset-0 -z-10 bg-black/40 transition-opacity duration-300 group-hover:bg-black/30" />
 
                     <button
@@ -561,8 +560,9 @@ const MergedAboutRoute = memo(() => {
           </div>
         </motion.div>
       </section>
-      {/* ───────────────────────── 5. Contact section ───────────────────────── */}
-      <ContactSection></ContactSection>
+
+      {/* ───────────────────────── 6. Contact section ───────────────────────── */}
+      <ContactSection />
     </main>
   );
 });
