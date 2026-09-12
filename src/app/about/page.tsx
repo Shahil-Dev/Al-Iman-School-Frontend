@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo } from "react";
+import React, { memo, useState } from "react";
 import Link from "next/link";
 import {
   FaBookOpen,
@@ -8,19 +8,25 @@ import {
   FaCompass,
   FaGraduationCap,
   FaArrowRight,
+  FaPlay,
+  FaVideo,
+  FaQuoteLeft,
 } from "react-icons/fa6";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
-import { useLanguage } from "@/src/context/LanguageContext"; // প্রয়োজনে আপনার প্রজেক্টের পাথ অনুযায়ী অ্যাডজাস্ট করুন
+import { useLanguage } from "@/src/context/LanguageContext";
+import { ContactSection } from "@/src/components/ContactSection";
 
 type Language = "en" | "bn";
 
 const pageTranslations = {
   bn: {
+    // 1. Hero
     heroBadge: "দ্বীন ও আধুনিক শিক্ষার সমন্বয়",
     heroTitle: "আল-ঈমান স্কুল প্রতিষ্ঠার উদ্দেশ্য ও আমাদের পথচলা",
     heroSubtitle:
       "ঈমান-আকিদা রক্ষা এবং নৈতিক শিক্ষার সুরক্ষায় একটি আদর্শিক শিক্ষা প্রতিষ্ঠানের পথপ্রদর্শক।",
 
+    // 2. Statement
     statementTitle: "আমাদের প্রতিষ্ঠার পটভূমি ও মূল লক্ষ্য",
     statementQuote:
       "আল-ঈমান স্কুল প্রতিষ্ঠার মূল উদ্দেশ্য কেবল প্রচলিত পাঠদান সম্পন্ন করা নয়; বরং দ্বীনি চেতনা ও আধুনিক শিক্ষার সমন্বয়ে জাতীয় শিক্ষাক্রমে একটি ইতিবাচক সংস্কার সাধন করা।",
@@ -31,37 +37,46 @@ const pageTranslations = {
     para3:
       "দ্বিতীয়ত, রাষ্ট্রীয় বাধ্যবাধকতার কারণে আমাদের উপর যে শিক্ষাক্রম অনুসরণের বিষয় রয়েছে, তা মেনে নেওয়ার পাশাপাশি পাঠ্যক্রমের যাবতীয় বিভ্রান্তি থেকে শিক্ষার্থীদের ঈমান ও আখলাক রক্ষা করে গড়ে তোলাই আমাদের প্রধান অগ্রাধিকার।",
 
+    // 3. Principal Video
+    videoBadge: "অধ্যক্ষের বক্তব্য",
+    videoTitle: "আমাদের লক্ষ্য ও কার্যক্রম নিয়ে কিছু কথা",
+    principalName: "মুফতি শায়েক হারুন ইজহার",
+    principalTitle: "অধ্যক্ষ ও প্রতিষ্ঠাতা, আল-ঈমান স্কুল",
+    principalQuote:
+      "দ্বীনি আকীদা ও যুগের চাহিদার সমন্বয়ে একঝাঁক সৎ ও যোগ্য সন্তান গড়াই আমাদের মূল লক্ষ্য।",
+    videoPlaceholderText: "ভিডিও বার্তাটি দেখতে প্লে বাটনে ক্লিক করুন",
+
+    // 4. Pillars
     pillarsTitle: "আমাদের মূল স্তম্ভসমূহ",
     pillarsSubtitle:
       "যে আদর্শিক কাঠামোর ওপর ভিত্তি করে আমাদের শিক্ষা কার্যক্রম পরিচালিত হয়",
-
     pillar1Title: "ঈমান ও আকিদা সংরক্ষণ",
     pillar1Desc:
       "শিক্ষার্থীদের হৃদয়ে আল্লাহ তাআলার সাথে সম্পর্কের গভীরতা ও খাঁটি তাওহীদি চেতনা জাগ্রত রাখা।",
-
     pillar2Title: "জাতীয় মূলধারার সমন্বয়",
     pillar2Desc:
       "জাতীয় শিক্ষাক্রম অন্তর্ভুক্ত রেখে শিক্ষার্থীদের যুগোপযোগী ও মেধাভিত্তিক শিক্ষায় গড়ে তোলা।",
-
     pillar3Title: "আখলাক ও চরিত্র গঠন",
     pillar3Desc:
       "পাঠ্যক্রমের যাবতীয় অনৈসলামিক বিভ্রান্তি থেকে শিক্ষার্থীদের নৈতিকতা ও আখলাক সুরক্ষিত রাখা।",
-
     pillar4Title: "যৌক্তিক সংস্কার প্রস্তাবনা",
     pillar4Desc:
       "বাস্তব অভিজ্ঞতার আলোকে রাষ্ট্রের কাছে ইসলামী মূল্যবোধভিত্তিক শিক্ষাব্যবস্থার রূপরেখা পেশ করা।",
 
+    // 5. CTA
     ctaTitle: "আপনার সন্তানকে দ্বীনি ও আধুনিক শিক্ষায় গড়ে তুলতে চান?",
     ctaSubtitle:
       "আল-ঈমান স্কুলে ভর্তি এবং আমাদের শিক্ষা পদ্ধতি সম্পর্কে বিস্তারিত জানতে যোগাযোগ করুন।",
     ctaBtn: "ভর্তির তথ্য দেখুন",
   },
   en: {
+    // 1. Hero
     heroBadge: "Blend of Deen & Modern Education",
     heroTitle: "Purpose of Establishing Al-Eman School",
     heroSubtitle:
       "A pioneering ideological educational institution for protecting Faith, Creed, and Moral Education.",
 
+    // 2. Statement
     statementTitle: "Background & Core Purpose of Establishment",
     statementQuote:
       "The primary purpose of establishing Al-Eman School is not merely to deliver conventional lessons; rather, it is to bring about positive reform in the national curriculum through a synthesis of Islamic consciousness and modern education.",
@@ -72,26 +87,33 @@ const pageTranslations = {
     para3:
       "Secondly, while fulfilling state obligations by following the mandated curriculum, our highest priority remains safeguarding students' Iman and Akhlaq from all textbook ambiguities and un-Islamic ideas.",
 
+    // 3. Principal Video
+    videoBadge: "Principal's Speech",
+    videoTitle: "Insights into Our Vision & Journey",
+    principalName: "Mufti Shaykh Harun Izhar",
+    principalTitle: "Principal & Founder, Al-Eman School",
+    principalQuote:
+      "Our main goal is to nurture righteous and capable leaders through the blend of authentic Islamic creed and modern education.",
+    videoPlaceholderText: "Click play button to watch the video message",
+
+    // 4. Pillars
     pillarsTitle: "Our Core Pillars",
     pillarsSubtitle:
       "The ideological foundation upon which our educational system operates",
-
     pillar1Title: "Preservation of Iman & Aqeedah",
     pillar1Desc:
       "Nurturing deep devotion to Allah Almighty and pure Islamic creed in students' hearts.",
-
     pillar2Title: "Integration with Mainstream Curriculum",
     pillar2Desc:
       "Keeping students connected to national education with modern competency.",
-
     pillar3Title: "Moral & Character Building (Akhlaq)",
     pillar3Desc:
       "Protecting students' ethics and morality from un-Islamic influences in modern study materials.",
-
     pillar4Title: "Advocating Educational Reform",
     pillar4Desc:
       "Presenting constructive proposals to the state for value-based educational reform.",
 
+    // 5. CTA
     ctaTitle: "Ready to nurture your child with Islamic values & excellence?",
     ctaSubtitle:
       "Contact us to learn more about admission procedures and our curriculum approach.",
@@ -99,10 +121,15 @@ const pageTranslations = {
   },
 } as const;
 
-/* ---------- Icons (react-icons) ---------- */
-const pillarIcons = [FaShieldHalved, FaGraduationCap, FaCompass, FaBookOpen] as const;
+/* ---------- Icons ---------- */
+const pillarIcons = [
+  FaShieldHalved,
+  FaGraduationCap,
+  FaCompass,
+  FaBookOpen,
+] as const;
 
-/* ---------- Motion variants (hoisted for performance) ---------- */
+/* ---------- Motion Variants ---------- */
 const sectionVariants: Variants = {
   hidden: {},
   show: {
@@ -129,20 +156,25 @@ const rowVariants: Variants = {
   },
 };
 
-const reduced: Variants = {
+const reducedVariants: Variants = {
   hidden: { opacity: 1 },
   show: { opacity: 1 },
 };
 
-/* ---------- Main Component ---------- */
-const AboutPage = memo(() => {
-  const { language = "bn" } = useLanguage(); // Default fallback
+/* ---------- Main Combined Component ---------- */
+const MergedAboutRoute = memo(() => {
+  const { language = "bn" } = useLanguage();
   const currentLang = (language === "en" ? "en" : "bn") as Language;
   const t = pageTranslations[currentLang];
   const reduceMotion = useReducedMotion();
 
-  const rise = reduceMotion ? reduced : riseVariants;
-  const row = reduceMotion ? reduced : rowVariants;
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  // YouTube Video Embed ID
+  const youtubeVideoId = "YOUR_YOUTUBE_VIDEO_ID";
+
+  const rise = reduceMotion ? reducedVariants : riseVariants;
+  const row = reduceMotion ? reducedVariants : rowVariants;
   const section = sectionVariants;
 
   const pillars = [
@@ -159,7 +191,6 @@ const AboutPage = memo(() => {
         aria-labelledby="about-hero-heading"
         className="relative overflow-hidden border-b border-border/70 bg-gradient-to-b from-background via-background to-muted/20"
       >
-        {/* Soft Ambient Radial Wash */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
@@ -175,14 +206,16 @@ const AboutPage = memo(() => {
           animate="show"
           className="relative mx-auto grid max-w-6xl grid-cols-1 gap-10 px-5 pb-16 pt-20 sm:px-8 sm:pb-20 sm:pt-24 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] md:gap-14 md:pt-28"
         >
-          {/* Left Column */}
           <div className="flex flex-col">
             <motion.div
               variants={rise}
               className="mb-6 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#a8874a] dark:text-[#d4b878]"
             >
               <span>01</span>
-              <span aria-hidden="true" className="h-px w-8 bg-current opacity-50" />
+              <span
+                aria-hidden="true"
+                className="h-px w-8 bg-current opacity-50"
+              />
               <span>{t.heroBadge}</span>
             </motion.div>
 
@@ -195,7 +228,6 @@ const AboutPage = memo(() => {
             </motion.h1>
           </div>
 
-          {/* Right Column */}
           <motion.p
             variants={rise}
             className="max-w-md self-end text-sm leading-relaxed text-muted-foreground sm:text-[0.95rem]"
@@ -224,7 +256,10 @@ const AboutPage = memo(() => {
               className="mb-8 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#a8874a] dark:text-[#d4b878]"
             >
               <span>02</span>
-              <span aria-hidden="true" className="h-px w-8 bg-current opacity-50" />
+              <span
+                aria-hidden="true"
+                className="h-px w-8 bg-current opacity-50"
+              />
               <h2 id="about-statement-heading">{t.statementTitle}</h2>
             </motion.div>
 
@@ -264,7 +299,131 @@ const AboutPage = memo(() => {
         </motion.div>
       </section>
 
-      {/* ───────────────────────── 3. PILLARS SECTION ───────────────────────── */}
+      {/* ───────────────────────── 3. PRINCIPAL VIDEO SECTION ───────────────────────── */}
+      <section
+        aria-labelledby="principal-video-heading"
+        className="relative overflow-hidden border-t border-border/70 bg-gradient-to-b from-background via-muted/10 to-background py-20 sm:py-24"
+      >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 50% 50% at 80% 50%, rgba(201,169,97,0.08), transparent 70%)",
+          }}
+        />
+
+        <motion.div
+          variants={section}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
+          className="relative mx-auto max-w-6xl px-5 sm:px-8"
+        >
+          {/* Section Header */}
+          <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] md:gap-16">
+            <div>
+              <motion.div
+                variants={rise}
+                className="mb-4 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#a8874a] dark:text-[#d4b878]"
+              >
+                <span>03</span>
+                <span
+                  aria-hidden="true"
+                  className="h-px w-8 bg-current opacity-50"
+                />
+                <span>{t.videoBadge}</span>
+              </motion.div>
+
+              <motion.h2
+                id="principal-video-heading"
+                variants={rise}
+                className="text-balance text-2xl font-bold leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl"
+              >
+                {t.videoTitle}
+              </motion.h2>
+            </div>
+
+            <motion.div variants={rise} className="flex flex-col justify-end">
+              <div className="flex items-center gap-3 text-sm font-semibold text-foreground">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#c9a961]/10 text-[#a8874a] dark:text-[#d4b878]">
+                  <FaVideo className="h-3.5 w-3.5" />
+                </span>
+                <span>{t.principalName}</span>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t.principalTitle}
+              </p>
+            </motion.div>
+          </div>
+
+          {/* Content Layout: Video Frame & Quote Box */}
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-center">
+            {/* Video Player Box (8 Cols) */}
+            <motion.div variants={rise} className="lg:col-span-8">
+              <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
+                {isPlaying ? (
+                  <iframe
+                    className="h-full w-full border-0"
+                    src={`Image/video -shayekh.mp4`}
+                    title={`${t.principalName} - Video Speech`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <div className="group relative flex h-full w-full flex-col items-center justify-center bg-gradient-to-tr from-black/80 via-black/50 to-transparent p-6 text-center text-white">
+                    <div
+                      className="absolute inset-0 -z-10 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                      style={{
+                        backgroundImage: `url('https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg')`,
+                      }}
+                    />
+                    <div className="absolute inset-0 -z-10 bg-black/40 transition-opacity duration-300 group-hover:bg-black/30" />
+
+                    <button
+                      onClick={() => setIsPlaying(true)}
+                      aria-label="Play video"
+                      className="group/btn relative flex h-16 w-16 items-center justify-center rounded-full bg-[#c9a961] text-white shadow-xl transition-all duration-300 hover:scale-110 hover:bg-[#b89850] focus:outline-none focus:ring-4 focus:ring-[#c9a961]/40 sm:h-20 sm:w-20"
+                    >
+                      <FaPlay className="ml-1 h-6 w-6 sm:h-7 sm:w-7" />
+                      <span className="absolute inset-0 -z-10 animate-ping rounded-full bg-[#c9a961]/40" />
+                    </button>
+
+                    <p className="mt-6 text-xs sm:text-sm font-medium tracking-wide text-white/90 drop-shadow">
+                      {t.videoPlaceholderText}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Principal Quote & Bio Box (4 Cols) */}
+            <motion.div
+              variants={rise}
+              className="flex flex-col justify-between lg:col-span-4"
+            >
+              <div className="relative rounded-2xl border border-border bg-card/60 p-6 sm:p-8 backdrop-blur-sm shadow-sm">
+                <FaQuoteLeft className="mb-4 h-7 w-7 text-[#a8874a]/40 dark:text-[#d4b878]/40" />
+
+                <blockquote className="text-sm sm:text-base italic leading-relaxed text-foreground/90 font-medium">
+                  "{t.principalQuote}"
+                </blockquote>
+
+                <div className="mt-6 pt-6 border-t border-border/60">
+                  <h4 className="text-base font-bold text-foreground">
+                    {t.principalName}
+                  </h4>
+                  <p className="text-xs text-[#a8874a] dark:text-[#d4b878] font-semibold mt-0.5">
+                    {t.principalTitle}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ───────────────────────── 4. PILLARS SECTION ───────────────────────── */}
       <section
         aria-labelledby="about-pillars-heading"
         className="border-y border-border/70 bg-muted/15"
@@ -281,8 +440,11 @@ const AboutPage = memo(() => {
               variants={rise}
               className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#a8874a] dark:text-[#d4b878]"
             >
-              <span>03</span>
-              <span aria-hidden="true" className="h-px w-8 bg-current opacity-50" />
+              <span>04</span>
+              <span
+                aria-hidden="true"
+                className="h-px w-8 bg-current opacity-50"
+              />
               <h2 id="about-pillars-heading">{t.pillarsTitle}</h2>
             </motion.div>
             <motion.p
@@ -338,7 +500,7 @@ const AboutPage = memo(() => {
         </div>
       </section>
 
-      {/* ───────────────────────── 4. CTA SECTION ───────────────────────── */}
+      {/* ───────────────────────── 5. CTA SECTION ───────────────────────── */}
       <section
         aria-labelledby="about-cta-heading"
         className="relative overflow-hidden"
@@ -351,7 +513,7 @@ const AboutPage = memo(() => {
               "radial-gradient(ellipse 50% 60% at 50% 50%, rgba(201,169,97,0.10), transparent 65%)",
           }}
         />
-        {/* <motion.div
+        <motion.div
           variants={section}
           initial="hidden"
           whileInView="show"
@@ -397,12 +559,14 @@ const AboutPage = memo(() => {
               </Link>
             </motion.div>
           </div>
-        </motion.div> */}
+        </motion.div>
       </section>
+      {/* ───────────────────────── 5. Contact section ───────────────────────── */}
+      <ContactSection></ContactSection>
     </main>
   );
 });
 
-AboutPage.displayName = "AboutPage";
+MergedAboutRoute.displayName = "MergedAboutRoute";
 
-export default AboutPage;
+export default MergedAboutRoute;
