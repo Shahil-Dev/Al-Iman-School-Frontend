@@ -25,6 +25,79 @@ import {
 } from "@/src/components/ui/card";
 import { submitAdmission } from "@/src/services/admissionApi";
 
+// 🔴 আপনার প্রজেক্টের ভাষা নিয়ন্ত্রণকারী Context/Hook টি এখানে ইমপোর্ট করুন
+import { useLanguage } from "@/src/context/LanguageContext"; // (উদাহরণস্বরূপ)
+
+type Language = "en" | "bn";
+
+// Multilingual Data Source for Admission Page
+const translations = {
+  en: {
+    title: "Online Student Admission",
+    subtitle: "Academic Year 2026-2027 · Please fill out the form carefully",
+    successTitle: "Application Submitted!",
+    successSubtitleStart: "Thank you for applying. Your Application ID is",
+    successSubtitleEnd: ". Please save this for future tracking.",
+    resetBtn: "Submit Another Application",
+    section1Title: "Student Information",
+    studentNameLabel: "Full Student Name",
+    studentNamePlaceholder: "e.g. Yemtehan Shahil",
+    classLabel: "Target Class",
+    classPlaceholder: "Select Class",
+    dobLabel: "Date of Birth",
+    genderLabel: "Gender",
+    genderPlaceholder: "Select Gender",
+    genderMale: "Male",
+    genderFemale: "Female",
+    section2Title: "Parent / Guardian Details",
+    guardianNameLabel: "Guardian Name",
+    guardianNamePlaceholder: "Father's or Mother's Name",
+    phoneLabel: "Contact Phone Number",
+    emailLabel: "Email Address",
+    section3Title: "Required Documents Upload",
+    photoTitle: "Student Photo (Passport Size)",
+    photoSubtitle: "PNG, JPG up to 2MB",
+    certTitle: "Birth Certificate / PSC Transcript",
+    certSubtitle: "PDF, JPG up to 5MB",
+    fileSelected: "File selected",
+    submitBtn: "Submit Admission Form",
+    submittingBtn: "Submitting Application...",
+    requiredField: "is required",
+  },
+  bn: {
+    title: "অনলাইন শিক্ষার্থী ভর্তি",
+    subtitle: "শিক্ষাবর্ষ ২০২৬-২০২৭ · অনুগ্রহ করে ফর্মটি মনোযোগ সহকারে পূরণ করুন",
+    successTitle: "আবেদন জমা দেওয়া হয়েছে!",
+    successSubtitleStart: "আবেদন করার জন্য ধন্যবাদ। আপনার আবেদন আইডি হলো",
+    successSubtitleEnd: "। ভবিষ্যৎ ট্র্যাকিংয়ের জন্য এটি সংরক্ষণ করুন।",
+    resetBtn: "আরেকটি আবেদন জমা দিন",
+    section1Title: "শিক্ষার্থীর তথ্য",
+    studentNameLabel: "শিক্ষার্থীর পূর্ণ নাম",
+    studentNamePlaceholder: "উদাঃ ইমতেহান শাহিল",
+    classLabel: "ভর্তির শ্রেণী",
+    classPlaceholder: "শ্রেণী নির্বাচন করুন",
+    dobLabel: "জন্ম তারিখ",
+    genderLabel: "লিঙ্গ",
+    genderPlaceholder: "লিঙ্গ নির্বাচন করুন",
+    genderMale: "পুরুষ",
+    genderFemale: "নারী",
+    section2Title: "পিতা-মাতা / অভিভাবকের বিবরণ",
+    guardianNameLabel: "অভিভাবকের নাম",
+    guardianNamePlaceholder: "পিতা বা মাতার নাম",
+    phoneLabel: "যোগাযোগের ফোন নম্বর",
+    emailLabel: "ইমেইল ঠিকানা",
+    section3Title: "প্রয়োজনীয় কাগজপত্র আপলোড",
+    photoTitle: "শিক্ষার্থীর ছবি (পাসপোর্ট সাইজ)",
+    photoSubtitle: "PNG, JPG ২ মেগাবাইট পর্যন্ত",
+    certTitle: "জন্ম নিবন্ধন / PSC ট্রান্সক্রিপ্ট",
+    certSubtitle: "PDF, JPG ৫ মেগাবাইট পর্যন্ত",
+    fileSelected: "ফাইল নির্বাচন করা হয়েছে",
+    submitBtn: "ভর্তি ফর্ম জমা দিন",
+    submittingBtn: "আবেদন জমা দেওয়া হচ্ছে...",
+    requiredField: "আবশ্যক",
+  },
+};
+
 const springConfig = {
   type: "spring" as const,
   stiffness: 300,
@@ -69,21 +142,21 @@ const FormSection = memo(
         animate="visible"
         className="space-y-5"
       >
-        <div className="flex items-center gap-3 pb-3 border-b border-[#1a2b3c]/10">
-          <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-[#1a2b3c] text-white text-xs font-bold">
+        <div className="flex items-center gap-3 pb-3 border-b border-border">
+          <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground text-xs font-bold">
             {step}
-            <span className="absolute -right-1 -top-1 w-3 h-3 rounded-full bg-[#C9A961] flex items-center justify-center">
-              <Icon size={6} className="text-white" />
+            <span className="absolute -right-1 -top-1 w-3 h-3 rounded-full bg-[#c9a961] flex items-center justify-center">
+              <Icon size={6} className="text-white dark:text-slate-950" />
             </span>
           </div>
-          <h3 className="text-base font-semibold text-[#1a2b3c] flex items-center gap-2">
+          <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
             {title}
           </h3>
         </div>
         {children}
       </motion.div>
     );
-  },
+  }
 );
 
 FormSection.displayName = "FormSection";
@@ -92,12 +165,14 @@ const UploadZone = memo(
   ({
     title,
     subtitle,
+    fileSelectedText,
     accept,
     icon: Icon,
     onChange,
   }: {
     title: string;
     subtitle: string;
+    fileSelectedText: string;
     accept: string;
     icon: React.ComponentType<{ size?: number; className?: string }>;
     onChange: (file: File | null) => void;
@@ -124,8 +199,8 @@ const UploadZone = memo(
         onDrop={() => setIsDragOver(false)}
         className={`relative border-2 border-dashed rounded-xl p-5 text-center transition-colors duration-200 cursor-pointer ${
           isDragOver
-            ? "border-[#C9A961] bg-[#C9A961]/5"
-            : "border-[#1a2b3c]/20 hover:border-[#C9A961]/60 bg-[#f8f9fa]"
+            ? "border-[#c9a961] bg-[#c9a961]/5"
+            : "border-input hover:border-[#c9a961]/60 bg-muted/20"
         }`}
       >
         <Input
@@ -138,28 +213,33 @@ const UploadZone = memo(
         <label htmlFor={`file-${title}`} className="block cursor-pointer">
           <Icon
             className={`text-2xl mx-auto mb-2 transition-colors ${
-              isDragOver ? "text-[#C9A961]" : "text-[#8a9baa]"
+              isDragOver ? "text-[#c9a961]" : "text-muted-foreground"
             }`}
           />
-          <span className="block text-xs font-semibold text-[#1a2b3c]">
+          <span className="block text-xs font-semibold text-foreground">
             {fileName || title}
           </span>
-          <span className="text-[10px] text-[#8a9baa] block mt-1">
-            {fileName ? "File selected" : subtitle}
+          <span className="text-[10px] text-muted-foreground block mt-1">
+            {fileName ? fileSelectedText : subtitle}
           </span>
         </label>
       </motion.div>
     );
-  },
+  }
 );
 
 UploadZone.displayName = "UploadZone";
 
 export default function AdmissionPage() {
+  // 🔴 আপনার ন্যাভবার যে ভাষা কনটেক্সট ব্যবহার করে তা থেকে `lang` নিয়ে আসুন
+  const { language = "en" } = useLanguage();
+  const currentLang = (language === "bn" ? "bn" : "en") as Language;
+  const t = translations[currentLang];
+
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [applicationId, setApplicationId] = useState<string>("#ADM-2026-8942");
+  const [applicationId, setApplicationId] = useState<string>("");
   const reduceMotion = useReducedMotion();
 
   // Form Field States
@@ -180,7 +260,6 @@ export default function AdmissionPage() {
       setErrorMessage(null);
 
       try {
-        // Create FormData to support both text fields and file uploads
         const data = new FormData();
         data.append("studentName", studentName);
         data.append("targetClass", targetClass);
@@ -202,7 +281,10 @@ export default function AdmissionPage() {
         setIsSubmitted(true);
       } catch (err: any) {
         setErrorMessage(
-          err.message || "Something went wrong. Please try again.",
+          err.message ||
+            (currentLang === "bn"
+              ? "কিছু ভুল হয়েছে। আবার চেষ্টা করুন।"
+              : "Something went wrong. Please try again.")
         );
       } finally {
         setLoading(false);
@@ -218,20 +300,32 @@ export default function AdmissionPage() {
       email,
       studentPhoto,
       birthCertificate,
-    ],
+      currentLang,
+    ]
   );
 
   const handleReset = useCallback(() => {
     setIsSubmitted(false);
     setErrorMessage(null);
+    // Reset all form fields
+    setStudentName("");
+    setTargetClass("");
+    setDob("");
+    setGender("");
+    setGuardianName("");
+    setPhone("");
+    setEmail("");
+    setStudentPhoto(null);
+    setBirthCertificate(null);
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f4f6f8] via-[#eef1f4] to-[#e8ecef] flex flex-col font-sans relative">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans relative transition-colors duration-300">
+      {/* Dynamic Background Pattern */}
       <div
-        className="absolute inset-0 opacity-[0.01] pointer-events-none"
+        className="absolute inset-0 opacity-[0.01] dark:opacity-[0.03] pointer-events-none"
         style={{
-          backgroundImage: `linear-gradient(rgba(26,43,60,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(26,43,60,0.1) 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`,
           backgroundSize: "48px 48px",
         }}
       />
@@ -248,7 +342,7 @@ export default function AdmissionPage() {
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
               transition={reduceMotion ? { duration: 0 } : springConfig}
             >
-              <Card className="border-[#4a7c5c]/20 bg-white shadow-[0_8px_30px_-8px_rgba(26,43,60,0.15)] text-center py-14 px-6 rounded-2xl">
+              <Card className="border-border bg-card shadow-xl text-center py-14 px-6 rounded-2xl">
                 <CardContent className="space-y-6">
                   <motion.div
                     initial={reduceMotion ? { scale: 1 } : { scale: 0 }}
@@ -258,25 +352,25 @@ export default function AdmissionPage() {
                         ? { duration: 0 }
                         : { delay: 0.2, type: "spring", ...springConfig }
                     }
-                    className="w-20 h-20 bg-[#4a7c5c]/10 text-[#4a7c5c] rounded-full flex items-center justify-center mx-auto text-4xl"
+                    className="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto text-4xl"
                   >
                     <FaCheckCircle />
                   </motion.div>
-                  <h2 className="text-3xl font-bold text-[#1a2b3c]">
-                    Application Submitted!
+                  <h2 className="text-3xl font-bold text-foreground">
+                    {t.successTitle}
                   </h2>
-                  <p className="text-[#5a6b7a] max-w-md mx-auto leading-relaxed">
-                    Thank you for applying. Your Application ID is{" "}
-                    <span className="font-semibold text-[#C9A961]">
+                  <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
+                    {t.successSubtitleStart}{" "}
+                    <span className="font-semibold text-[#c9a961]">
                       {applicationId}
                     </span>
-                    . Please save this for future tracking.
+                    {t.successSubtitleEnd}
                   </p>
                   <Button
                     onClick={handleReset}
-                    className="bg-[#1a2b3c] hover:bg-[#2c4356] text-white rounded-xl px-8 h-11 transition-all duration-200 hover:shadow-lg"
+                    className="bg-primary hover:opacity-90 text-primary-foreground rounded-xl px-8 h-11 transition-all duration-200 hover:shadow-lg text-sm font-semibold"
                   >
-                    Submit Another Application
+                    {t.resetBtn}
                   </Button>
                 </CardContent>
               </Card>
@@ -293,19 +387,18 @@ export default function AdmissionPage() {
                   : { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
               }
             >
-              <Card className="border-[#1a2b3c]/10 shadow-[0_8px_30px_-8px_rgba(26,43,60,0.12)] rounded-2xl overflow-hidden bg-white">
-                <CardHeader className="bg-gradient-to-r from-[#1a2b3c] to-[#2c4356] text-white p-8 md:p-10">
+              <Card className="border-border shadow-xl rounded-2xl overflow-hidden bg-card/95 backdrop-blur-sm">
+                <CardHeader className="bg-primary text-primary-foreground p-8 md:p-10">
                   <div className="flex items-center gap-4">
-                    <div className="p-3.5 bg-white/10 rounded-xl">
-                      <FaGraduationCap className="text-3xl text-[#C9A961]" />
+                    <div className="p-3.5 bg-background/10 rounded-xl">
+                      <FaGraduationCap className="text-3xl text-[#c9a961]" />
                     </div>
                     <div>
-                      <CardTitle className="text-2xl md:text-3xl font-bold tracking-tight">
-                        Online Student Admission
+                      <CardTitle className="text-2xl md:text-3xl font-bold tracking-tight text-primary-foreground">
+                        {t.title}
                       </CardTitle>
-                      <CardDescription className="text-[#a0b0c0] text-sm mt-1.5">
-                        Academic Year 2026-2027 · Please fill out the form
-                        carefully
+                      <CardDescription className="text-primary-foreground/70 text-sm mt-1.5">
+                        {t.subtitle}
                       </CardDescription>
                     </div>
                   </div>
@@ -313,7 +406,7 @@ export default function AdmissionPage() {
 
                 <CardContent className="p-6 md:p-10">
                   {errorMessage && (
-                    <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                    <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
                       {errorMessage}
                     </div>
                   )}
@@ -322,7 +415,7 @@ export default function AdmissionPage() {
                     {/* Section 1: Academic & Personal Info */}
                     <FormSection
                       icon={FaUserGraduate}
-                      title="Student Information"
+                      title={t.section1Title}
                       step={1}
                       index={0}
                     >
@@ -330,39 +423,39 @@ export default function AdmissionPage() {
                         <div>
                           <label
                             htmlFor="studentName"
-                            className="block text-xs font-semibold text-[#1a2b3c] mb-2"
+                            className="block text-xs font-semibold text-foreground mb-2"
                           >
-                            Full Student Name{" "}
-                            <span className="text-[#C9A961]">*</span>
+                            {t.studentNameLabel}{" "}
+                            <span className="text-[#c9a961]">*</span>
                           </label>
                           <Input
                             id="studentName"
-                            placeholder="e.g. Yemtehan Shahil"
+                            placeholder={t.studentNamePlaceholder}
                             required
                             value={studentName}
                             onChange={(e) => setStudentName(e.target.value)}
-                            className="rounded-xl border-[#1a2b3c]/15 bg-white text-sm text-[#1a2b3c] placeholder:text-[#a0b0c0] focus:ring-2 focus:ring-[#C9A961] focus:border-[#C9A961] transition-all duration-200 py-3"
+                            className="w-full h-11 px-4 rounded-xl border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent transition-all duration-200"
                           />
                         </div>
 
                         <div>
                           <label
                             htmlFor="targetClass"
-                            className="block text-xs font-semibold text-[#1a2b3c] mb-2"
+                            className="block text-xs font-semibold text-foreground mb-2"
                           >
-                            Target Class{" "}
-                            <span className="text-[#C9A961]">*</span>
+                            {t.classLabel}{" "}
+                            <span className="text-[#c9a961]">*</span>
                           </label>
                           <div className="relative">
-                            <FaLayerGroup className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a9baa] text-xs pointer-events-none" />
+                            <FaLayerGroup className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs pointer-events-none" />
                             <select
                               id="targetClass"
                               required
                               value={targetClass}
                               onChange={(e) => setTargetClass(e.target.value)}
-                              className="w-full h-11 pl-10 pr-3 rounded-xl border border-[#1a2b3c]/15 text-[#1a2b3c] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A961] focus:border-[#C9A961] bg-white transition-all duration-200"
+                              className="w-full h-11 pl-10 pr-3 rounded-xl border border-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent bg-background transition-all duration-200"
                             >
-                              <option value="">Select Class</option>
+                              <option value="">{t.classPlaceholder}</option>
                               <option value="play">Play</option>
                               <option value="nursery">Nursery</option>
                               <option value="kg">KG</option>
@@ -381,20 +474,20 @@ export default function AdmissionPage() {
                         <div>
                           <label
                             htmlFor="dob"
-                            className="block text-xs font-semibold text-[#1a2b3c] mb-2"
+                            className="block text-xs font-semibold text-foreground mb-2"
                           >
-                            Date of Birth{" "}
-                            <span className="text-[#C9A961]">*</span>
+                            {t.dobLabel}{" "}
+                            <span className="text-[#c9a961]">*</span>
                           </label>
                           <div className="relative">
-                            <FaCalendarAlt className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a9baa] text-xs pointer-events-none" />
+                            <FaCalendarAlt className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs pointer-events-none" />
                             <Input
                               id="dob"
                               type="date"
                               required
                               value={dob}
                               onChange={(e) => setDob(e.target.value)}
-                              className="rounded-xl border-[#1a2b3c]/15 text-[#1a2b3c] pl-10 focus:ring-2 focus:ring-[#C9A961] focus:border-[#C9A961] transition-all duration-200"
+                              className="w-full h-11 pl-10 pr-4 rounded-xl border border-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent bg-background transition-all duration-200"
                             />
                           </div>
                         </div>
@@ -402,22 +495,23 @@ export default function AdmissionPage() {
                         <div>
                           <label
                             htmlFor="gender"
-                            className="block text-xs font-semibold text-[#1a2b3c] mb-2"
+                            className="block text-xs font-semibold text-foreground mb-2"
                           >
-                            Gender <span className="text-[#C9A961]">*</span>
+                            {t.genderLabel}{" "}
+                            <span className="text-[#c9a961]">*</span>
                           </label>
                           <div className="relative">
-                            <FaVenusMars className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a9baa] text-xs pointer-events-none" />
+                            <FaVenusMars className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs pointer-events-none" />
                             <select
                               id="gender"
                               required
                               value={gender}
                               onChange={(e) => setGender(e.target.value)}
-                              className="w-full h-11 pl-10 pr-3 rounded-xl border border-[#1a2b3c]/15 text-[#1a2b3c] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A961] focus:border-[#C9A961] bg-white transition-all duration-200"
+                              className="w-full h-11 pl-10 pr-3 rounded-xl border border-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent bg-background transition-all duration-200"
                             >
-                              <option value="">Select Gender</option>
-                              <option value="male">Male</option>
-                              <option value="female">Female</option>
+                              <option value="">{t.genderPlaceholder}</option>
+                              <option value="male">{t.genderMale}</option>
+                              <option value="female">{t.genderFemale}</option>
                             </select>
                           </div>
                         </div>
@@ -427,7 +521,7 @@ export default function AdmissionPage() {
                     {/* Section 2: Guardian Details */}
                     <FormSection
                       icon={FaUser}
-                      title="Parent / Guardian Details"
+                      title={t.section2Title}
                       step={2}
                       index={1}
                     >
@@ -435,38 +529,38 @@ export default function AdmissionPage() {
                         <div>
                           <label
                             htmlFor="guardianName"
-                            className="block text-xs font-semibold text-[#1a2b3c] mb-2"
+                            className="block text-xs font-semibold text-foreground mb-2"
                           >
-                            Guardian Name{" "}
-                            <span className="text-[#C9A961]">*</span>
+                            {t.guardianNameLabel}{" "}
+                            <span className="text-[#c9a961]">*</span>
                           </label>
                           <Input
                             id="guardianName"
-                            placeholder="Father's or Mother's Name"
+                            placeholder={t.guardianNamePlaceholder}
                             required
                             value={guardianName}
                             onChange={(e) => setGuardianName(e.target.value)}
-                            className="rounded-xl border-[#1a2b3c]/15 bg-white text-sm text-[#1a2b3c] placeholder:text-[#a0b0c0] focus:ring-2 focus:ring-[#C9A961] focus:border-[#C9A961] transition-all duration-200 py-3"
+                            className="w-full h-11 px-4 rounded-xl border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent transition-all duration-200"
                           />
                         </div>
 
                         <div>
                           <label
                             htmlFor="phone"
-                            className="block text-xs font-semibold text-[#1a2b3c] mb-2"
+                            className="block text-xs font-semibold text-foreground mb-2"
                           >
-                            Contact Phone Number{" "}
-                            <span className="text-[#C9A961]">*</span>
+                            {t.phoneLabel}{" "}
+                            <span className="text-[#c9a961]">*</span>
                           </label>
                           <div className="relative group">
-                            <FaPhoneAlt className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a9baa] text-xs transition-colors group-focus-within:text-[#C9A961]" />
+                            <FaPhoneAlt className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs transition-colors group-focus-within:text-[#c9a961]" />
                             <Input
                               id="phone"
                               placeholder="017XXXXXXXX"
                               required
                               value={phone}
                               onChange={(e) => setPhone(e.target.value)}
-                              className="rounded-xl border-[#1a2b3c]/15 pl-10 focus:ring-2 focus:ring-[#C9A961] focus:border-[#C9A961] transition-all duration-200 py-3"
+                              className="w-full h-11 pl-10 pr-4 rounded-xl border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent transition-all duration-200"
                             />
                           </div>
                         </div>
@@ -474,19 +568,19 @@ export default function AdmissionPage() {
                         <div className="md:col-span-2">
                           <label
                             htmlFor="email"
-                            className="block text-xs font-semibold text-[#1a2b3c] mb-2"
+                            className="block text-xs font-semibold text-foreground mb-2"
                           >
-                            Email Address
+                            {t.emailLabel}
                           </label>
                           <div className="relative group">
-                            <FaEnvelope className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a9baa] text-xs transition-colors group-focus-within:text-[#C9A961]" />
+                            <FaEnvelope className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs transition-colors group-focus-within:text-[#c9a961]" />
                             <Input
                               id="email"
                               type="email"
                               placeholder="guardian@gmail.com"
                               value={email}
                               onChange={(e) => setEmail(e.target.value)}
-                              className="rounded-xl border-[#1a2b3c]/15 pl-10 focus:ring-2 focus:ring-[#C9A961] focus:border-[#C9A961] transition-all duration-200 py-3"
+                              className="w-full h-11 pl-10 pr-4 rounded-xl border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent transition-all duration-200"
                             />
                           </div>
                         </div>
@@ -496,21 +590,23 @@ export default function AdmissionPage() {
                     {/* Section 3: File Uploads */}
                     <FormSection
                       icon={FaFileUpload}
-                      title="Required Documents Upload"
+                      title={t.section3Title}
                       step={3}
                       index={2}
                     >
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <UploadZone
-                          title="Student Photo (Passport Size)"
-                          subtitle="PNG, JPG up to 2MB"
+                          title={t.photoTitle}
+                          subtitle={t.photoSubtitle}
+                          fileSelectedText={t.fileSelected}
                           accept="image/*"
                           icon={FaFileUpload}
                           onChange={(file) => setStudentPhoto(file)}
                         />
                         <UploadZone
-                          title="Birth Certificate / PSC Transcript"
-                          subtitle="PDF, JPG up to 5MB"
+                          title={t.certTitle}
+                          subtitle={t.certSubtitle}
+                          fileSelectedText={t.fileSelected}
                           accept=".pdf,image/*"
                           icon={FaFileUpload}
                           onChange={(file) => setBirthCertificate(file)}
@@ -534,15 +630,15 @@ export default function AdmissionPage() {
                       <Button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-gradient-to-r from-[#1a2b3c] to-[#2c4356] hover:from-[#243747] hover:to-[#385268] text-white h-12 rounded-xl text-sm font-semibold shadow-[0_4px_16px_-4px_rgba(26,43,60,0.3)] transition-all duration-200 hover:shadow-[0_8px_24px_-6px_rgba(26,43,60,0.4)] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="w-full bg-primary text-primary-foreground hover:opacity-90 h-12 rounded-xl text-sm font-semibold shadow-md transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
                         {loading ? (
                           <>
                             <FaSpinner className="animate-spin text-sm" />
-                            Submitting Application...
+                            {t.submittingBtn}
                           </>
                         ) : (
-                          "Submit Admission Form"
+                          t.submitBtn
                         )}
                       </Button>
                     </motion.div>

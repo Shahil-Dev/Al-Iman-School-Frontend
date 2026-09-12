@@ -76,29 +76,29 @@ const RoleButton = memo(
         whileTap={reduceMotion ? {} : { scale: 0.98 }}
         aria-pressed={isSelected}
         aria-label={`Select ${config.label} role preview`}
-        className={`relative flex flex-col items-center gap-1.5 py-2.5 px-1 rounded-xl text-xs font-semibold transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A961] focus-visible:ring-offset-2 ${
+        className={`relative flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl text-xs font-semibold transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a961] ${
           isSelected
-            ? "bg-white text-[#1a2b3c] shadow-[0_2px_8px_-2px_rgba(26,43,60,0.15)]"
-            : "text-[#5a6b7a] hover:text-[#1a2b3c] hover:bg-white/50"
+            ? "bg-card text-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
         }`}
       >
         {isSelected && (
           <motion.div
             layoutId="roleIndicator"
             transition={reduceMotion ? { duration: 0 } : springConfig}
-            className="absolute -bottom-px left-2 right-2 h-[2px] rounded-full bg-[#C9A961]"
+            className="absolute -bottom-px left-2 right-2 h-[2px] rounded-full bg-[#c9a961]"
           />
         )}
         <Icon className="text-base mb-0.5" />
         <span className="truncate w-full text-center">{config.label}</span>
         {isSelected && (
-          <span className="text-[9px] text-[#8a9baa] font-normal -mt-0.5 truncate max-w-full px-1">
+          <span className="text-[9px] text-muted-foreground font-normal -mt-0.5 truncate max-w-full px-1">
             {config.description}
           </span>
         )}
       </motion.button>
     );
-  },
+  }
 );
 
 RoleButton.displayName = "RoleButton";
@@ -111,6 +111,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  
   const reduceMotion = useReducedMotion();
 
   const handleRoleSelect = useCallback((role: RoleType) => {
@@ -123,20 +124,17 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // Backend expects strictly { email, password }
       const res = await axiosInstance.post("/auth/login", {
         email,
         password,
       });
 
-      // Extract access token & user object from response payload
       const { accessToken, user } = res.data.data;
 
       const cookieExpiry = rememberMe ? 30 : 7;
       Cookies.set("accessToken", accessToken, { expires: cookieExpiry });
       Cookies.set("userRole", user.role, { expires: cookieExpiry });
 
-      // Determine redirect URL according to Backend Role Enum (e.g. SUPER_ADMIN -> /dashboard/super_admin)
       const rolePath = user.role.toLowerCase().replace(/_/g, "-");
       const redirectPath = `/dashboard/${rolePath}`;
 
@@ -145,7 +143,7 @@ export default function LoginPage() {
       setError(
         err.response?.data?.message ||
           err.message ||
-          "Invalid credentials. Please try again.",
+          "Invalid credentials. Please try again."
       );
     } finally {
       setLoading(false);
@@ -153,11 +151,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f4f6f8] via-[#eef1f4] to-[#e8ecef] flex items-center justify-center p-4 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4 font-sans relative overflow-hidden transition-colors duration-300">
+      {/* Background Pattern */}
       <div
-        className="absolute inset-0 opacity-[0.015]"
+        className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
         style={{
-          backgroundImage: `linear-gradient(rgba(26,43,60,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(26,43,60,0.1) 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`,
           backgroundSize: "40px 40px",
         }}
       />
@@ -182,25 +181,25 @@ export default function LoginPage() {
             <motion.div
               whileHover={reduceMotion ? {} : { scale: 1.05 }}
               whileTap={reduceMotion ? {} : { scale: 0.95 }}
-              className="p-3.5 bg-gradient-to-br from-[#1a2b3c] to-[#2c4356] rounded-2xl text-white shadow-[0_8px_24px_-6px_rgba(26,43,60,0.4)] transition-shadow group-hover:shadow-[0_12px_32px_-8px_rgba(26,43,60,0.5)]"
+              className="p-3.5 bg-primary text-primary-foreground rounded-2xl shadow-lg transition-shadow"
             >
               <FaGraduationCap className="text-3xl" />
             </motion.div>
           </Link>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-[#1a2b3c] tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
               Al-Iman School ERP
             </h1>
-            <p className="text-sm text-[#5a6b7a] mt-1.5">
+            <p className="text-sm text-muted-foreground mt-1.5">
               Sign in to access your ERP Portal
             </p>
           </div>
         </div>
 
-        <Card className="border-[#1a2b3c]/10 shadow-[0_8px_30px_-8px_rgba(26,43,60,0.15)] rounded-2xl overflow-hidden bg-white/95">
+        <Card className="border-border shadow-xl rounded-2xl overflow-hidden bg-card/95 backdrop-blur-sm">
           <CardContent className="p-6 md:p-7 space-y-6">
             {/* Role Switcher Tabs */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 bg-[#f0f2f5] rounded-xl">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 bg-muted rounded-xl">
               {Object.entries(roleConfig).map(([role]) => (
                 <RoleButton
                   key={role}
@@ -227,11 +226,11 @@ export default function LoginPage() {
                   role="alert"
                   aria-live="polite"
                 >
-                  <div className="flex items-start justify-between gap-3 p-3.5 rounded-xl bg-[#fdf0f0] border border-[#f0c8c8] text-[#b84444] text-xs font-medium">
+                  <div className="flex items-start justify-between gap-3 p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium">
                     <span className="flex-1">{error}</span>
                     <button
                       onClick={() => setError("")}
-                      className="shrink-0 hover:text-[#8a3030] transition-colors"
+                      className="shrink-0 hover:opacity-80 transition-opacity"
                       aria-label="Dismiss error"
                     >
                       <FaTimes className="text-sm" />
@@ -246,12 +245,12 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-xs font-semibold text-[#1a2b3c] mb-2"
+                  className="block text-xs font-semibold text-foreground mb-2"
                 >
                   Email / ID / Phone
                 </label>
                 <div className="relative group">
-                  <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8a9baa] text-sm transition-colors group-focus-within:text-[#C9A961]" />
+                  <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm transition-colors group-focus-within:text-[#c9a961]" />
                   <Input
                     id="email"
                     type="text"
@@ -260,7 +259,7 @@ export default function LoginPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     autoComplete="username"
-                    className="pl-11 pr-4 py-3 rounded-xl border-[#1a2b3c]/15 bg-white text-sm text-[#1a2b3c] placeholder:text-[#a0b0c0] focus:ring-2 focus:ring-[#C9A961] focus:border-[#C9A961] transition-all duration-200"
+                    className="pl-11 pr-4 py-3 rounded-xl border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent transition-all duration-200 w-full"
                   />
                 </div>
               </div>
@@ -268,12 +267,12 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-xs font-semibold text-[#1a2b3c] mb-2"
+                  className="block text-xs font-semibold text-foreground mb-2"
                 >
                   Password
                 </label>
                 <div className="relative group">
-                  <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8a9baa] text-sm transition-colors group-focus-within:text-[#C9A961]" />
+                  <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm transition-colors group-focus-within:text-[#c9a961]" />
                   <Input
                     id="password"
                     type="password"
@@ -282,26 +281,26 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     autoComplete="current-password"
-                    className="pl-11 pr-4 py-3 rounded-xl border-[#1a2b3c]/15 bg-white text-sm text-[#1a2b3c] placeholder:text-[#a0b0c0] focus:ring-2 focus:ring-[#C9A961] focus:border-[#C9A961] transition-all duration-200"
+                    className="pl-11 pr-4 py-3 rounded-xl border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent transition-all duration-200 w-full"
                   />
                 </div>
               </div>
 
               <div className="flex items-center justify-between text-xs pt-1">
-                <label className="flex items-center gap-2.5 text-[#5a6b7a] cursor-pointer group">
+                <label className="flex items-center gap-2.5 text-muted-foreground cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="rounded border-[#1a2b3c]/20 text-[#C9A961] focus:ring-[#C9A961] transition-colors cursor-pointer"
+                    className="rounded border-input text-[#c9a961] focus:ring-[#c9a961] transition-colors cursor-pointer accent-[#c9a961]"
                   />
-                  <span className="group-hover:text-[#1a2b3c] transition-colors">
+                  <span className="group-hover:text-foreground transition-colors">
                     Remember me for 30 days
                   </span>
                 </label>
                 <Link
                   href="#"
-                  className="text-[#C9A961] font-semibold hover:text-[#b89850] transition-colors hover:underline underline-offset-2"
+                  className="text-[#c9a961] font-semibold hover:opacity-80 transition-opacity hover:underline underline-offset-2"
                 >
                   Forgot Password?
                 </Link>
@@ -310,7 +309,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-[#1a2b3c] to-[#2c4356] hover:from-[#243747] hover:to-[#385268] text-white h-12 rounded-xl text-sm font-semibold shadow-[0_4px_16px_-4px_rgba(26,43,60,0.3)] transition-all duration-200 hover:shadow-[0_8px_24px_-6px_rgba(26,43,60,0.4)] mt-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-primary text-primary-foreground hover:opacity-90 h-12 rounded-xl text-sm font-semibold shadow-md transition-all duration-200 mt-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -318,7 +317,7 @@ export default function LoginPage() {
                     Authenticating...
                   </>
                 ) : (
-                  `Login to Portal`
+                  "Login to Portal"
                 )}
               </Button>
             </form>
@@ -336,7 +335,7 @@ export default function LoginPage() {
         >
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-xs text-[#5a6b7a] hover:text-[#1a2b3c] font-medium transition-colors group"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors group"
           >
             <FaArrowLeft className="text-xs transition-transform group-hover:-translate-x-1" />
             Back to Public Website

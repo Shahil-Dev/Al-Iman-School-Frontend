@@ -18,12 +18,12 @@ import {
   FaClock,
   FaChartLine,
   FaQuoteLeft,
-  FaAward
+  FaAward,
 } from "react-icons/fa";
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useRef, useCallback, memo } from "react";
-import { useLanguage } from "@/src/context/LanguageContext"; // Context Import
+import { useLanguage } from "@/src/context/LanguageContext";
 
 // ============ Multilingual Data ============
 const slidesData = {
@@ -54,14 +54,12 @@ const slidesData = {
     {
       id: 3,
       type: "speaker",
-      image: "/Image/al-iman hero-2.jpeg",
+      image: "/Image/Shayek Harun Izhar.png",
       speaker: {
         quote:
           "True education expands the intellect while purifying the soul. Our goal is to craft future leaders who shine in both Dunya and Akhirah.",
-        name: "Dr. Al-Hasan Mahmood",
-        role: "Islamic Scholar & Chief Advisor",
-        image:
-          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400",
+        name: "Shayek Harun Izhar",
+        role: "Islamic Scholar & Principal",
       },
     },
     {
@@ -107,14 +105,12 @@ const slidesData = {
     {
       id: 3,
       type: "speaker",
-      image: "/Image/al-iman hero-2.jpeg",
+      image: "/Image/Shayek Harun Izhar.png",
       speaker: {
         quote:
-          "প্রকৃত শিক্ষা আত্মার পরিশুদ্ধির সাথে সাথে বুদ্ধিমত্তার বিকাশ ঘটায়। আমাদের লক্ষ্য এমন নেতা তৈরি করা যারা দুনিয়া ও আখিরাত উভয় ক্ষেত্রেই সফল হবেন।",
-        name: "ড. আল-হাসান মাহমুদ",
-        role: "ইসলামিক স্কলার ও প্রধান উপদেষ্টা",
-        image:
-          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400",
+          "আমরা আল-ঈমান স্কুল প্রতিষ্ঠা করেছি জাতীয় মূল সিলেবাসকে প্রভাবিত করে সংস্কারের উদ্দেশ্যে। আমাদের লক্ষ্য হলো এমন শিক্ষার্থীদের গড়ে তোলা যারা দুনিয়াতেও এবং আখিরাতেও আলোকিত হবে।",
+        name: "শায়েক হারুন ইজহার",
+        role: "অধ্যক্ষ আল ঈমান স্কুল অ্যান্ড কলেজ",
       },
     },
     {
@@ -129,8 +125,8 @@ const slidesData = {
         { value: "২০০০+", label: "শিক্ষার্থী", icon: FaUsers },
         { value: "২৫+", label: "বছরের অভিজ্ঞতা", icon: FaClock },
       ],
-      ctaText: "ভর্তি আবেদন",
-      ctaLink: "/admission",
+    
+   
     },
   ],
 };
@@ -145,7 +141,6 @@ interface SlideStats {
 interface Speaker {
   name: string;
   role: string;
-  image: string;
   quote: string;
 }
 
@@ -184,7 +179,7 @@ const MouseTrackingGradient = memo(() => {
       mouseX.set(e.clientX - rect.left - rect.width / 2);
       mouseY.set(e.clientY - rect.top - rect.height / 2);
     },
-    [mouseX, mouseY, reduceMotion]
+    [mouseX, mouseY, reduceMotion],
   );
 
   const gradientX = useTransform(springX, (x) => x ?? 0);
@@ -193,7 +188,7 @@ const MouseTrackingGradient = memo(() => {
   const background = useTransform(
     [gradientX, gradientY],
     ([latestX, latestY]) =>
-      `radial-gradient(circle at ${latestX}px ${latestY}px, rgba(79, 70, 229, 0.25), transparent 80%)`
+      `radial-gradient(circle at ${latestX}px ${latestY}px, rgba(79, 70, 229, 0.25), transparent 80%)`,
   );
 
   return (
@@ -226,10 +221,15 @@ const SlideContent = memo(({ slide }: { slide: Slide }) => {
         <motion.div
           initial={reduceMotion ? { opacity: 0 } : { scale: 0.85, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.2, duration: 1, type: "spring", ...SPRING_CONFIG }}
+          transition={{
+            delay: 0.2,
+            duration: 1,
+            type: "spring",
+            ...SPRING_CONFIG,
+          }}
           className="relative flex flex-col items-center"
         >
-          <div className="relative w-28 h-28 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full p-1.5 bg-white/10 border border-white/20 mb-6 md:mb-8 overflow-hidden backdrop-blur-md">
+          <div className="relative w-24 h-24 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full p-1.5 bg-white/10 border border-white/20 mb-4 md:mb-8 overflow-hidden backdrop-blur-md">
             <Image
               src={slide.image}
               alt="Al-Iman School Logo"
@@ -239,10 +239,10 @@ const SlideContent = memo(({ slide }: { slide: Slide }) => {
               priority
             />
           </div>
-          <h1 className="text-3xl md:text-5xl lg:text-7xl font-extrabold text-white tracking-tight leading-tight">
+          <h1 className="text-2xl md:text-5xl lg:text-7xl font-extrabold text-white tracking-tight leading-tight">
             {slide.tagline}
           </h1>
-          <p className="mt-4 md:mt-6 text-indigo-200 font-medium text-sm md:text-xl tracking-wide max-w-3xl">
+          <p className="mt-3 md:mt-6 text-indigo-200 font-medium text-xs md:text-xl tracking-wide max-w-3xl">
             {slide.subTagline}
           </p>
         </motion.div>
@@ -252,61 +252,94 @@ const SlideContent = memo(({ slide }: { slide: Slide }) => {
 
   if (slide.type === "speaker" && slide.speaker) {
     return (
-      <div className="w-full max-w-6xl mx-auto h-full flex flex-col justify-between py-6 md:py-10 relative">
-        <div className="flex-1 flex flex-col justify-center items-center text-center px-4 md:px-12 my-auto">
-          <div className="p-3 md:p-4 rounded-full bg-amber-400/10 text-amber-300 mb-4 md:mb-6 border border-amber-400/20 backdrop-blur-md">
-            <FaQuoteLeft className="text-2xl md:text-4xl" />
+      <div className="w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-12 px-2 md:px-8">
+        {/* Quote Section */}
+        <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left">
+          <div className="p-2.5 md:p-3.5 rounded-2xl bg-amber-400/10 text-amber-300 mb-3 md:mb-6 border border-amber-400/20 backdrop-blur-md">
+            <FaQuoteLeft className="text-xl md:text-3xl" />
           </div>
-          <blockquote className="text-xl md:text-3xl lg:text-4xl font-serif italic text-white leading-relaxed max-w-4xl tracking-wide">
+          <blockquote className="text-sm md:text-2xl lg:text-3xl font-serif italic text-slate-100 leading-relaxed tracking-wide mb-4 md:mb-6">
             &ldquo;{slide.speaker.quote}&rdquo;
           </blockquote>
-        </div>
-        <div className="self-end flex items-center gap-4 bg-slate-900/80 p-3 md:p-4 rounded-2xl border border-white/10 backdrop-blur-md shadow-2xl mt-6">
-          <div className="relative w-14 h-14 md:w-20 md:h-20 rounded-full overflow-hidden border-2 border-amber-400 shrink-0">
-            <img src={slide.speaker.image} alt={slide.speaker.name} className="object-cover w-full h-full" />
+          <div>
+            <h3 className="text-amber-400 font-bold text-base md:text-2xl tracking-wide">
+              {slide.speaker.name}
+            </h3>
+            <p className="text-slate-300 text-xs md:text-base mt-0.5 md:mt-1 font-medium">
+              {slide.speaker.role}
+            </p>
           </div>
-          <div className="pr-2 md:pr-4">
-            <h4 className="text-white font-bold text-base md:text-xl">{slide.speaker.name}</h4>
-            <p className="text-amber-300/90 text-xs md:text-sm font-medium">{slide.speaker.role}</p>
-          </div>
         </div>
+
+        {/* Photocard Section */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="relative group shrink-0"
+        >
+          {/* Card Glow */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/30 to-indigo-500/30 rounded-3xl blur-xl opacity-70 group-hover:opacity-100 transition duration-500" />
+
+          <div className="relative w-48 h-64 md:w-72 md:h-96 rounded-2xl bg-slate-900/60 border border-white/15 p-3 md:p-4 backdrop-blur-xl shadow-2xl flex flex-col justify-end overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent z-10" />
+
+            <Image
+              src={slide.image}
+              alt={slide.speaker.name}
+              fill
+              className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
+            />
+
+            <div className="relative z-20 text-center pb-1 md:pb-2">
+              <span className="inline-block px-2.5 py-0.5 md:px-3 md:py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 text-[10px] md:text-xs font-semibold backdrop-blur-md mb-1 md:mb-2">
+                Principle
+              </span>
+              <h4 className="text-white font-bold text-xs md:text-xl drop-shadow-md">
+                {slide.speaker.name}
+              </h4>
+            </div>
+          </div>
+        </motion.div>
       </div>
     );
   }
 
   return (
     <div className="max-w-5xl mx-auto">
-      <h1 className="text-3xl md:text-5xl lg:text-7xl font-extrabold text-white leading-[1.15] mb-4 md:mb-6 tracking-tight">
+      <h1 className="text-2xl md:text-5xl lg:text-7xl font-extrabold text-white leading-[1.15] mb-3 md:mb-6 tracking-tight">
         {slide.title} <br />
         <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400">
           {slide.highlight}
         </span>
       </h1>
-      <p className="text-slate-200 text-sm md:text-xl max-w-2xl font-normal mb-6 md:mb-8 leading-relaxed">
+      <p className="text-slate-200 text-xs md:text-xl max-w-2xl font-normal mb-5 md:mb-8 leading-relaxed">
         {slide.desc}
       </p>
-      <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-12">
+      <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-12">
         {slide.ctaLink && (
           <Link
             href={slide.ctaLink}
-            className="inline-flex items-center justify-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-8 py-4 rounded-xl transition-all shadow-lg text-sm md:text-base"
+            className="inline-flex items-center justify-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 md:px-8 md:py-4 rounded-xl transition-all shadow-lg text-xs md:text-base"
           >
             {slide.ctaText}
-            <FaArrowRight size={16} />
+            <FaArrowRight size={14} />
           </Link>
         )}
         {slide.stats && (
-          <div className="flex gap-8 md:gap-10 border-t md:border-t-0 md:border-l border-white/20 pt-4 md:pt-0 md:pl-10">
+          <div className="flex gap-6 md:gap-10 border-t md:border-t-0 md:border-l border-white/20 pt-3 md:pt-0 md:pl-10">
             {slide.stats.map((stat, i) => (
-              <div key={i} className="flex items-start gap-3">
+              <div key={i} className="flex items-start gap-2.5 md:gap-3">
                 {stat.icon && (
-                  <div className="p-2.5 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                    <stat.icon size={18} />
+                  <div className="p-2 md:p-2.5 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                    <stat.icon size={16} />
                   </div>
                 )}
                 <div>
-                  <p className="text-2xl md:text-4xl font-extrabold text-white tracking-tight">{stat.value}</p>
-                  <p className="text-[10px] md:text-[11px] uppercase tracking-wider text-amber-200/80 font-medium mt-1">
+                  <p className="text-xl md:text-4xl font-extrabold text-white tracking-tight">
+                    {stat.value}
+                  </p>
+                  <p className="text-[9px] md:text-[11px] uppercase tracking-wider text-amber-200/80 font-medium mt-0.5 md:mt-1">
                     {stat.label}
                   </p>
                 </div>
@@ -322,7 +355,7 @@ SlideContent.displayName = "SlideContent";
 
 // ============ Main Component ============
 export default function SchoolHero() {
-  const { language } = useLanguage(); // Context থেকে ল্যাঙ্গুয়েজ রিড করা হচ্ছে
+  const { language } = useLanguage();
 
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -351,7 +384,9 @@ export default function SchoolHero() {
 
   const handlePrev = useCallback(() => {
     setDirection(-1);
-    setCurrent((prev) => (prev - 1 + activeSlides.length) % activeSlides.length);
+    setCurrent(
+      (prev) => (prev - 1 + activeSlides.length) % activeSlides.length,
+    );
     startTimer();
   }, [startTimer, activeSlides.length]);
 
@@ -366,11 +401,11 @@ export default function SchoolHero() {
 
   return (
     <section
-      className="h-[75vh] lg:h-screen w-full relative overflow-hidden flex items-center justify-center"
+      className="h-[85vh] lg:h-screen w-full relative overflow-hidden flex items-start lg:items-center justify-center pb-12 lg:pb-0"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      <div className="relative h-full min-h-screen lg:min-h-[92vh] w-full lg:w-[98%] lg:mx-auto lg:mt-[2vh] lg:rounded-[24px] overflow-hidden shadow-2xl">
+      <div className="relative h-full w-full lg:w-[98%] lg:mx-auto lg:mt-[2vh] lg:rounded-[24px] overflow-hidden shadow-2xl">
         {/* Background Layer */}
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
@@ -383,6 +418,16 @@ export default function SchoolHero() {
           >
             {currentSlide.type === "brand" ? (
               <MouseTrackingGradient />
+            ) : currentSlide.type === "speaker" ? (
+              <div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-[#1E1B4B] to-[#020617]">
+                <div
+                  className="absolute inset-0 opacity-[0.03]"
+                  style={{
+                    backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+                    backgroundSize: "60px 60px",
+                  }}
+                />
+              </div>
             ) : (
               <div className="relative h-full w-full overflow-hidden">
                 <Image
@@ -399,7 +444,7 @@ export default function SchoolHero() {
         </AnimatePresence>
 
         {/* Content Layer */}
-        <div className="relative z-10 h-full w-full flex items-center justify-center pt-28 pb-16 md:pt-36 lg:pt-40 lg:pb-20 px-6 md:px-12 lg:px-24">
+        <div className="relative z-10 h-full w-full flex items-center justify-center pt-20 pb-12 md:pt-36 lg:pt-40 lg:pb-20 px-4 md:px-12 lg:px-24">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={`content-${current}-${language}`}
@@ -417,15 +462,15 @@ export default function SchoolHero() {
         {/* Navigation Buttons */}
         <button
           onClick={handlePrev}
-          className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-14 md:h-14 rounded-full bg-black/20 hover:bg-indigo-600 border border-white/20 flex items-center justify-center text-white backdrop-blur-md"
+          className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 z-20 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/20 hover:bg-indigo-600 border border-white/20 flex items-center justify-center text-white backdrop-blur-md"
         >
-          <FaChevronLeft size={20} />
+          <FaChevronLeft size={16} />
         </button>
         <button
           onClick={handleNext}
-          className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-20 w-11 h-11 md:w-14 md:h-14 rounded-full bg-black/20 hover:bg-indigo-600 border border-white/20 flex items-center justify-center text-white backdrop-blur-md"
+          className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 z-20 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/20 hover:bg-indigo-600 border border-white/20 flex items-center justify-center text-white backdrop-blur-md"
         >
-          <FaChevronRight size={20} />
+          <FaChevronRight size={16} />
         </button>
       </div>
     </section>
