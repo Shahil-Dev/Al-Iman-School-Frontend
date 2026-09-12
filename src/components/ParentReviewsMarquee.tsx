@@ -166,7 +166,7 @@ export default function ParentReviewsMarquee() {
       try {
         // Replace 5000 with your actual backend port if it's different (e.g. 5000, 8000, 3001)
         const baseUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
+          process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
         
         const res = await fetch(`${baseUrl}/reviews/public`);
         const data = await res.json();

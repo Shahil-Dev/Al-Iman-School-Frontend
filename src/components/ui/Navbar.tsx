@@ -19,7 +19,7 @@ import { useLanguage } from "@/src/context/LanguageContext";
 
 const navigationItems = [
   { href: "/", bnLabel: "হোম", enLabel: "Home" },
-  { href: "#about", bnLabel: "আমাদের সম্পর্কে", enLabel: "About Us" },
+  { href: "/about", bnLabel: "আমাদের সম্পর্কে", enLabel: "About Us" },
   { href: "#notices", bnLabel: "নোটিশ বোর্ড", enLabel: "Notice Board" },
   { href: "#teachers", bnLabel: "শিক্ষক মণ্ডলী", enLabel: "Teachers" },
   { href: "/admission", bnLabel: "অনলাইন ভর্তি", enLabel: "Online Admission", accent: true },
