@@ -23,10 +23,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/src/components/ui/card";
-import { submitAdmission } from "@/src/services/admissionApi";
 
-// 🔴 আপনার প্রজেক্টের ভাষা নিয়ন্ত্রণকারী Context/Hook টি এখানে ইমপোর্ট করুন
-import { useLanguage } from "@/src/context/LanguageContext"; // (উদাহরণস্বরূপ)
+import { useLanguage } from "@/src/context/LanguageContext"; //
+import { submitAdmission } from "@/src/Services/admissionApi";
 
 type Language = "en" | "bn";
 
@@ -34,7 +33,7 @@ type Language = "en" | "bn";
 const translations = {
   en: {
     title: "Online Student Admission",
-    subtitle: "Academic Year 2026-2027 · Please fill out the form carefully",
+    subtitle: "Please fill out the form carefully",
     successTitle: "Application Submitted!",
     successSubtitleStart: "Thank you for applying. Your Application ID is",
     successSubtitleEnd: ". Please save this for future tracking.",
@@ -66,7 +65,7 @@ const translations = {
   },
   bn: {
     title: "অনলাইন শিক্ষার্থী ভর্তি",
-    subtitle: "শিক্ষাবর্ষ ২০২৬-২০২৭ · অনুগ্রহ করে ফর্মটি মনোযোগ সহকারে পূরণ করুন",
+    subtitle: "অনুগ্রহ করে ফর্মটি মনোযোগ সহকারে পূরণ করুন",
     successTitle: "আবেদন জমা দেওয়া হয়েছে!",
     successSubtitleStart: "আবেদন করার জন্য ধন্যবাদ। আপনার আবেদন আইডি হলো",
     successSubtitleEnd: "। ভবিষ্যৎ ট্র্যাকিংয়ের জন্য এটি সংরক্ষণ করুন।",
@@ -156,7 +155,7 @@ const FormSection = memo(
         {children}
       </motion.div>
     );
-  }
+  },
 );
 
 FormSection.displayName = "FormSection";
@@ -225,13 +224,12 @@ const UploadZone = memo(
         </label>
       </motion.div>
     );
-  }
+  },
 );
 
 UploadZone.displayName = "UploadZone";
 
 export default function AdmissionPage() {
-  // 🔴 আপনার ন্যাভবার যে ভাষা কনটেক্সট ব্যবহার করে তা থেকে `lang` নিয়ে আসুন
   const { language = "en" } = useLanguage();
   const currentLang = (language === "bn" ? "bn" : "en") as Language;
   const t = translations[currentLang];
@@ -284,7 +282,7 @@ export default function AdmissionPage() {
           err.message ||
             (currentLang === "bn"
               ? "কিছু ভুল হয়েছে। আবার চেষ্টা করুন।"
-              : "Something went wrong. Please try again.")
+              : "Something went wrong. Please try again."),
         );
       } finally {
         setLoading(false);
@@ -301,7 +299,7 @@ export default function AdmissionPage() {
       studentPhoto,
       birthCertificate,
       currentLang,
-    ]
+    ],
   );
 
   const handleReset = useCallback(() => {
