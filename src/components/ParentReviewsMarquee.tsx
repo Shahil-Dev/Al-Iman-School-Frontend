@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, memo } from "react";
 import Marquee from "react-fast-marquee";
-import { FaStar, FaQuoteLeft, FaUser } from "react-icons/fa";
+import { FaStar, FaQuoteLeft } from "react-icons/fa";
 import { motion, useReducedMotion } from "framer-motion";
 import { useLanguage } from "@/src/context/LanguageContext"; // Import your language context
 
@@ -11,10 +11,6 @@ interface ParentInfo {
   fatherName?: string | null;
   motherName?: string | null;
   profileImage?: string | null;
-  user?: {
-    name?: string | null;
-    image?: string | null;
-  };
 }
 
 interface Review {
@@ -59,18 +55,29 @@ const getInitials = (name: string): string => {
 const ReviewCard = memo(
   ({ review, fallbackName }: { review: Review; fallbackName: string }) => {
     const reduceMotion = useReducedMotion();
+    const [formattedDate, setFormattedDate] = useState<string>("");
 
-    // Resolve Parent Name Priority: fatherName -> motherName -> user.name -> Fallback
+    // Prevent SSR Hydration Mismatch for Date formatting
+    useEffect(() => {
+      if (review?.createdAt) {
+        setFormattedDate(
+          new Date(review.createdAt).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })
+        );
+      }
+    }, [review.createdAt]);
+
+    // Resolve Parent Name Priority: fatherName -> motherName -> Fallback
     const displayName =
       review.parent?.fatherName ||
       review.parent?.motherName ||
-      review.parent?.user?.name ||
       fallbackName;
 
     // Resolve Profile Image Priority
-    const avatarUrl =
-      review.parent?.profileImage || review.parent?.user?.image || null;
-
+    const avatarUrl = review.parent?.profileImage || null;
     const initials = getInitials(displayName);
 
     return (
@@ -135,18 +142,12 @@ const ReviewCard = memo(
 
           {/* Footer: Date display */}
           <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
-            <span>
-              {new Date(review.createdAt).toLocaleDateString(undefined, {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
-            </span>
+            <span>{formattedDate}</span>
           </div>
         </motion.div>
       </div>
     );
-  },
+  }
 );
 
 ReviewCard.displayName = "ReviewCard";
@@ -163,13 +164,18 @@ export default function ParentReviewsMarquee() {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const res = await fetch("/api/v1/reviews/public"); // Adjust API route if needed
+        // Replace 5000 with your actual backend port if it's different (e.g. 5000, 8000, 3001)
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
+        
+        const res = await fetch(`${baseUrl}/reviews/public`);
         const data = await res.json();
+
         if (data?.success && Array.isArray(data?.data)) {
           setReviews(data.data);
         }
       } catch (error) {
-        // Handle error silently or pass fallback state
+        // Handle fetch error silently
       } finally {
         setLoading(false);
       }
