@@ -1,0 +1,102 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  Users,
+  GraduationCap,
+  UserCheck,
+  BookOpen,
+  Calendar,
+  FileText,
+  Receipt,
+  Settings,
+} from "lucide-react";
+
+interface SidebarProps {
+  role?: string;
+}
+
+export default function Sidebar({ role }: SidebarProps) {
+  const pathname = usePathname();
+
+  const getMenuItems = () => {
+    const common = [
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Routine", href: "/dashboard/routine", icon: Calendar },
+      { name: "Notices", href: "/dashboard/notices", icon: FileText },
+    ];
+
+    if (role === "SUPER_ADMIN" || role === "ACCOUNTS") {
+      return [
+        ...common,
+        { name: "Academic", href: "/dashboard/academic", icon: BookOpen },
+        { name: "Students", href: "/dashboard/students", icon: GraduationCap },
+        { name: "Teachers", href: "/dashboard/teachers", icon: Users },
+        { name: "Parents", href: "/dashboard/parents", icon: UserCheck },
+        { name: "Fees & Invoices", href: "/dashboard/payments", icon: Receipt },
+        { name: "Settings", href: "/dashboard/settings", icon: Settings },
+      ];
+    }
+
+    if (role === "TEACHER") {
+      return [
+        ...common,
+        { name: "My Classes", href: "/dashboard/classes", icon: BookOpen },
+        { name: "Attendance", href: "/dashboard/attendance", icon: UserCheck },
+        { name: "Marks Entry", href: "/dashboard/marks", icon: FileText },
+      ];
+    }
+
+    if (role === "STUDENT" || role === "PARENT") {
+      return [
+        ...common,
+        { name: "My Marks", href: "/dashboard/marks", icon: FileText },
+        { name: "Attendance", href: "/dashboard/attendance", icon: UserCheck },
+        { name: "Invoices", href: "/dashboard/invoices", icon: Receipt },
+      ];
+    }
+
+    return common;
+  };
+
+  const menuItems = getMenuItems();
+
+  return (
+    <aside className="w-64 bg-slate-900 text-white min-h-screen p-4 flex flex-col justify-between">
+      <div>
+        <div className="text-xl font-bold border-b border-slate-700 pb-4 mb-6 text-center tracking-wide text-emerald-400">
+          Al-Iman School
+        </div>
+        <nav className="space-y-1">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-emerald-600 text-white"
+                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                {item.name}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      <div className="border-t border-slate-800 pt-4 text-xs text-slate-400 text-center">
+        Role:{" "}
+        <span className="text-emerald-400 font-semibold">
+          {role || "Loading..."}
+        </span>
+      </div>
+    </aside>
+  );
+}
