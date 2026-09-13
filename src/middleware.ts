@@ -1,27 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 
-
 export function middleware(request: NextRequest) {
   const token = request.cookies.get("accessToken")?.value;
   const { pathname } = request.nextUrl;
 
-  // Protect Dashboard Routes
-  if (pathname.startsWith("/dashboard")) {
-    if (!token) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
+ 
+  const privateRoutes = ["/Dashboard", "/notices", "/teachers", "/admission"];
+
+ 
+  const isPrivateKeyRoute = privateRoutes.some((route) =>
+    pathname.toLowerCase().startsWith(route.toLowerCase())
+  );
+
+ 
+  if (isPrivateKeyRoute && !token) {
+    const loginUrl = new URL("/login", request.url);
+   
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // Prevent logged-in users from accessing the login page
-  if (pathname === "/login" && token) {
-    const userRole = request.cookies.get("userRole")?.value || "STUDENT";
-    const rolePath = userRole.toLowerCase().replace(/_/g, "-");
-    return NextResponse.redirect(new URL(`/dashboard/${rolePath}`, request.url));
+  if (pathname.toLowerCase() === "/login" && token) {
+    return NextResponse.redirect(new URL("/Dashboard", request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: [
+    "/Dashboard/:path*",
+    "/notices/:path*",
+    "/teachers/:path*",
+    "/admission/:path*",
+    "/login",
+  ],
 };

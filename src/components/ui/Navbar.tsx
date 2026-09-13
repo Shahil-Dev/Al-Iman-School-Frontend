@@ -6,7 +6,6 @@ import React, { useEffect, useState } from "react";
 import {
   FaBars,
   FaChevronRight,
-  FaGraduationCap,
   FaSignInAlt,
   FaTimes,
   FaGlobe,
@@ -16,13 +15,19 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useLanguage } from "@/src/context/LanguageContext";
+import { useRouter } from "next/navigation";
 
 const navigationItems = [
   { href: "/", bnLabel: "হোম", enLabel: "Home" },
   { href: "/about", bnLabel: "আমাদের সম্পর্কে", enLabel: "About Us" },
-  { href: "#notices", bnLabel: "নোটিশ বোর্ড", enLabel: "Notice Board" },
-  { href: "#teachers", bnLabel: "শিক্ষক মণ্ডলী", enLabel: "Teachers" },
-  { href: "/admission", bnLabel: "অনলাইন ভর্তি", enLabel: "Online Admission", accent: true },
+  { href: "/notices", bnLabel: "নোটিশ বোর্ড", enLabel: "Notice Board" },
+  { href: "/teachers", bnLabel: "শিক্ষক মণ্ডলী", enLabel: "Teachers" },
+  {
+    href: "/admission",
+    bnLabel: "অনলাইন ভর্তি",
+    enLabel: "Online Admission",
+    accent: true,
+  },
 ];
 
 const springConfig = {
@@ -38,6 +43,29 @@ export const Navbar = () => {
   const [activeSection, setActiveSection] = useState("/");
   const [mounted, setMounted] = useState(false);
   const prefersReducedMotion = useReducedMotion();
+  const router = useRouter();
+
+  // -------------------------------------------------------------
+  // Auth State (আপনার প্রজেক্টের Auth Provider অনুযায়ী পরিবর্তন করে নেবেন)
+  // উদাহরণস্বরূপ: NextAuth, Context, বা localStorage
+  // -------------------------------------------------------------
+  const [user, setUser] = useState<{
+    name?: string;
+    image?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    // উদাহরণ: LocalStorage/Cookie থেকে ইউজারের তথ্য চেক করা
+    // NextAuth ব্যবহার করলে useSession() হুক ব্যবহার করতে পারেন
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        setUser(null);
+      }
+    }
+  }, []);
 
   const { theme, setTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
@@ -71,6 +99,20 @@ export const Navbar = () => {
     return activeSection?.startsWith(href);
   };
 
+  // প্রাইভেট রাউটে ক্লিকের সময় ক্লায়েন্ট-সাইড চেক
+  const handleProtectedNavigation = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    href: string
+  ) => {
+    const isPrivate = ["/notices", "/teachers", "/admission"].includes(href);
+    if (isPrivate && !user) {
+      e.preventDefault();
+      router.push("/login");
+    } else {
+      setActiveSection(href);
+    }
+  };
+
   return (
     <header
       onKeyDown={handleKeyDown}
@@ -90,12 +132,7 @@ export const Navbar = () => {
             onClick={() => setActiveSection("/")}
           >
             <span className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] text-white shadow-[0_4px_16px_-6px_rgba(16,16,24,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-300 ease-out group-hover:-translate-y-0.5 group-hover:shadow-[0_8px_24px_-8px_rgba(16,16,24,0.6),inset_0_1px_1px_rgba(255,255,255,0.15)] group-focus-visible:-translate-y-0.5 sm:h-12 sm:w-12">
-              <img
-                src="Image/logo aliman.jpg"
-                alt="Al-Iman School Logo"
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
+              <img src="/Image/logo-aliman.jpg" alt="Logo" className="h-full w-full object-cover" />
             </span>
 
             <span className="min-w-0">
@@ -114,14 +151,14 @@ export const Navbar = () => {
               <Link
                 key={href}
                 href={href}
-                onClick={() => setActiveSection(href)}
+                onClick={(e) => handleProtectedNavigation(e, href)}
                 aria-current={isActive(href) ? "page" : undefined}
                 className={`group relative rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] focus-visible:ring-offset-2 ${
                   accent
                     ? "text-[#B8860B] hover:text-[#9a6f0a]"
                     : isActive(href)
-                    ? "text-[#1a1a1a] dark:text-white"
-                    : "text-[#4a4a52] dark:text-slate-300 hover:text-[#1a1a1a] dark:hover:text-white"
+                      ? "text-[#1a1a1a] dark:text-white"
+                      : "text-[#4a4a52] dark:text-slate-300 hover:text-[#1a1a1a] dark:hover:text-white"
                 }`}
               >
                 {t(bnLabel, enLabel)}
@@ -134,7 +171,7 @@ export const Navbar = () => {
             ))}
           </nav>
 
-          {/* Desktop Controls (Language, Theme, CTA) */}
+          {/* Desktop Controls (Language, Theme, CTA / Profile) */}
           <div className="hidden items-center gap-3 md:flex">
             {/* Language Toggle Button */}
             <button
@@ -163,24 +200,66 @@ export const Navbar = () => {
               </button>
             )}
 
-            {/* Login CTA */}
-            <Link
-              href="/login"
-              onClick={() => setActiveSection("/login")}
-              className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] focus-visible:ring-offset-2"
-            >
-              <Button className="group flex h-11 items-center gap-2 rounded-xl bg-[#1a1a1a] dark:bg-[#B8860B] px-5 text-sm font-semibold text-white dark:text-slate-950 shadow-[0_4px_16px_-8px_rgba(16,16,24,0.6),inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#2d2d2d] dark:hover:bg-[#a0750a] hover:shadow-[0_8px_24px_-10px_rgba(16,16,24,0.7),inset_0_1px_1px_rgba(255,255,255,0.15)] active:translate-y-0 active:shadow-[0_2px_8px_-4px_rgba(16,16,24,0.5)]">
-                <FaSignInAlt
-                  aria-hidden="true"
-                  className="transition-transform duration-200 group-hover:translate-x-0.5"
-                />
-                {t("পোর্টাল লগইন", "Portal Login")}
-              </Button>
-            </Link>
+            {/* Profile Avatar / Portal Login CTA */}
+            {user ? (
+              <Link
+                href="/dashboard"
+                onClick={() => setActiveSection("/dashboard")}
+                className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-[#B8860B]/30 bg-[#1a1a1a] dark:bg-[#B8860B] text-white dark:text-slate-950 font-bold text-base shadow-md hover:scale-105 transition-transform overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B]"
+                title="Go to Dashboard"
+              >
+                {user.image ? (
+                  <img
+                    src={user.image}
+                    alt={user.name || "User Avatar"}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span>
+                    {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                  </span>
+                )}
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setActiveSection("/login")}
+                className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] focus-visible:ring-offset-2"
+              >
+                <Button className="group flex h-11 items-center gap-2 rounded-xl bg-[#1a1a1a] dark:bg-[#B8860B] px-5 text-sm font-semibold text-white dark:text-slate-950 shadow-[0_4px_16px_-8px_rgba(16,16,24,0.6),inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#2d2d2d] dark:hover:bg-[#a0750a] hover:shadow-[0_8px_24px_-10px_rgba(16,16,24,0.7),inset_0_1px_1px_rgba(255,255,255,0.15)] active:translate-y-0 active:shadow-[0_2px_8px_-4px_rgba(16,16,24,0.5)]">
+                  <FaSignInAlt
+                    aria-hidden="true"
+                    className="transition-transform duration-200 group-hover:translate-x-0.5"
+                  />
+                  {t("পোর্টাল লগইন", "Portal Login")}
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Actions & Menu Toggle */}
           <div className="flex items-center gap-2 md:hidden">
+            {/* Mobile Profile Icon (If logged in) */}
+            {user && (
+              <Link
+                href="/dashboard"
+                onClick={() => setActiveSection("/dashboard")}
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#B8860B]/30 bg-[#1a1a1a] dark:bg-[#B8860B] text-white dark:text-slate-950 font-bold text-sm overflow-hidden"
+              >
+                {user.image ? (
+                  <img
+                    src={user.image}
+                    alt={user.name || "User Avatar"}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span>
+                    {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                  </span>
+                )}
+              </Link>
+            )}
+
             {/* Mobile Language Switcher */}
             <button
               onClick={toggleLanguage}
@@ -230,15 +309,11 @@ export const Navbar = () => {
           <motion.div
             id="mobile-navigation"
             initial={
-              prefersReducedMotion
-                ? { opacity: 1 }
-                : { height: 0, opacity: 0 }
+              prefersReducedMotion ? { opacity: 1 } : { height: 0, opacity: 0 }
             }
             animate={{ height: "auto", opacity: 1 }}
             exit={
-              prefersReducedMotion
-                ? { opacity: 0 }
-                : { height: 0, opacity: 0 }
+              prefersReducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }
             }
             transition={
               prefersReducedMotion ? { duration: 0.15 } : springConfig
@@ -269,17 +344,17 @@ export const Navbar = () => {
                     >
                       <Link
                         href={href}
-                        onClick={() => {
+                        onClick={(e) => {
                           closeMenu();
-                          setActiveSection(href);
+                          handleProtectedNavigation(e, href);
                         }}
                         aria-current={isActive(href) ? "page" : undefined}
                         className={`group flex items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] active:scale-[0.98] ${
                           accent
                             ? "bg-[#B8860B]/10 text-[#9a6f0a] dark:text-[#B8860B] hover:bg-[#B8860B]/15"
                             : isActive(href)
-                            ? "bg-[#1a1a1a]/5 dark:bg-white/10 text-[#1a1a1a] dark:text-white"
-                            : "text-[#4a4a52] dark:text-slate-300 hover:bg-[#1a1a1a]/5 dark:hover:bg-white/5 hover:text-[#1a1a1a] dark:hover:text-white"
+                              ? "bg-[#1a1a1a]/5 dark:bg-white/10 text-[#1a1a1a] dark:text-white"
+                              : "text-[#4a4a52] dark:text-slate-300 hover:bg-[#1a1a1a]/5 dark:hover:bg-white/5 hover:text-[#1a1a1a] dark:hover:text-white"
                         }`}
                       >
                         {t(bnLabel, enLabel)}
@@ -289,8 +364,8 @@ export const Navbar = () => {
                             accent
                               ? "text-[#B8860B]"
                               : isActive(href)
-                              ? "text-[#1a1a1a] dark:text-white"
-                              : "text-[#4a4a52]/40 dark:text-white/40"
+                                ? "text-[#1a1a1a] dark:text-white"
+                                : "text-[#4a4a52]/40 dark:text-white/40"
                           }`}
                         />
                       </Link>
@@ -299,37 +374,37 @@ export const Navbar = () => {
                 )}
               </div>
 
-              <motion.div
-                initial={
-                  prefersReducedMotion
-                    ? { opacity: 1 }
-                    : { opacity: 0, y: 8 }
-                }
-                animate={{ opacity: 1, y: 0 }}
-                transition={
-                  prefersReducedMotion
-                    ? { duration: 0 }
-                    : {
-                        delay: navigationItems.length * 0.05 + 0.1,
-                        ...springConfig,
-                      }
-                }
-                className="mt-4 border-t border-[#1a1a1a]/10 dark:border-white/10 pt-4"
-              >
-                <Link
-                  href="/login"
-                  onClick={() => {
-                    closeMenu();
-                    setActiveSection("/login");
-                  }}
-                  className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] focus-visible:ring-offset-2"
+              {!user && (
+                <motion.div
+                  initial={
+                    prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 8 }
+                  }
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={
+                    prefersReducedMotion
+                      ? { duration: 0 }
+                      : {
+                          delay: navigationItems.length * 0.05 + 0.1,
+                          ...springConfig,
+                        }
+                  }
+                  className="mt-4 border-t border-[#1a1a1a]/10 dark:border-white/10 pt-4"
                 >
-                  <Button className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1a1a1a] dark:bg-[#B8860B] text-sm font-semibold text-white dark:text-slate-950 shadow-[0_4px_16px_-8px_rgba(16,16,24,0.6)] transition-all duration-200 hover:bg-[#2d2d2d] dark:hover:bg-[#a0750a] active:scale-[0.98]">
-                    <FaSignInAlt aria-hidden="true" />
-                    {t("পোর্টাল লগইন", "Portal Login")}
-                  </Button>
-                </Link>
-              </motion.div>
+                  <Link
+                    href="/login"
+                    onClick={() => {
+                      closeMenu();
+                      setActiveSection("/login");
+                    }}
+                    className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] focus-visible:ring-offset-2"
+                  >
+                    <Button className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1a1a1a] dark:bg-[#B8860B] text-sm font-semibold text-white dark:text-slate-950 shadow-[0_4px_16px_-8px_rgba(16,16,24,0.6)] transition-all duration-200 hover:bg-[#2d2d2d] dark:hover:bg-[#a0750a] active:scale-[0.98]">
+                      <FaSignInAlt aria-hidden="true" />
+                      {t("পোর্টাল লগইন", "Portal Login")}
+                    </Button>
+                  </Link>
+                </motion.div>
+              )}
             </nav>
           </motion.div>
         )}

@@ -118,7 +118,7 @@ export default function LoginPage() {
     setSelectedRole(role);
   }, []);
 
-  const handleLogin = async (e: React.FormEvent) => {
+const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -135,10 +135,8 @@ export default function LoginPage() {
       Cookies.set("accessToken", accessToken, { expires: cookieExpiry });
       Cookies.set("userRole", user.role, { expires: cookieExpiry });
 
-      const rolePath = user.role.toLowerCase().replace(/_/g, "-");
-      const redirectPath = `/dashboard/${rolePath}`;
-
-      router.push(redirectPath);
+   
+      router.push("/Dashboard");
     } catch (err: any) {
       setError(
         err.response?.data?.message ||

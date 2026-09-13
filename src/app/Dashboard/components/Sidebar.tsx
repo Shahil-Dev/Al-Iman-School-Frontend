@@ -23,38 +23,38 @@ export default function Sidebar({ role }: SidebarProps) {
 
   const getMenuItems = () => {
     const common = [
-      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { name: "Routine", href: "/dashboard/routine", icon: Calendar },
-      { name: "Notices", href: "/dashboard/notices", icon: FileText },
+      { name: "Dashboard", href: "/Dashboard", icon: LayoutDashboard },
+      { name: "Routine", href: "/Dashboard/routine", icon: Calendar },
+      { name: "Notices", href: "/Dashboard/notices", icon: FileText },
     ];
 
     if (role === "SUPER_ADMIN" || role === "ACCOUNTS") {
       return [
         ...common,
-        { name: "Academic", href: "/dashboard/academic", icon: BookOpen },
-        { name: "Students", href: "/dashboard/students", icon: GraduationCap },
-        { name: "Teachers", href: "/dashboard/teachers", icon: Users },
-        { name: "Parents", href: "/dashboard/parents", icon: UserCheck },
-        { name: "Fees & Invoices", href: "/dashboard/payments", icon: Receipt },
-        { name: "Settings", href: "/dashboard/settings", icon: Settings },
+        { name: "Academic", href: "/Dashboard/academic", icon: BookOpen },
+        { name: "Students", href: "/Dashboard/students", icon: GraduationCap },
+        { name: "Teachers", href: "/Dashboard/teachers", icon: Users },
+        { name: "Parents", href: "/Dashboard/parents", icon: UserCheck },
+        { name: "Fees & Invoices", href: "/Dashboard/payments", icon: Receipt },
+        { name: "Settings", href: "/Dashboard/settings", icon: Settings },
       ];
     }
 
     if (role === "TEACHER") {
       return [
         ...common,
-        { name: "My Classes", href: "/dashboard/classes", icon: BookOpen },
-        { name: "Attendance", href: "/dashboard/attendance", icon: UserCheck },
-        { name: "Marks Entry", href: "/dashboard/marks", icon: FileText },
+        { name: "My Classes", href: "/Dashboard/classes", icon: BookOpen },
+        { name: "Attendance", href: "/Dashboard/attendance", icon: UserCheck },
+        { name: "Marks Entry", href: "/Dashboard/marks", icon: FileText },
       ];
     }
 
     if (role === "STUDENT" || role === "PARENT") {
       return [
         ...common,
-        { name: "My Marks", href: "/dashboard/marks", icon: FileText },
-        { name: "Attendance", href: "/dashboard/attendance", icon: UserCheck },
-        { name: "Invoices", href: "/dashboard/invoices", icon: Receipt },
+        { name: "My Marks", href: "/Dashboard/marks", icon: FileText },
+        { name: "Attendance", href: "/Dashboard/attendance", icon: UserCheck },
+        { name: "Invoices", href: "/Dashboard/invoices", icon: Receipt },
       ];
     }
 
