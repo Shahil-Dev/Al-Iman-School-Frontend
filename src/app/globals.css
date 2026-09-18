@@ -1,8 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 
-
-
-
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -16,7 +13,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-bangla), var(--font-english), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
-  --font-[#C9A961]: #c9a961;
+  --color-gold: #c9a961;
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);

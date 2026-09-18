@@ -98,7 +98,7 @@ const RoleButton = memo(
         )}
       </motion.button>
     );
-  }
+  },
 );
 
 RoleButton.displayName = "RoleButton";
@@ -111,14 +111,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  
+
   const reduceMotion = useReducedMotion();
 
   const handleRoleSelect = useCallback((role: RoleType) => {
     setSelectedRole(role);
   }, []);
 
-const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -135,13 +135,13 @@ const handleLogin = async (e: React.FormEvent) => {
       Cookies.set("accessToken", accessToken, { expires: cookieExpiry });
       Cookies.set("userRole", user.role, { expires: cookieExpiry });
 
-   
-      router.push("/Dashboard");
+      // রিডাইরেক্ট করে পেজ রিফ্রেশ নিশ্চিত করা যেন Navbar এর useUser তৎক্ষণাৎ নতুন স্টেট লোড করতে পারে
+      window.location.href = "/Dashboard";
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
           err.message ||
-          "Invalid credentials. Please try again."
+          "Invalid credentials. Please try again.",
       );
     } finally {
       setLoading(false);

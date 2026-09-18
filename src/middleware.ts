@@ -4,18 +4,14 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("accessToken")?.value;
   const { pathname } = request.nextUrl;
 
- 
   const privateRoutes = ["/Dashboard", "/notices", "/teachers", "/admission"];
 
- 
   const isPrivateKeyRoute = privateRoutes.some((route) =>
     pathname.toLowerCase().startsWith(route.toLowerCase())
   );
 
- 
   if (isPrivateKeyRoute && !token) {
     const loginUrl = new URL("/login", request.url);
-   
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }

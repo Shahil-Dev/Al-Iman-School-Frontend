@@ -16,7 +16,11 @@ export default function DashboardPage() {
         Welcome Back, <span className="text-emerald-600">{user?.email}</span>
       </h2>
       <p className="text-slate-500 mt-2">
-        You are logged in as <span className="font-semibold text-slate-700 capitalize">{user?.role}</span>. Select options from the sidebar to manage your account.
+        You are logged in as{" "}
+        <span className="font-semibold text-slate-700 capitalize">
+          {user?.role}
+        </span>
+        . Select options from the sidebar to manage your account.
       </p>
     </div>
   );

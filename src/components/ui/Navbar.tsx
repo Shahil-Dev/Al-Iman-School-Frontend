@@ -16,14 +16,15 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/src/hooks/useUser";
 
 const navigationItems = [
   { href: "/", bnLabel: "হোম", enLabel: "Home" },
-  { href: "/about", bnLabel: "আমাদের সম্পর্কে", enLabel: "About Us" },
-  { href: "/notices", bnLabel: "নোটিশ বোর্ড", enLabel: "Notice Board" },
-  { href: "/teachers", bnLabel: "শিক্ষক মণ্ডলী", enLabel: "Teachers" },
+  { href: "/Public/about", bnLabel: "আমাদের সম্পর্কে", enLabel: "About Us" },
+  { href: "/Public/notices", bnLabel: "নোটিশ বোর্ড", enLabel: "Notice Board" },
+  { href: "/Public/teachers", bnLabel: "শিক্ষক মণ্ডলী", enLabel: "Teachers" },
   {
-    href: "/admission",
+    href: "/Public/admission",
     bnLabel: "অনলাইন ভর্তি",
     enLabel: "Online Admission",
     accent: true,
@@ -45,27 +46,8 @@ export const Navbar = () => {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
 
-  // -------------------------------------------------------------
-  // Auth State (আপনার প্রজেক্টের Auth Provider অনুযায়ী পরিবর্তন করে নেবেন)
-  // উদাহরণস্বরূপ: NextAuth, Context, বা localStorage
-  // -------------------------------------------------------------
-  const [user, setUser] = useState<{
-    name?: string;
-    image?: string;
-  } | null>(null);
 
-  useEffect(() => {
-    // উদাহরণ: LocalStorage/Cookie থেকে ইউজারের তথ্য চেক করা
-    // NextAuth ব্যবহার করলে useSession() হুক ব্যবহার করতে পারেন
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        setUser(null);
-      }
-    }
-  }, []);
+  const { user } = useUser();
 
   const { theme, setTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
@@ -99,7 +81,7 @@ export const Navbar = () => {
     return activeSection?.startsWith(href);
   };
 
-  // প্রাইভেট রাউটে ক্লিকের সময় ক্লায়েন্ট-সাইড চেক
+
   const handleProtectedNavigation = (
     e: React.MouseEvent<HTMLAnchorElement>,
     href: string
@@ -132,7 +114,7 @@ export const Navbar = () => {
             onClick={() => setActiveSection("/")}
           >
             <span className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] text-white shadow-[0_4px_16px_-6px_rgba(16,16,24,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-300 ease-out group-hover:-translate-y-0.5 group-hover:shadow-[0_8px_24px_-8px_rgba(16,16,24,0.6),inset_0_1px_1px_rgba(255,255,255,0.15)] group-focus-visible:-translate-y-0.5 sm:h-12 sm:w-12">
-              <img src="/Image/logo-aliman.jpg" alt="Logo" className="h-full w-full object-cover" />
+              <img src="/Image/logo aliman.jpg" alt="Logo" className="h-full w-full object-cover" />
             </span>
 
             <span className="min-w-0">
@@ -203,8 +185,8 @@ export const Navbar = () => {
             {/* Profile Avatar / Portal Login CTA */}
             {user ? (
               <Link
-                href="/dashboard"
-                onClick={() => setActiveSection("/dashboard")}
+                href="/Dashboard"
+                onClick={() => setActiveSection("/Dashboard")}
                 className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-[#B8860B]/30 bg-[#1a1a1a] dark:bg-[#B8860B] text-white dark:text-slate-950 font-bold text-base shadow-md hover:scale-105 transition-transform overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B]"
                 title="Go to Dashboard"
               >
@@ -216,7 +198,7 @@ export const Navbar = () => {
                   />
                 ) : (
                   <span>
-                    {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                    {user.name ? user.name.charAt(0).toUpperCase() : user.email ? user.email.charAt(0).toUpperCase() : "U"}
                   </span>
                 )}
               </Link>
@@ -242,8 +224,8 @@ export const Navbar = () => {
             {/* Mobile Profile Icon (If logged in) */}
             {user && (
               <Link
-                href="/dashboard"
-                onClick={() => setActiveSection("/dashboard")}
+                href="/Dashboard"
+                onClick={() => setActiveSection("/Dashboard")}
                 className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#B8860B]/30 bg-[#1a1a1a] dark:bg-[#B8860B] text-white dark:text-slate-950 font-bold text-sm overflow-hidden"
               >
                 {user.image ? (
@@ -254,7 +236,7 @@ export const Navbar = () => {
                   />
                 ) : (
                   <span>
-                    {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                    {user.name ? user.name.charAt(0).toUpperCase() : user.email ? user.email.charAt(0).toUpperCase() : "U"}
                   </span>
                 )}
               </Link>
