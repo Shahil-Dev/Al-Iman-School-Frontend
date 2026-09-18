@@ -1,8 +1,10 @@
 "use client";
 
-import { Button } from "@base-ui/react";
-import Link from "next/link";
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
+import { Button } from "@base-ui/react";
 import {
   FaBars,
   FaChevronRight,
@@ -15,7 +17,6 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useLanguage } from "@/src/context/LanguageContext";
-import { useRouter } from "next/navigation";
 import { useUser } from "@/src/hooks/useUser";
 
 const navigationItems = [
@@ -38,17 +39,16 @@ const springConfig = {
   mass: 0.8,
 };
 
-export const Navbar = () => {
+export const NavbarMain = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [activeSection, setActiveSection] = useState("/");
   const [mounted, setMounted] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
-  const router = useRouter();
 
+  const pathname = usePathname();
+  const router = useRouter();
+  const prefersReducedMotion = useReducedMotion();
 
   const { user } = useUser();
-
   const { theme, setTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
 
@@ -62,12 +62,6 @@ export const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setActiveSection(window.location.pathname);
-    }
-  }, []);
-
   const closeMenu = () => setIsOpen(false);
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -77,21 +71,22 @@ export const Navbar = () => {
   };
 
   const isActive = (href: string) => {
-    if (href === "/") return activeSection === "/";
-    return activeSection?.startsWith(href);
+    if (href === "/") return pathname === "/";
+    return pathname?.startsWith(href);
   };
-
 
   const handleProtectedNavigation = (
     e: React.MouseEvent<HTMLAnchorElement>,
-    href: string
+    href: string,
   ) => {
-    const isPrivate = ["/notices", "/teachers", "/admission"].includes(href);
-    if (isPrivate && !user) {
+    const protectedPaths = [
+      "/Public/notices",
+      "/Public/teachers",
+      "/Public/admission",
+    ];
+    if (protectedPaths.includes(href) && !user) {
       e.preventDefault();
-      router.push("/login");
-    } else {
-      setActiveSection(href);
+      router.push(`/login?callbackUrl=${encodeURIComponent(href)}`);
     }
   };
 
@@ -100,7 +95,7 @@ export const Navbar = () => {
       onKeyDown={handleKeyDown}
       className={`sticky top-0 z-50 transition-shadow duration-300 ${
         scrolled
-          ? "border-b border-[#1a1a1a]/10 dark:border-white/10 bg-white/98 dark:bg-slate-900/98 shadow-[0_2px_12px_-4px_rgba(16,16,24,0.08),0_1px_3px_-1px_rgba(16,16,24,0.04)] backdrop-blur-sm"
+          ? "border-b border-[#1a1a1a]/10 dark:border-white/10 bg-white/98 dark:bg-slate-900/98 shadow-md backdrop-blur-sm"
           : "border-b border-[#1a1a1a]/5 dark:border-white/5 bg-white/95 dark:bg-slate-900/95"
       }`}
     >
@@ -110,15 +105,20 @@ export const Navbar = () => {
           <Link
             href="/"
             aria-label="Al-Iman School home"
-            className="group flex min-w-0 items-center gap-3 outline-none rounded-xl focus-visible:ring-2 focus-visible:ring-[#B8860B] focus-visible:ring-offset-2"
-            onClick={() => setActiveSection("/")}
+            className="group flex min-w-0 items-center gap-3 outline-none rounded-xl focus-visible:ring-2 focus-visible:ring-[#B8860B]"
           >
-            <span className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] text-white shadow-[0_4px_16px_-6px_rgba(16,16,24,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-300 ease-out group-hover:-translate-y-0.5 group-hover:shadow-[0_8px_24px_-8px_rgba(16,16,24,0.6),inset_0_1px_1px_rgba(255,255,255,0.15)] group-focus-visible:-translate-y-0.5 sm:h-12 sm:w-12">
-              <img src="/Image/logo aliman.jpg" alt="Logo" className="h-full w-full object-cover" />
+            <span className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] text-white shadow-md transition-all duration-300 group-hover:-translate-y-0.5 sm:h-12 sm:w-12">
+              <Image
+                src="/Image/logo aliman.jpg"
+                alt="Al-Iman School Logo"
+                fill
+                sizes="(max-width: 640px) 44px, 48px"
+                className="object-cover"
+                priority
+              />
             </span>
-
             <span className="min-w-0">
-              <span className="block truncate text-[1.1rem] font-bold tracking-[-0.04em] text-[#1a1a1a] dark:text-white sm:text-xl">
+              <span className="block truncate text-[1.1rem] font-bold tracking-tight text-[#1a1a1a] dark:text-white sm:text-xl">
                 {t("আল-ঈমান স্কুল", "Al-Iman School")}
               </span>
             </span>
@@ -135,7 +135,7 @@ export const Navbar = () => {
                 href={href}
                 onClick={(e) => handleProtectedNavigation(e, href)}
                 aria-current={isActive(href) ? "page" : undefined}
-                className={`group relative rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] focus-visible:ring-offset-2 ${
+                className={`group relative rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] ${
                   accent
                     ? "text-[#B8860B] hover:text-[#9a6f0a]"
                     : isActive(href)
@@ -145,17 +145,18 @@ export const Navbar = () => {
               >
                 {t(bnLabel, enLabel)}
                 <span
-                  className={`absolute inset-x-3 bottom-0.5 h-[2px] origin-left rounded-full transition-transform duration-300 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100 ${
-                    isActive(href) ? "scale-x-100" : "scale-x-0"
+                  className={`absolute inset-x-3 bottom-0.5 h-[2px] origin-left rounded-full transition-transform duration-300 ease-out ${
+                    isActive(href)
+                      ? "scale-x-100"
+                      : "scale-x-0 group-hover:scale-x-100"
                   } ${accent ? "bg-[#B8860B]" : "bg-[#1a1a1a] dark:bg-white"}`}
                 />
               </Link>
             ))}
           </nav>
 
-          {/* Desktop Controls (Language, Theme, CTA / Profile) */}
+          {/* Desktop Controls */}
           <div className="hidden items-center gap-3 md:flex">
-            {/* Language Toggle Button */}
             <button
               onClick={toggleLanguage}
               type="button"
@@ -166,7 +167,6 @@ export const Navbar = () => {
               <span>{language === "bn" ? "ENG" : "বাংলা"}</span>
             </button>
 
-            {/* Theme Toggle Button */}
             {mounted && (
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -182,67 +182,62 @@ export const Navbar = () => {
               </button>
             )}
 
-            {/* Profile Avatar / Portal Login CTA */}
             {user ? (
               <Link
                 href="/Dashboard"
-                onClick={() => setActiveSection("/Dashboard")}
                 className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-[#B8860B]/30 bg-[#1a1a1a] dark:bg-[#B8860B] text-white dark:text-slate-950 font-bold text-base shadow-md hover:scale-105 transition-transform overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B]"
                 title="Go to Dashboard"
               >
                 {user.image ? (
-                  <img
+                  <Image
                     src={user.image}
                     alt={user.name || "User Avatar"}
-                    className="h-full w-full object-cover"
+                    fill
+                    sizes="44px"
+                    className="object-cover"
                   />
                 ) : (
                   <span>
-                    {user.name ? user.name.charAt(0).toUpperCase() : user.email ? user.email.charAt(0).toUpperCase() : "U"}
+                    {(user.name || user.email || "U").charAt(0).toUpperCase()}
                   </span>
                 )}
               </Link>
             ) : (
               <Link
                 href="/login"
-                onClick={() => setActiveSection("/login")}
-                className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] focus-visible:ring-offset-2"
+                className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B]"
               >
-                <Button className="group flex h-11 items-center gap-2 rounded-xl bg-[#1a1a1a] dark:bg-[#B8860B] px-5 text-sm font-semibold text-white dark:text-slate-950 shadow-[0_4px_16px_-8px_rgba(16,16,24,0.6),inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#2d2d2d] dark:hover:bg-[#a0750a] hover:shadow-[0_8px_24px_-10px_rgba(16,16,24,0.7),inset_0_1px_1px_rgba(255,255,255,0.15)] active:translate-y-0 active:shadow-[0_2px_8px_-4px_rgba(16,16,24,0.5)]">
-                  <FaSignInAlt
-                    aria-hidden="true"
-                    className="transition-transform duration-200 group-hover:translate-x-0.5"
-                  />
+                <Button className="group flex h-11 items-center gap-2 rounded-xl bg-[#1a1a1a] dark:bg-[#B8860B] px-5 text-sm font-semibold text-white dark:text-slate-950 shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#2d2d2d] dark:hover:bg-[#a0750a]">
+                  <FaSignInAlt className="transition-transform duration-200 group-hover:translate-x-0.5" />
                   {t("পোর্টাল লগইন", "Portal Login")}
                 </Button>
               </Link>
             )}
           </div>
 
-          {/* Mobile Actions & Menu Toggle */}
+          {/* Mobile Menu Actions */}
           <div className="flex items-center gap-2 md:hidden">
-            {/* Mobile Profile Icon (If logged in) */}
             {user && (
               <Link
                 href="/Dashboard"
-                onClick={() => setActiveSection("/Dashboard")}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#B8860B]/30 bg-[#1a1a1a] dark:bg-[#B8860B] text-white dark:text-slate-950 font-bold text-sm overflow-hidden"
+                className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-[#B8860B]/30 bg-[#1a1a1a] dark:bg-[#B8860B] text-white dark:text-slate-950 font-bold text-sm overflow-hidden"
               >
                 {user.image ? (
-                  <img
+                  <Image
                     src={user.image}
                     alt={user.name || "User Avatar"}
-                    className="h-full w-full object-cover"
+                    fill
+                    sizes="36px"
+                    className="object-cover"
                   />
                 ) : (
                   <span>
-                    {user.name ? user.name.charAt(0).toUpperCase() : user.email ? user.email.charAt(0).toUpperCase() : "U"}
+                    {(user.name || user.email || "U").charAt(0).toUpperCase()}
                   </span>
                 )}
               </Link>
             )}
 
-            {/* Mobile Language Switcher */}
             <button
               onClick={toggleLanguage}
               type="button"
@@ -252,7 +247,6 @@ export const Navbar = () => {
               <span>{language === "bn" ? "ENG" : "বাংলা"}</span>
             </button>
 
-            {/* Mobile Theme Toggle */}
             {mounted && (
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -264,7 +258,6 @@ export const Navbar = () => {
               </button>
             )}
 
-            {/* Mobile Menu Toggle Button */}
             <button
               type="button"
               onClick={() => setIsOpen((open) => !open)}
@@ -273,19 +266,15 @@ export const Navbar = () => {
               aria-label={
                 isOpen ? "Close navigation menu" : "Open navigation menu"
               }
-              className="grid h-10 w-10 place-items-center rounded-xl border border-[#1a1a1a]/15 dark:border-white/15 bg-white dark:bg-slate-800 text-lg text-[#4a4a52] dark:text-white transition-all duration-200 hover:border-[#B8860B]/40 hover:bg-[#B8860B]/5 hover:text-[#B8860B] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] focus-visible:ring-offset-2 active:scale-95"
+              className="grid h-10 w-10 place-items-center rounded-xl border border-[#1a1a1a]/15 dark:border-white/15 bg-white dark:bg-slate-800 text-lg text-[#4a4a52] dark:text-white transition-all duration-200 hover:border-[#B8860B]/40 hover:text-[#B8860B]"
             >
-              {isOpen ? (
-                <FaTimes aria-hidden="true" />
-              ) : (
-                <FaBars aria-hidden="true" />
-              )}
+              {isOpen ? <FaTimes /> : <FaBars />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Navigation Drawer */}
+      {/* Mobile Drawer */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -300,8 +289,7 @@ export const Navbar = () => {
             transition={
               prefersReducedMotion ? { duration: 0.15 } : springConfig
             }
-            className="border-t border-[#1a1a1a]/10 dark:border-white/10 bg-white dark:bg-slate-900 md:hidden"
-            aria-hidden={false}
+            className="border-t border-[#1a1a1a]/10 dark:border-white/10 bg-white dark:bg-slate-900 md:hidden overflow-hidden"
           >
             <nav
               aria-label="Mobile navigation"
@@ -331,61 +319,43 @@ export const Navbar = () => {
                           handleProtectedNavigation(e, href);
                         }}
                         aria-current={isActive(href) ? "page" : undefined}
-                        className={`group flex items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] active:scale-[0.98] ${
+                        className={`group flex items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold transition-all duration-200 ${
                           accent
-                            ? "bg-[#B8860B]/10 text-[#9a6f0a] dark:text-[#B8860B] hover:bg-[#B8860B]/15"
+                            ? "bg-[#B8860B]/10 text-[#9a6f0a] dark:text-[#B8860B]"
                             : isActive(href)
                               ? "bg-[#1a1a1a]/5 dark:bg-white/10 text-[#1a1a1a] dark:text-white"
-                              : "text-[#4a4a52] dark:text-slate-300 hover:bg-[#1a1a1a]/5 dark:hover:bg-white/5 hover:text-[#1a1a1a] dark:hover:text-white"
+                              : "text-[#4a4a52] dark:text-slate-300 hover:bg-[#1a1a1a]/5 dark:hover:bg-white/5"
                         }`}
                       >
                         {t(bnLabel, enLabel)}
                         <FaChevronRight
-                          aria-hidden="true"
                           className={`text-xs transition-transform duration-200 group-hover:translate-x-0.5 ${
                             accent
                               ? "text-[#B8860B]"
                               : isActive(href)
                                 ? "text-[#1a1a1a] dark:text-white"
-                                : "text-[#4a4a52]/40 dark:text-white/40"
+                                : "text-[#4a4a52]/40"
                           }`}
                         />
                       </Link>
                     </motion.div>
-                  )
+                  ),
                 )}
               </div>
 
               {!user && (
-                <motion.div
-                  initial={
-                    prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 8 }
-                  }
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={
-                    prefersReducedMotion
-                      ? { duration: 0 }
-                      : {
-                          delay: navigationItems.length * 0.05 + 0.1,
-                          ...springConfig,
-                        }
-                  }
-                  className="mt-4 border-t border-[#1a1a1a]/10 dark:border-white/10 pt-4"
-                >
+                <div className="mt-4 border-t border-[#1a1a1a]/10 dark:border-white/10 pt-4">
                   <Link
                     href="/login"
-                    onClick={() => {
-                      closeMenu();
-                      setActiveSection("/login");
-                    }}
-                    className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B] focus-visible:ring-offset-2"
+                    onClick={closeMenu}
+                    className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B]"
                   >
-                    <Button className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1a1a1a] dark:bg-[#B8860B] text-sm font-semibold text-white dark:text-slate-950 shadow-[0_4px_16px_-8px_rgba(16,16,24,0.6)] transition-all duration-200 hover:bg-[#2d2d2d] dark:hover:bg-[#a0750a] active:scale-[0.98]">
-                      <FaSignInAlt aria-hidden="true" />
+                    <Button className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1a1a1a] dark:bg-[#B8860B] text-sm font-semibold text-white dark:text-slate-950 shadow-md">
+                      <FaSignInAlt />
                       {t("পোর্টাল লগইন", "Portal Login")}
                     </Button>
                   </Link>
-                </motion.div>
+                </div>
               )}
             </nav>
           </motion.div>

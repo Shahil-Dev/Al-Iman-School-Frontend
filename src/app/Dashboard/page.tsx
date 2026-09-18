@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@/src/hooks/useUser";
-import AdminAnalytics from "./components/AdminAnalytics";
+import AdminAnalytics from "./components/admin/AdminAnalytics";
 
 export default function DashboardPage() {
   const { user } = useUser();

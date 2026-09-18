@@ -32,7 +32,7 @@ export function AdminSidebar() {
     },
     {
       title: t("ভর্তি আবেদন", "Admissions"),
-      href: "/Dashboard/admissions",
+      href: "/Dashboard/admin/admissions",
       icon: GraduationCap,
     },
     {

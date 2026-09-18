@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { cn } from "cn";
-import { Navbar } from "../components/ui/Navbar";
-import { ThemeProvider } from "../components/ui/ThemeProvider";
-import { LanguageProvider } from "../context/LanguageContext";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+import { LanguageProvider } from "@/src/context/LanguageContext"; // আপনার প্রজেক্টের সঠিক পাথ অনুযায়ী যাচাই করুন
+import Navbar from "./Dashboard/components/Navbar";
+import { NavbarMain } from "../components/ui/Navbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,38 +17,22 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Al-Iman School",
-  description: "Management System for Al-Iman School",
+  description: "Al-Iman School Management System",
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={cn(
-        "h-full",
-        "antialiased",
-        geistSans.variable,
-        geistMono.variable,
-        "font-sans",
-        inter.variable,
-      )}
-    >
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+    <html lang="bn" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
         <LanguageProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <Navbar />
-            <main>{children}</main>
-          </ThemeProvider>
+        <NavbarMain/>
+          {children}
         </LanguageProvider>
       </body>
     </html>
