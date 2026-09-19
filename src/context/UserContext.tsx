@@ -47,8 +47,13 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
 export const useUser = () => {
   const context = useContext(UserContext);
+  // সেফ ফলব্যাক: Provider অনুপস্থিত থাকলে ক্র্যাশ না করে ফাঁকা স্টেট রিটার্ন করবে
   if (!context) {
-    throw new Error("useUser must be used within a UserProvider");
+    return {
+      user: null,
+      setUser: () => {},
+      logout: () => {},
+    };
   }
   return context;
 };

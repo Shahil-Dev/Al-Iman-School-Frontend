@@ -11,7 +11,7 @@ export function middleware(request: NextRequest) {
 
 
   if (isDashboardRoute && !token) {
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = new URL("/", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }

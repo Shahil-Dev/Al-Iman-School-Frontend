@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/src/context/LanguageContext";
-import { UserProvider } from "@/src/context/UserContext"; // <--- UserProvider ইম্পোর্ট করুন
+import { NavbarMain } from "../components/ui/Navbar";
+import { UserProvider } from "../context/UserContext";
+// import { UserProvider } from "@/src/context/UserContext"; // <--- UserProvider ইম্পোর্ট করুন
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,11 +31,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <UserProvider>
-          <LanguageProvider>
-            {children}
-          </LanguageProvider>
-        </UserProvider>
+      <UserProvider>
+      <LanguageProvider>
+        {children}
+      </LanguageProvider>
+    </UserProvider>
       </body>
     </html>
   );
