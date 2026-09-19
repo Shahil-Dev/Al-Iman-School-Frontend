@@ -1,27 +1,41 @@
 "use client";
 
-import { useUser } from "@/src/hooks/useUser";
-import AdminAnalytics from "./components/admin/AdminAnalytics";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useUser } from "@/src/context/UserContext";
+import { FaSpinner } from "react-icons/fa";
 
-export default function DashboardPage() {
+export default function DashboardEntryPage() {
+  const router = useRouter();
   const { user } = useUser();
 
-  if (user?.role === "SUPER_ADMIN" || user?.role === "ACCOUNTS") {
-    return <AdminAnalytics />;
-  }
+  useEffect(() => {
+    const role = user?.role || "SUPER_ADMIN";
+
+    switch (role) {
+      case "SUPER_ADMIN":
+      case "ADMIN":
+        router.replace("/Dashboard/admin");
+        break;
+      case "ACCOUNTS":
+        router.replace("/Dashboard/accounts");
+        break;
+      case "TEACHER":
+        router.replace("/Dashboard/teacher");
+        break;
+      case "STUDENT":
+      case "PARENT":
+        router.replace("/Dashboard/student");
+        break;
+      default:
+        router.replace("/Dashboard/admin");
+    }
+  }, [user, router]);
 
   return (
-    <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
-      <h2 className="text-2xl font-bold text-slate-800">
-        Welcome Back, <span className="text-emerald-600">{user?.email}</span>
-      </h2>
-      <p className="text-slate-500 mt-2">
-        You are logged in as{" "}
-        <span className="font-semibold text-slate-700 capitalize">
-          {user?.role}
-        </span>
-        . Select options from the sidebar to manage your account.
-      </p>
+    <div className="h-[60vh] flex flex-col items-center justify-center gap-3 text-muted-foreground">
+      <FaSpinner className="animate-spin text-2xl text-primary" />
+      <p className="text-xs font-semibold">Redirecting to your portal...</p>
     </div>
   );
 }

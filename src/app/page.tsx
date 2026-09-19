@@ -8,6 +8,7 @@ export default function Home() {
     <div>
     
       <HomePage></HomePage>
+    
       <ExtraSection></ExtraSection>
       <ParentReviewsMarquee></ParentReviewsMarquee>
       <IslamicCTASection></IslamicCTASection>

@@ -30,10 +30,10 @@ const contactTranslations = {
 
     // Contact Details
     phoneTitle: "ফোন নাম্বার",
-    phoneNumber: "+880 1700-000000",
+    phoneNumber: "+880 1328211952",
 
     emailTitle: "ইমেইল অ্যাড্রেস",
-    emailAddress: "info@aleemanschool.edu.bd",
+    emailAddress: "alimanschool2009@outlook.com",
 
     addressTitle: "ঠিকানা",
     addressDetails: "চট্টগ্রাম, বাংলাদেশ",
@@ -60,7 +60,7 @@ const contactTranslations = {
 
     // Contact Details
     phoneTitle: "Phone Number",
-    phoneNumber: "+880 1700-000000",
+    phoneNumber: "+880 1328211952",
 
     emailTitle: "Email Address",
     emailAddress: "info@aleemanschool.edu.bd",
@@ -111,7 +111,7 @@ export const ContactSection = memo(() => {
   const section = sectionVariants;
 
   // ⚠️ আপনার অ্যাডমিনের আসল হোয়াটসঅ্যাপ নাম্বার (কান্ট্রি কোড সহ, কোনো + বা স্পেস ছাড়া)
-  const adminWhatsAppNumber = "8801700000000"; 
+  const adminWhatsAppNumber = "8801328211952"; 
   
   const whatsappUrl = `https://wa.me/${adminWhatsAppNumber}?text=${encodeURIComponent(
     t.whatsappDefaultMsg

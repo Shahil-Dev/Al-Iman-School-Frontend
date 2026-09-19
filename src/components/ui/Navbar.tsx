@@ -21,11 +21,11 @@ import { useUser } from "@/src/hooks/useUser";
 
 const navigationItems = [
   { href: "/", bnLabel: "হোম", enLabel: "Home" },
-  { href: "/Public/about", bnLabel: "আমাদের সম্পর্কে", enLabel: "About Us" },
-  { href: "/Public/notices", bnLabel: "নোটিশ বোর্ড", enLabel: "Notice Board" },
-  { href: "/Public/teachers", bnLabel: "শিক্ষক মণ্ডলী", enLabel: "Teachers" },
+  { href: "/about", bnLabel: "আমাদের সম্পর্কে", enLabel: "About Us" },
+  { href: "/notices", bnLabel: "নোটিশ বোর্ড", enLabel: "Notice Board" },
+  { href: "/teachers", bnLabel: "শিক্ষক মণ্ডলী", enLabel: "Teachers" },
   {
-    href: "/Public/admission",
+    href: "/admission",
     bnLabel: "অনলাইন ভর্তি",
     enLabel: "Online Admission",
     accent: true,
@@ -80,9 +80,9 @@ export const NavbarMain = () => {
     href: string,
   ) => {
     const protectedPaths = [
-      "/Public/notices",
-      "/Public/teachers",
-      "/Public/admission",
+      "/notices",
+      "/teachers",
+      "/admission",
     ];
     if (protectedPaths.includes(href) && !user) {
       e.preventDefault();

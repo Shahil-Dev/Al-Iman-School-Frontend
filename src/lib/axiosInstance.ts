@@ -3,19 +3,18 @@ import Cookies from "js-cookie";
 
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1",
-  timeout: 10000, // ১০ সেকেন্ডের বেশি সময় লাগলে রিকোয়েস্ট টাইমআউট হবে
+  timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Request Interceptor: Attach JWT Token from Cookies
+// Request Interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
-    // শুধুমাত্র ক্লায়েন্ট সাইডে (Browser-এ) কুকি থেকে টোকেন রিড করার নিরাপদ উপায়
     if (typeof window !== "undefined") {
       const token = Cookies.get("accessToken");
-      if (token) {
+      if (token && token !== "undefined" && token !== "null") {
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
@@ -26,14 +25,18 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Response Interceptor: global error handling & auth cleanup
+// Response Interceptor
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response) {
-      // ৪০১ unauthorized হলে (যেমন: টোকেন এক্সপায়ার হলে) লগইন পেজে রিডাইরেক্ট করা
-      if (error.response.status === 401 && typeof window !== "undefined") {
-        Cookies.remove("accessToken");
+    if (error.response && error.response.status === 401 && typeof window !== "undefined") {
+      // টোকেন ভুল বা এক্সপায়ার হলে ক্লিয়ার করে দিন
+      Cookies.remove("accessToken");
+      Cookies.remove("userRole");
+
+      // শুধুমাত্র যদি ইউজার অলরেডি /login পেজে না থাকে এবং প্রটেক্টেড পেজে থাকে তবেই রিডাইরেক্ট করবে
+      const currentPath = window.location.pathname.toLowerCase();
+      if (currentPath !== "/login" && currentPath.startsWith("/dashboard")) {
         window.location.href = "/login";
       }
     }

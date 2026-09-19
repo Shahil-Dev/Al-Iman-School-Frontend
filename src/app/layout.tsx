@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/src/context/LanguageContext";
+import { UserProvider } from "@/src/context/UserContext";
+import { ThemeProvider } from "@/src/components/ui/ThemeProvider"; // <--- ThemeProvider ইম্পোর্ট করুন
 import { NavbarMain } from "../components/ui/Navbar";
-import { UserProvider } from "../context/UserContext";
-// import { UserProvider } from "@/src/context/UserContext"; // <--- UserProvider ইম্পোর্ট করুন
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,13 +29,22 @@ export default function RootLayout({
   return (
     <html lang="bn" suppressHydrationWarning>
       <body
+        suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-      <UserProvider>
-      <LanguageProvider>
-        {children}
-      </LanguageProvider>
-    </UserProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <UserProvider>
+            <LanguageProvider>
+              <NavbarMain></NavbarMain>
+              {children}
+            </LanguageProvider>
+          </UserProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
