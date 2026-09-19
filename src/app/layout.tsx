@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { LanguageProvider } from "@/src/context/LanguageContext"; // আপনার প্রজেক্টের সঠিক পাথ অনুযায়ী যাচাই করুন
-import Navbar from "./Dashboard/components/Navbar";
-import { NavbarMain } from "../components/ui/Navbar";
+import { LanguageProvider } from "@/src/context/LanguageContext";
+import { UserProvider } from "@/src/context/UserContext"; // <--- UserProvider ইম্পোর্ট করুন
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,10 +29,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <LanguageProvider>
-        <NavbarMain/>
-          {children}
-        </LanguageProvider>
+        <UserProvider>
+          <LanguageProvider>
+            {children}
+          </LanguageProvider>
+        </UserProvider>
       </body>
     </html>
   );

@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, memo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Cookies from "js-cookie";
 import {
   FaGraduationCap,
@@ -21,6 +21,7 @@ import axiosInstance from "@/src/lib/axiosInstance";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Input } from "@base-ui/react";
 import { Button } from "@/src/components/ui/button";
+import { useUser } from "@/src/context/UserContext";
 
 type RoleType = "ADMIN" | "TEACHER" | "STUDENT" | "PARENT";
 
@@ -105,6 +106,9 @@ RoleButton.displayName = "RoleButton";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { setUser } = useUser();
+
   const [selectedRole, setSelectedRole] = useState<RoleType>("ADMIN");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -132,11 +136,14 @@ export default function LoginPage() {
       const { accessToken, user } = res.data.data;
 
       const cookieExpiry = rememberMe ? 30 : 7;
-      Cookies.set("accessToken", accessToken, { expires: cookieExpiry });
-      Cookies.set("userRole", user.role, { expires: cookieExpiry });
+      Cookies.set("accessToken", accessToken, { expires: cookieExpiry, path: "/" });
+      Cookies.set("userRole", user.role, { expires: cookieExpiry, path: "/" });
 
-      // রিডাইরেক্ট করে পেজ রিফ্রেশ নিশ্চিত করা যেন Navbar এর useUser তৎক্ষণাৎ নতুন স্টেট লোড করতে পারে
-      window.location.href = "/Dashboard";
+      setUser(user);
+
+      const callbackUrl = searchParams.get("callbackUrl") || "/Dashboard";
+      router.push(callbackUrl);
+      router.refresh();
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
@@ -150,7 +157,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4 font-sans relative overflow-hidden transition-colors duration-300">
-      {/* Background Pattern */}
       <div
         className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
         style={{
@@ -169,7 +175,6 @@ export default function LoginPage() {
         }
         className="max-w-md w-full space-y-6 relative z-10"
       >
-        {/* Brand Header */}
         <div className="text-center space-y-3">
           <Link
             href="/"
@@ -196,7 +201,6 @@ export default function LoginPage() {
 
         <Card className="border-border shadow-xl rounded-2xl overflow-hidden bg-card/95 backdrop-blur-sm">
           <CardContent className="p-6 md:p-7 space-y-6">
-            {/* Role Switcher Tabs */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 bg-muted rounded-xl">
               {Object.entries(roleConfig).map(([role]) => (
                 <RoleButton
@@ -208,7 +212,6 @@ export default function LoginPage() {
               ))}
             </div>
 
-            {/* Error Display */}
             <AnimatePresence mode="wait">
               {error && (
                 <motion.div
@@ -238,7 +241,6 @@ export default function LoginPage() {
               )}
             </AnimatePresence>
 
-            {/* Login Form */}
             <form onSubmit={handleLogin} className="space-y-5">
               <div>
                 <label
@@ -322,7 +324,6 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        {/* Back Link */}
         <motion.div
           initial={reduceMotion ? { opacity: 1 } : { opacity: 0 }}
           animate={{ opacity: 1 }}
