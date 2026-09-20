@@ -1,101 +1,127 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   FaSearch,
   FaPlus,
   FaUserGraduate,
   FaEdit,
   FaTrashAlt,
-  FaFilter,
+  FaEye,
   FaTimes,
   FaSpinner,
+  FaPhone,
+  FaMapMarkerAlt,
+  FaCalendarAlt,
+  FaUser,
+  FaSave,
 } from "react-icons/fa";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
-import { Input } from "@base-ui/react";
-
-// মক ডাটা (পরবর্তীতে ব্যাকেন্ড API সাথে সংযুক্ত হবে)
-const initialStudents = [
-  {
-    id: "STU-1001",
-    roll: "01",
-    name: "Mohammad Abdullah",
-    class: "Class 8",
-    section: "A",
-    guardianPhone: "+880 1812-345678",
-    status: "ACTIVE",
-  },
-  {
-    id: "STU-1002",
-    roll: "02",
-    name: "Fatima Zahra",
-    class: "Class 8",
-    section: "A",
-    guardianPhone: "+880 1711-987654",
-    status: "ACTIVE",
-  },
-  {
-    id: "STU-1003",
-    roll: "05",
-    name: "Yusuf Hassan",
-    class: "Class 7",
-    section: "B",
-    guardianPhone: "+880 1913-223344",
-    status: "INACTIVE",
-  },
-];
+import { StudentService } from "@/src/Services/studentService";
 
 export default function StudentManagementPage() {
   const { language } = useLanguage();
-  const [students, setStudents] = useState(initialStudents);
+  const [students, setStudents] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Filters & Search
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClass, setSelectedClass] = useState("ALL");
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // Form State for Add Student
-  const [formData, setFormData] = useState({
-    name: "",
-    roll: "",
-    class: "Class 8",
-    section: "A",
-    guardianPhone: "",
-  });
+  // Modals state
+  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // Search and Filter Logic
-  const filteredStudents = students.filter((student) => {
-    const matchesSearch =
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.roll.includes(searchTerm) ||
-      student.id.toLowerCase().includes(searchTerm.toLowerCase());
+  // Edit Form State
+  const [editFormData, setEditFormData] = useState<any>({});
 
-    const matchesClass =
-      selectedClass === "ALL" || student.class === selectedClass;
+  // 1. Load Students from Backend
+  const fetchStudents = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await StudentService.getAllStudents({
+        searchTerm: searchTerm || undefined,
+        classId: selectedClass !== "ALL" ? selectedClass : undefined,
+      });
+      setStudents(res.data || []);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to fetch students");
+    } finally {
+      setLoading(false);
+    }
+  }, [searchTerm, selectedClass]);
 
-    return matchesSearch && matchesClass;
-  });
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchStudents();
+    }, 400); // Debounce search
+    return () => clearTimeout(timer);
+  }, [fetchStudents]);
 
-  const handleAddStudent = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newStudent = {
-      id: `STU-${1000 + students.length + 1}`,
-      roll: formData.roll,
-      name: formData.name,
-      class: formData.class,
-      section: formData.section,
-      guardianPhone: formData.guardianPhone,
-      status: "ACTIVE",
-    };
-
-    setStudents([newStudent, ...students]);
-    setIsAddModalOpen(false);
-    setFormData({ name: "", roll: "", class: "Class 8", section: "A", guardianPhone: "" });
+  // Handle View Details
+  const handleOpenDetails = (student: any) => {
+    setSelectedStudent(student);
+    setEditFormData({
+      firstName: student.firstName || "",
+      lastName: student.lastName || "",
+      phone: student.phone || "",
+      address: student.address || "",
+      rollNo: student.rollNo || 0,
+    });
+    setIsEditing(false);
+    setIsDetailsModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this student?")) {
-      setStudents(students.filter((s) => s.id !== id));
+  // Handle Update Student Action
+  const handleUpdateStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStudent) return;
+
+    setActionLoading(true);
+    try {
+      await StudentService.updateStudent(selectedStudent.id, {
+        firstName: editFormData.firstName,
+        lastName: editFormData.lastName,
+        phone: editFormData.phone,
+        address: editFormData.address,
+        rollNo: Number(editFormData.rollNo),
+      });
+
+      setIsEditing(false);
+      setIsDetailsModalOpen(false);
+      fetchStudents(); // Refresh List
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to update student profile");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handle Delete Action
+  const handleDeleteStudent = async (id: string) => {
+    if (
+      !confirm(
+        "Are you sure you want to delete this student profile permanently?",
+      )
+    ) {
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      await StudentService.deleteStudent(id);
+      setIsDetailsModalOpen(false);
+      fetchStudents(); // Refresh List
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to delete student");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -107,23 +133,17 @@ export default function StudentManagementPage() {
           <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2.5">
             <FaUserGraduate className="text-primary text-2xl" />
             <span>
-              {language === "bn" ? "শিক্ষার্থী ব্যবস্থাপনা" : "Student Management"}
+              {language === "bn"
+                ? "শিক্ষার্থী ব্যবস্থাপনা"
+                : "Student Management"}
             </span>
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
             {language === "bn"
-              ? "স্কুলের সকল শিক্ষার্থীর তথ্য দেখুন, ফিল্টার ও এডিট করুন"
-              : "Manage, search, and register students in Al-Iman School"}
+              ? "লাইভ ব্যাকেন্ড থেকে শিক্ষার্থীদের তথ্য ফিল্টার, বিস্তারিত দেখা ও পরিচালনা করুন"
+              : "Search, filter, view details and manage students directly from backend"}
           </p>
         </div>
-
-        <Button
-          onClick={() => setIsAddModalOpen(true)}
-          className="bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-sm"
-        >
-          <FaPlus />
-          <span>{language === "bn" ? "নতুন শিক্ষার্থী যোগ করুন" : "Add New Student"}</span>
-        </Button>
       </div>
 
       {/* Search & Filter Bar */}
@@ -131,28 +151,17 @@ export default function StudentManagementPage() {
         <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-80">
             <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-            <Input
+            <input
               type="text"
-              placeholder={language === "bn" ? "নাম বা রোল দিয়ে খুঁজুন..." : "Search by name or roll..."}
+              placeholder={
+                language === "bn"
+                  ? "নাম, রোল বা আইডি দিয়ে খুঁজুন..."
+                  : "Search by name, roll or ID..."
+              }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-4 py-2 text-xs rounded-xl border border-input bg-background w-full focus:outline-none focus:ring-2 focus:ring-primary"
+              className="pl-9 pr-4 py-2 text-xs rounded-xl border border-input bg-background w-full focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
             />
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <FaFilter className="text-muted-foreground text-xs shrink-0" />
-            <select
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-              className="px-3 py-2 text-xs rounded-xl border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary w-full sm:w-40"
-            >
-              <option value="ALL">{language === "bn" ? "সকল ক্লাস" : "All Classes"}</option>
-              <option value="Class 7">Class 7</option>
-              <option value="Class 8">Class 8</option>
-              <option value="Class 9">Class 9</option>
-              <option value="Class 10">Class 10</option>
-            </select>
           </div>
         </CardContent>
       </Card>
@@ -163,59 +172,84 @@ export default function StudentManagementPage() {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-muted/50 text-muted-foreground border-b border-border font-semibold">
-                <th className="p-4">ID / Roll</th>
+                <th className="p-4">Roll / ID</th>
                 <th className="p-4">Student Name</th>
                 <th className="p-4">Class & Section</th>
                 <th className="p-4">Guardian Phone</th>
-                <th className="p-4">Status</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50 text-foreground font-medium">
-              {filteredStudents.length > 0 ? (
-                filteredStudents.map((student) => (
-                  <tr key={student.id} className="hover:bg-muted/30 transition-colors">
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="text-center p-8">
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                      <FaSpinner className="animate-spin text-lg text-primary" />
+                      <span>Loading live student records...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="text-center p-8 text-destructive font-semibold"
+                  >
+                    {error}
+                  </td>
+                </tr>
+              ) : students.length > 0 ? (
+                students.map((student) => (
+                  <tr
+                    key={student.id}
+                    className="hover:bg-muted/30 transition-colors"
+                  >
                     <td className="p-4">
-                      <span className="font-bold text-foreground">{student.roll}</span>
-                      <span className="block text-[10px] text-muted-foreground">{student.id}</span>
-                    </td>
-                    <td className="p-4 font-semibold text-foreground">{student.name}</td>
-                    <td className="p-4">
-                      {student.class} ({student.section})
-                    </td>
-                    <td className="p-4 text-muted-foreground">{student.guardianPhone}</td>
-                    <td className="p-4">
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                          student.status === "ACTIVE"
-                            ? "bg-emerald-500/10 text-emerald-600"
-                            : "bg-destructive/10 text-destructive"
-                        }`}
-                      >
-                        {student.status}
+                      <span className="font-bold text-foreground">
+                        Roll: {student.rollNo}
+                      </span>
+                      <span className="block text-[10px] text-muted-foreground">
+                        {student.studentIdNo}
                       </span>
                     </td>
-                    <td className="p-4 text-right space-x-2">
-                      <button
-                        title="Edit Student"
-                        className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted transition-colors"
+                    <td className="p-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                          {student.firstName?.charAt(0) || "S"}
+                        </div>
+                        <span className="font-semibold text-foreground">
+                          {student.firstName} {student.lastName}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      {student.class?.name || "N/A"} (
+                      {student.section?.name || "N/A"})
+                    </td>
+                    <td className="p-4 text-muted-foreground">
+                      {student.phone || student.parent?.phone || "N/A"}
+                    </td>
+                    <td className="p-4 text-right space-x-1.5">
+                      <Button
+                        onClick={() => handleOpenDetails(student)}
+                        variant="outline"
+                        className="px-3 py-1.5 h-auto text-[11px] rounded-xl flex items-center gap-1.5 inline-flex"
                       >
-                        <FaEdit className="text-sm" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(student.id)}
-                        title="Delete Student"
-                        className="p-2 text-muted-foreground hover:text-destructive rounded-lg hover:bg-muted transition-colors"
-                      >
-                        <FaTrashAlt className="text-sm" />
-                      </button>
+                        <FaEye className="text-primary text-xs" />
+                        <span>
+                          {language === "bn" ? "বিস্তারিত" : "Details"}
+                        </span>
+                      </Button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="text-center p-8 text-muted-foreground font-medium">
-                    No students found.
+                  <td
+                    colSpan={5}
+                    className="text-center p-8 text-muted-foreground font-medium"
+                  >
+                    No student records found matching your criteria.
                   </td>
                 </tr>
               )}
@@ -224,96 +258,270 @@ export default function StudentManagementPage() {
         </div>
       </Card>
 
-      {/* Add Student Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <Card className="max-w-md w-full bg-card border-border shadow-2xl rounded-2xl overflow-hidden">
-            <div className="p-5 border-b border-border flex items-center justify-between">
-              <h3 className="text-sm font-bold text-foreground">Add New Student</h3>
+      {/* Comprehensive Student Details & Action Modal */}
+      {isDetailsModalOpen && selectedStudent && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <Card className="max-w-xl w-full bg-card border-border shadow-2xl rounded-2xl overflow-hidden my-8">
+            {/* Modal Topbar */}
+            <div className="p-5 border-b border-border flex items-center justify-between bg-muted/30">
+              <div className="flex items-center gap-2">
+                <FaUserGraduate className="text-primary text-lg" />
+                <h3 className="text-sm font-bold text-foreground">
+                  {isEditing
+                    ? "Edit Student Information"
+                    : "Student Detailed Profile"}
+                </h3>
+              </div>
               <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground p-1"
+                onClick={() => setIsDetailsModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground p-1 rounded-lg"
               >
                 <FaTimes />
               </button>
             </div>
-            <form onSubmit={handleAddStudent} className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  Full Name
-                </label>
-                <Input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g. Mohammad Ali"
-                  className="w-full p-2.5 text-xs rounded-xl border border-input bg-background"
-                />
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    Roll No
-                  </label>
-                  <Input
-                    type="text"
-                    required
-                    value={formData.roll}
-                    onChange={(e) => setFormData({ ...formData, roll: e.target.value })}
-                    placeholder="e.g. 05"
-                    className="w-full p-2.5 text-xs rounded-xl border border-input bg-background"
-                  />
+            {/* Modal Body */}
+            <div className="p-6 space-y-6">
+              {/* Profile Card Header */}
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                <div className="w-14 h-14 rounded-2xl bg-primary/20 text-primary flex items-center justify-center font-bold text-xl shrink-0">
+                  {selectedStudent.photoUrl ? (
+                    <img
+                      src={selectedStudent.photoUrl}
+                      alt="Student"
+                      className="w-full h-full object-cover rounded-2xl"
+                    />
+                  ) : (
+                    selectedStudent.firstName?.charAt(0) || "S"
+                  )}
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    Class
-                  </label>
-                  <select
-                    value={formData.class}
-                    onChange={(e) => setFormData({ ...formData, class: e.target.value })}
-                    className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
-                  >
-                    <option value="Class 7">Class 7</option>
-                    <option value="Class 8">Class 8</option>
-                    <option value="Class 9">Class 9</option>
-                    <option value="Class 10">Class 10</option>
-                  </select>
+                <div className="space-y-0.5">
+                  <h4 className="text-base font-bold text-foreground">
+                    {selectedStudent.firstName} {selectedStudent.lastName}
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    ID:{" "}
+                    <span className="font-semibold text-foreground">
+                      {selectedStudent.studentIdNo}
+                    </span>
+                  </p>
+                  <p className="text-[11px] text-primary font-semibold">
+                    {selectedStudent.class?.name} | Section:{" "}
+                    {selectedStudent.section?.name} | Roll:{" "}
+                    {selectedStudent.rollNo}
+                  </p>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  Guardian Phone Number
-                </label>
-                <Input
-                  type="text"
-                  required
-                  value={formData.guardianPhone}
-                  onChange={(e) => setFormData({ ...formData, guardianPhone: e.target.value })}
-                  placeholder="e.g. +880 1812-000000"
-                  className="w-full p-2.5 text-xs rounded-xl border border-input bg-background"
-                />
-              </div>
+              {/* View Mode vs Edit Mode */}
+              {!isEditing ? (
+                /* READ-ONLY DETAILS VIEW */
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold flex items-center gap-1.5 mb-1">
+                        <FaUser className="text-xs text-primary" /> Gender & DOB
+                      </p>
+                      <p className="text-xs font-semibold text-foreground">
+                        {selectedStudent.gender || "N/A"} |{" "}
+                        {selectedStudent.dob
+                          ? new Date(selectedStudent.dob).toLocaleDateString()
+                          : "N/A"}
+                      </p>
+                    </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 text-xs rounded-xl"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-primary text-primary-foreground px-4 py-2 text-xs rounded-xl"
-                >
-                  Save Student
-                </Button>
-              </div>
-            </form>
+                    <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold flex items-center gap-1.5 mb-1">
+                        <FaPhone className="text-xs text-primary" /> Phone
+                        Number
+                      </p>
+                      <p className="text-xs font-semibold text-foreground">
+                        {selectedStudent.phone || "No phone provided"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
+                    <p className="text-[10px] text-muted-foreground uppercase font-semibold flex items-center gap-1.5 mb-1">
+                      <FaMapMarkerAlt className="text-xs text-primary" />{" "}
+                      Residential Address
+                    </p>
+                    <p className="text-xs font-semibold text-foreground">
+                      {selectedStudent.address || "No address on record"}
+                    </p>
+                  </div>
+
+                  {/* Guardian Section */}
+                  {selectedStudent.parent && (
+                    <div className="p-4 rounded-xl bg-card border border-border/70 space-y-2">
+                      <h5 className="text-xs font-bold text-foreground">
+                        Parent / Guardian Details
+                      </h5>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-muted-foreground block text-[10px]">
+                            Father Name
+                          </span>
+                          <span className="font-semibold text-foreground">
+                            {selectedStudent.parent.fatherName || "N/A"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground block text-[10px]">
+                            Mother Name
+                          </span>
+                          <span className="font-semibold text-foreground">
+                            {selectedStudent.parent.motherName || "N/A"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Modal Action Controls */}
+                  <div className="flex items-center justify-between pt-4 border-t border-border">
+                    <Button
+                      onClick={() => handleDeleteStudent(selectedStudent.id)}
+                      disabled={actionLoading}
+                      variant="destructive"
+                      className="px-4 py-2 text-xs rounded-xl flex items-center gap-1.5"
+                    >
+                      {actionLoading ? (
+                        <FaSpinner className="animate-spin" />
+                      ) : (
+                        <FaTrashAlt />
+                      )}
+                      <span>Delete Profile</span>
+                    </Button>
+
+                    <Button
+                      onClick={() => setIsEditing(true)}
+                      className="bg-primary text-primary-foreground px-4 py-2 text-xs rounded-xl flex items-center gap-1.5"
+                    >
+                      <FaEdit />
+                      <span>Edit Profile</span>
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                /* EDIT FORM VIEW */
+                <form onSubmit={handleUpdateStudent} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        First Name
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editFormData.firstName}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            firstName: e.target.value,
+                          })
+                        }
+                        className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        Last Name
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editFormData.lastName}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            lastName: e.target.value,
+                          })
+                        }
+                        className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        Roll Number
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        value={editFormData.rollNo}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            rollNo: e.target.value,
+                          })
+                        }
+                        className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        Phone Number
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.phone}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            phone: e.target.value,
+                          })
+                        }
+                        className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground mb-1">
+                      Address
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={editFormData.address}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          address: e.target.value,
+                        })
+                      }
+                      className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
+                    />
+                  </div>
+
+                  {/* Edit Form Buttons */}
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsEditing(false)}
+                      className="px-4 py-2 text-xs rounded-xl"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={actionLoading}
+                      className="bg-primary text-primary-foreground px-4 py-2 text-xs rounded-xl flex items-center gap-1.5"
+                    >
+                      {actionLoading ? (
+                        <FaSpinner className="animate-spin" />
+                      ) : (
+                        <FaSave />
+                      )}
+                      <span>Save Changes</span>
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
           </Card>
         </div>
       )}

@@ -25,7 +25,7 @@ import {
 } from "@/src/components/ui/card";
 
 import { useLanguage } from "@/src/context/LanguageContext"; //
-import { submitAdmission } from "@/src/Services/admissionApi";
+// import { submitAdmission } from "@/src/Services/admissionApi";
 
 type Language = "en" | "bn";
 
@@ -270,11 +270,11 @@ export default function AdmissionPage() {
         if (studentPhoto) data.append("studentPhoto", studentPhoto);
         if (birthCertificate) data.append("birthCertificate", birthCertificate);
 
-        const response = await submitAdmission(data);
+        // const response = await submitAdmission(data);
 
-        if (response?.applicationId) {
-          setApplicationId(response.applicationId);
-        }
+        // if (response?.applicationId) {
+        //   setApplicationId(response.applicationId);
+        // }
 
         setIsSubmitted(true);
       } catch (err: any) {
