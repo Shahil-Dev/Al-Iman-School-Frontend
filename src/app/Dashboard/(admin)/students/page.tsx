@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   FaSearch,
-  FaPlus,
   FaUserGraduate,
   FaEdit,
   FaTrashAlt,
@@ -12,24 +11,26 @@ import {
   FaSpinner,
   FaPhone,
   FaMapMarkerAlt,
-  FaCalendarAlt,
   FaUser,
   FaSave,
+  FaFilter,
 } from "react-icons/fa";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { StudentService } from "@/src/Services/studentService";
+import { AcademicService } from "@/src/Services/academicService";
 
 export default function StudentManagementPage() {
   const { language } = useLanguage();
   const [students, setStudents] = useState<any[]>([]);
+  const [classesList, setClassesList] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedClass, setSelectedClass] = useState("ALL");
+  const [selectedClassId, setSelectedClassId] = useState("ALL"); // <--- নির্বাচিত ক্লাস আইডি
 
   // Modals state
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
@@ -40,14 +41,28 @@ export default function StudentManagementPage() {
   // Edit Form State
   const [editFormData, setEditFormData] = useState<any>({});
 
-  // 1. Load Students from Backend
+  // 1. Fetch Dynamic Classes List from Backend
+  useEffect(() => {
+    async function loadClasses() {
+      try {
+        const res = await AcademicService.getAllClasses();
+        // API response structure অনুযায়ী data বা result ফিল্টার করা
+        setClassesList(res?.data || res || []);
+      } catch (err) {
+        console.error("Failed to load classes for filter dropdown:", err);
+      }
+    }
+    loadClasses();
+  }, []);
+
+  // 2. Load Students from Backend with Dynamic Search & Class Filter
   const fetchStudents = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await StudentService.getAllStudents({
         searchTerm: searchTerm || undefined,
-        classId: selectedClass !== "ALL" ? selectedClass : undefined,
+        classId: selectedClassId !== "ALL" ? selectedClassId : undefined,
       });
       setStudents(res.data || []);
     } catch (err: any) {
@@ -55,7 +70,7 @@ export default function StudentManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, selectedClass]);
+  }, [searchTerm, selectedClassId]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -105,11 +120,7 @@ export default function StudentManagementPage() {
 
   // Handle Delete Action
   const handleDeleteStudent = async (id: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this student profile permanently?",
-      )
-    ) {
+    if (!confirm("Are you sure you want to delete this student profile permanently?")) {
       return;
     }
 
@@ -133,22 +144,21 @@ export default function StudentManagementPage() {
           <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2.5">
             <FaUserGraduate className="text-primary text-2xl" />
             <span>
-              {language === "bn"
-                ? "শিক্ষার্থী ব্যবস্থাপনা"
-                : "Student Management"}
+              {language === "bn" ? "শিক্ষার্থী ব্যবস্থাপনা" : "Student Management"}
             </span>
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
             {language === "bn"
               ? "লাইভ ব্যাকেন্ড থেকে শিক্ষার্থীদের তথ্য ফিল্টার, বিস্তারিত দেখা ও পরিচালনা করুন"
-              : "Search, filter, view details and manage students directly from backend"}
+              : "Search, filter by dynamic class, view details and manage students"}
           </p>
         </div>
       </div>
 
-      {/* Search & Filter Bar */}
+      {/* Search & Dynamic Class Filter Bar */}
       <Card className="border-border/60 shadow-sm rounded-2xl bg-card">
         <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Left: Search Bar */}
           <div className="relative w-full sm:w-80">
             <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
             <input
@@ -162,6 +172,25 @@ export default function StudentManagementPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9 pr-4 py-2 text-xs rounded-xl border border-input bg-background w-full focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
             />
+          </div>
+
+          {/* Right: Dynamic Class Filter */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <FaFilter className="text-muted-foreground text-xs shrink-0" />
+            <select
+              value={selectedClassId}
+              onChange={(e) => setSelectedClassId(e.target.value)}
+              className="px-3.5 py-2 text-xs rounded-xl border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary w-full sm:w-48 font-semibold cursor-pointer"
+            >
+              <option value="ALL">
+                {language === "bn" ? "সকল ক্লাস (All Classes)" : "All Classes"}
+              </option>
+              {classesList.map((cls: any) => (
+                <option key={cls.id} value={cls.id}>
+                  {cls.name}
+                </option>
+              ))}
+            </select>
           </div>
         </CardContent>
       </Card>
@@ -191,23 +220,15 @@ export default function StudentManagementPage() {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="text-center p-8 text-destructive font-semibold"
-                  >
+                  <td colSpan={5} className="text-center p-8 text-destructive font-semibold">
                     {error}
                   </td>
                 </tr>
               ) : students.length > 0 ? (
                 students.map((student) => (
-                  <tr
-                    key={student.id}
-                    className="hover:bg-muted/30 transition-colors"
-                  >
+                  <tr key={student.id} className="hover:bg-muted/30 transition-colors">
                     <td className="p-4">
-                      <span className="font-bold text-foreground">
-                        Roll: {student.rollNo}
-                      </span>
+                      <span className="font-bold text-foreground">Roll: {student.rollNo}</span>
                       <span className="block text-[10px] text-muted-foreground">
                         {student.studentIdNo}
                       </span>
@@ -223,8 +244,7 @@ export default function StudentManagementPage() {
                       </div>
                     </td>
                     <td className="p-4">
-                      {student.class?.name || "N/A"} (
-                      {student.section?.name || "N/A"})
+                      {student.class?.name || "N/A"} ({student.section?.name || "N/A"})
                     </td>
                     <td className="p-4 text-muted-foreground">
                       {student.phone || student.parent?.phone || "N/A"}
@@ -236,19 +256,14 @@ export default function StudentManagementPage() {
                         className="px-3 py-1.5 h-auto text-[11px] rounded-xl flex items-center gap-1.5 inline-flex"
                       >
                         <FaEye className="text-primary text-xs" />
-                        <span>
-                          {language === "bn" ? "বিস্তারিত" : "Details"}
-                        </span>
+                        <span>{language === "bn" ? "বিস্তারিত" : "Details"}</span>
                       </Button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="text-center p-8 text-muted-foreground font-medium"
-                  >
+                  <td colSpan={5} className="text-center p-8 text-muted-foreground font-medium">
                     No student records found matching your criteria.
                   </td>
                 </tr>
@@ -267,9 +282,7 @@ export default function StudentManagementPage() {
               <div className="flex items-center gap-2">
                 <FaUserGraduate className="text-primary text-lg" />
                 <h3 className="text-sm font-bold text-foreground">
-                  {isEditing
-                    ? "Edit Student Information"
-                    : "Student Detailed Profile"}
+                  {isEditing ? "Edit Student Information" : "Student Detailed Profile"}
                 </h3>
               </div>
               <button
@@ -300,15 +313,10 @@ export default function StudentManagementPage() {
                     {selectedStudent.firstName} {selectedStudent.lastName}
                   </h4>
                   <p className="text-xs text-muted-foreground">
-                    ID:{" "}
-                    <span className="font-semibold text-foreground">
-                      {selectedStudent.studentIdNo}
-                    </span>
+                    ID: <span className="font-semibold text-foreground">{selectedStudent.studentIdNo}</span>
                   </p>
                   <p className="text-[11px] text-primary font-semibold">
-                    {selectedStudent.class?.name} | Section:{" "}
-                    {selectedStudent.section?.name} | Roll:{" "}
-                    {selectedStudent.rollNo}
+                    {selectedStudent.class?.name} | Section: {selectedStudent.section?.name} | Roll: {selectedStudent.rollNo}
                   </p>
                 </div>
               </div>
@@ -332,8 +340,7 @@ export default function StudentManagementPage() {
 
                     <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
                       <p className="text-[10px] text-muted-foreground uppercase font-semibold flex items-center gap-1.5 mb-1">
-                        <FaPhone className="text-xs text-primary" /> Phone
-                        Number
+                        <FaPhone className="text-xs text-primary" /> Phone Number
                       </p>
                       <p className="text-xs font-semibold text-foreground">
                         {selectedStudent.phone || "No phone provided"}
@@ -343,8 +350,7 @@ export default function StudentManagementPage() {
 
                   <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
                     <p className="text-[10px] text-muted-foreground uppercase font-semibold flex items-center gap-1.5 mb-1">
-                      <FaMapMarkerAlt className="text-xs text-primary" />{" "}
-                      Residential Address
+                      <FaMapMarkerAlt className="text-xs text-primary" /> Residential Address
                     </p>
                     <p className="text-xs font-semibold text-foreground">
                       {selectedStudent.address || "No address on record"}
@@ -354,25 +360,15 @@ export default function StudentManagementPage() {
                   {/* Guardian Section */}
                   {selectedStudent.parent && (
                     <div className="p-4 rounded-xl bg-card border border-border/70 space-y-2">
-                      <h5 className="text-xs font-bold text-foreground">
-                        Parent / Guardian Details
-                      </h5>
+                      <h5 className="text-xs font-bold text-foreground">Parent / Guardian Details</h5>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div>
-                          <span className="text-muted-foreground block text-[10px]">
-                            Father Name
-                          </span>
-                          <span className="font-semibold text-foreground">
-                            {selectedStudent.parent.fatherName || "N/A"}
-                          </span>
+                          <span className="text-muted-foreground block text-[10px]">Father Name</span>
+                          <span className="font-semibold text-foreground">{selectedStudent.parent.fatherName || "N/A"}</span>
                         </div>
                         <div>
-                          <span className="text-muted-foreground block text-[10px]">
-                            Mother Name
-                          </span>
-                          <span className="font-semibold text-foreground">
-                            {selectedStudent.parent.motherName || "N/A"}
-                          </span>
+                          <span className="text-muted-foreground block text-[10px]">Mother Name</span>
+                          <span className="font-semibold text-foreground">{selectedStudent.parent.motherName || "N/A"}</span>
                         </div>
                       </div>
                     </div>
@@ -386,11 +382,7 @@ export default function StudentManagementPage() {
                       variant="destructive"
                       className="px-4 py-2 text-xs rounded-xl flex items-center gap-1.5"
                     >
-                      {actionLoading ? (
-                        <FaSpinner className="animate-spin" />
-                      ) : (
-                        <FaTrashAlt />
-                      )}
+                      {actionLoading ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
                       <span>Delete Profile</span>
                     </Button>
 
@@ -415,12 +407,7 @@ export default function StudentManagementPage() {
                         type="text"
                         required
                         value={editFormData.firstName}
-                        onChange={(e) =>
-                          setEditFormData({
-                            ...editFormData,
-                            firstName: e.target.value,
-                          })
-                        }
+                        onChange={(e) => setEditFormData({ ...editFormData, firstName: e.target.value })}
                         className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
                       />
                     </div>
@@ -432,12 +419,7 @@ export default function StudentManagementPage() {
                         type="text"
                         required
                         value={editFormData.lastName}
-                        onChange={(e) =>
-                          setEditFormData({
-                            ...editFormData,
-                            lastName: e.target.value,
-                          })
-                        }
+                        onChange={(e) => setEditFormData({ ...editFormData, lastName: e.target.value })}
                         className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
                       />
                     </div>
@@ -452,12 +434,7 @@ export default function StudentManagementPage() {
                         type="number"
                         required
                         value={editFormData.rollNo}
-                        onChange={(e) =>
-                          setEditFormData({
-                            ...editFormData,
-                            rollNo: e.target.value,
-                          })
-                        }
+                        onChange={(e) => setEditFormData({ ...editFormData, rollNo: e.target.value })}
                         className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
                       />
                     </div>
@@ -468,12 +445,7 @@ export default function StudentManagementPage() {
                       <input
                         type="text"
                         value={editFormData.phone}
-                        onChange={(e) =>
-                          setEditFormData({
-                            ...editFormData,
-                            phone: e.target.value,
-                          })
-                        }
+                        onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
                         className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
                       />
                     </div>
@@ -486,12 +458,7 @@ export default function StudentManagementPage() {
                     <textarea
                       rows={2}
                       value={editFormData.address}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          address: e.target.value,
-                        })
-                      }
+                      onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
                       className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
                     />
                   </div>
@@ -511,11 +478,7 @@ export default function StudentManagementPage() {
                       disabled={actionLoading}
                       className="bg-primary text-primary-foreground px-4 py-2 text-xs rounded-xl flex items-center gap-1.5"
                     >
-                      {actionLoading ? (
-                        <FaSpinner className="animate-spin" />
-                      ) : (
-                        <FaSave />
-                      )}
+                      {actionLoading ? <FaSpinner className="animate-spin" /> : <FaSave />}
                       <span>Save Changes</span>
                     </Button>
                   </div>

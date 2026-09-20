@@ -1,32 +1,36 @@
-import axiosInstance from "../lib/axiosInstance";
+import axiosInstance from "@/src/lib/axiosInstance";
 
-export type ResourceType = "years" | "classes" | "sections" | "subjects";
 
-export const AcademicService = {
-  getAll: async (resource: ResourceType) => {
-    const response = await axiosInstance.get(`/academic/${resource}`);
-    return response.data;
-  },
-
-  create: async (resource: ResourceType, data: unknown) => {
-    const endpointMap: Record<ResourceType, string> = {
-      years: "/academic/create-year",
-      classes: "/academic/create-class",
-      sections: "/academic/create-section",
-      subjects: "/academic/create-subject",
-    };
-
-    const response = await axiosInstance.post(endpointMap[resource], data);
-    return response.data;
-  },
-
-  update: async (resource: ResourceType, id: string, data: unknown) => {
-    const response = await axiosInstance.put(`/academic/${resource}/${id}`, data);
-    return response.data;
-  },
-
-  delete: async (resource: ResourceType, id: string) => {
-    const response = await axiosInstance.delete(`/academic/${resource}/${id}`);
-    return response.data;
-  },
+export const getAllClasses = async () => {
+  const response = await axiosInstance.get("/academic/classes");
+  return response.data;
 };
+
+
+export const getClassById = async (id: string) => {
+  const response = await axiosInstance.get(`/academic/classes/${id}`);
+  return response.data;
+};
+
+
+export const getAllSections = async (classId?: string) => {
+  const response = await axiosInstance.get("/academic/sections", {
+    params: { classId },
+  });
+  return response.data;
+};
+
+
+export const createClass = async (payload: { name: string; code?: string }) => {
+  const response = await axiosInstance.post("/academic/classes", payload);
+  return response.data;
+};
+
+export const academicService = {
+  getAllClasses,
+  getClassById,
+  getAllSections,
+  createClass,
+};
+
+export default academicService;
