@@ -50,10 +50,10 @@ export default function DashboardLayout({
     if (role === "SUPER_ADMIN" || role === "ADMIN") {
       return [
         { label: isBn ? "ওভারভিউ" : "Overview", href: "/Dashboard/admin", icon: FaHome },
-        { label: isBn ? "ভর্তি আবেদন" : "Admissions", href: "/Dashboard/admin/admissions", icon: FaUserGraduate },
-        { label: isBn ? "শিক্ষার্থী ব্যবস্থাপনা" : "Students", href: "/Dashboard/admin/students", icon: FaUserGraduate },
-        { label: isBn ? "শিক্ষক তালিকা" : "Teachers", href: "/Dashboard/admin/teachers", icon: FaChalkboardTeacher },
-        { label: isBn ? "একাডেমিক সেটআপ" : "Academic", href: "/Dashboard/admin/academic", icon: FaBook },
+        { label: isBn ? "ভর্তি আবেদন" : "Admissions", href: "/Dashboard/admissions", icon: FaUserGraduate },
+        { label: isBn ? "শিক্ষার্থী ব্যবস্থাপনা" : "Students", href: "/Dashboard/students", icon: FaUserGraduate },
+        { label: isBn ? "শিক্ষক তালিকা" : "Teachers", href: "/Dashboard/teachers", icon: FaChalkboardTeacher },
+        { label: isBn ? "একাডেমিক সেটআপ" : "Academic", href: "/Dashboard /academic", icon: FaBook },
         { label: isBn ? "হিসাব বিভাগ" : "Accounts", href: "/Dashboard/accounts", icon: FaFileInvoiceDollar },
       ];
     }

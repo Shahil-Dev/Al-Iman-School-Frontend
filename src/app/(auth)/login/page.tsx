@@ -15,6 +15,10 @@ import {
   FaArrowLeft,
   FaTimes,
   FaSpinner,
+  FaSun,
+  FaMoon,
+  FaGlobe,
+  FaUserPlus,
 } from "react-icons/fa";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import axiosInstance from "@/src/lib/axiosInstance";
@@ -24,6 +28,7 @@ import { Button } from "@/src/components/ui/button";
 import { useUser } from "@/src/context/UserContext";
 
 type RoleType = "ADMIN" | "TEACHER" | "STUDENT" | "PARENT";
+type LangType = "EN" | "BN" | "AR";
 
 const roleConfig = {
   ADMIN: {
@@ -90,7 +95,7 @@ const RoleButton = memo(
             className="absolute -bottom-px left-2 right-2 h-[2px] rounded-full bg-[#c9a961]"
           />
         )}
-        <Icon className="text-base mb-0.5" />
+        <Icon className="text-base mb-0.5 text-[#c9a961]" />
         <span className="truncate w-full text-center">{config.label}</span>
         {isSelected && (
           <span className="text-[9px] text-muted-foreground font-normal -mt-0.5 truncate max-w-full px-1">
@@ -115,8 +120,21 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [lang, setLang] = useState<LangType>("EN");
 
   const reduceMotion = useReducedMotion();
+
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+    document.documentElement.classList.toggle("dark");
+  };
+
+  const cycleLanguage = () => {
+    const langs: LangType[] = ["EN", "BN", "AR"];
+    const nextIdx = (langs.indexOf(lang) + 1) % langs.length;
+    setLang(langs[nextIdx]);
+  };
 
   const handleRoleSelect = useCallback((role: RoleType) => {
     setSelectedRole(role);
@@ -157,6 +175,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4 font-sans relative overflow-hidden transition-colors duration-300">
+      {/* Background Subtle Grid Pattern */}
       <div
         className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
         style={{
@@ -164,6 +183,37 @@ export default function LoginPage() {
           backgroundSize: "40px 40px",
         }}
       />
+
+      {/* Islamic Typography Watermark Background */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] dark:opacity-[0.04] pointer-events-none select-none overflow-hidden">
+        <span className="text-[18vw] font-serif tracking-widest text-[#c9a961] whitespace-nowrap dir-rtl">
+          الإيمان والإحسان
+        </span>
+      </div>
+
+      {/* Header Controls: Theme & Language Toggle */}
+      <div className="absolute top-5 right-5 z-20 flex items-center gap-3">
+        <button
+          onClick={cycleLanguage}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card/80 text-xs font-medium text-foreground shadow-sm hover:border-[#c9a961] transition-all"
+          title="Change Language"
+        >
+          <FaGlobe className="text-[#c9a961]" />
+          <span>{lang}</span>
+        </button>
+
+        <button
+          onClick={toggleTheme}
+          className="p-2.5 rounded-xl border border-border bg-card/80 text-foreground shadow-sm hover:border-[#c9a961] transition-all"
+          title="Toggle Theme"
+        >
+          {isDarkMode ? (
+            <FaSun className="text-amber-400 text-sm" />
+          ) : (
+            <FaMoon className="text-slate-700 text-sm" />
+          )}
+        </button>
+      </div>
 
       <motion.div
         initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
@@ -173,7 +223,7 @@ export default function LoginPage() {
             ? { duration: 0 }
             : { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
         }
-        className="max-w-md w-full space-y-6 relative z-10"
+        className="max-w-md w-full space-y-6 relative z-10 my-8"
       >
         <div className="text-center space-y-3">
           <Link
@@ -184,22 +234,25 @@ export default function LoginPage() {
             <motion.div
               whileHover={reduceMotion ? {} : { scale: 1.05 }}
               whileTap={reduceMotion ? {} : { scale: 0.95 }}
-              className="p-3.5 bg-primary text-primary-foreground rounded-2xl shadow-lg transition-shadow"
+              className="p-3.5 bg-gradient-to-br from-[#c9a961] to-[#9a7b38] text-white rounded-2xl shadow-xl transition-shadow"
             >
               <FaGraduationCap className="text-3xl" />
             </motion.div>
           </Link>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
               Al-Iman School ERP
             </h1>
-            <p className="text-sm text-muted-foreground mt-1.5">
+            <p className="text-xs text-muted-foreground mt-1 tracking-wide uppercase font-semibold">
+              مدرسة الإيمان الإسلامية
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
               Sign in to access your ERP Portal
             </p>
           </div>
         </div>
 
-        <Card className="border-border shadow-xl rounded-2xl overflow-hidden bg-card/95 backdrop-blur-sm">
+        <Card className="border-border shadow-2xl rounded-2xl overflow-hidden bg-card/95 backdrop-blur-md">
           <CardContent className="p-6 md:p-7 space-y-6">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 bg-muted rounded-xl">
               {Object.entries(roleConfig).map(([role]) => (
@@ -241,20 +294,20 @@ export default function LoginPage() {
               )}
             </AnimatePresence>
 
-            <form onSubmit={handleLogin} className="space-y-5">
+            <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-xs font-semibold text-foreground mb-2"
+                  className="block text-xs font-semibold text-foreground mb-1.5"
                 >
-                  Email / ID / Phone
+                  Email / Employee ID / Student ID
                 </label>
                 <div className="relative group">
                   <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm transition-colors group-focus-within:text-[#c9a961]" />
                   <Input
                     id="email"
                     type="text"
-                    placeholder="Email, Student ID, or Phone Number"
+                    placeholder="Enter Email, ID or Mobile"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -267,7 +320,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-xs font-semibold text-foreground mb-2"
+                  className="block text-xs font-semibold text-foreground mb-1.5"
                 >
                   Password
                 </label>
@@ -287,7 +340,7 @@ export default function LoginPage() {
               </div>
 
               <div className="flex items-center justify-between text-xs pt-1">
-                <label className="flex items-center gap-2.5 text-muted-foreground cursor-pointer group">
+                <label className="flex items-center gap-2 text-muted-foreground cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={rememberMe}
@@ -295,7 +348,7 @@ export default function LoginPage() {
                     className="rounded border-input text-[#c9a961] focus:ring-[#c9a961] transition-colors cursor-pointer accent-[#c9a961]"
                   />
                   <span className="group-hover:text-foreground transition-colors">
-                    Remember me for 30 days
+                    Remember me
                   </span>
                 </label>
                 <Link
@@ -309,7 +362,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-primary text-primary-foreground hover:opacity-90 h-12 rounded-xl text-sm font-semibold shadow-md transition-all duration-200 mt-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-[#c9a961] to-[#a88a44] text-white hover:opacity-95 h-11 rounded-xl text-sm font-semibold shadow-md transition-all duration-200 mt-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -321,6 +374,37 @@ export default function LoginPage() {
                 )}
               </Button>
             </form>
+
+            {/* Dynamic Registration Link based on Role Selection */}
+            <AnimatePresence mode="wait">
+              {(selectedRole === "TEACHER" || selectedRole === "PARENT") && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="pt-3 border-t border-border text-center"
+                >
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Don't have an account yet?
+                  </p>
+                  <Link
+                    href={
+                      selectedRole === "TEACHER"
+                        ? "/teacher-register"
+                        : "/parent-register"
+                    }
+                    className="inline-flex items-center justify-center gap-2 text-xs font-bold text-[#c9a961] hover:underline hover:opacity-80 transition-all bg-[#c9a961]/10 px-4 py-2 rounded-xl w-full border border-[#c9a961]/20"
+                  >
+                    <FaUserPlus className="text-xs" />
+                    <span>
+                      {selectedRole === "TEACHER"
+                        ? "Apply for Teacher Registration →"
+                        : "Register as a Parent →"}
+                    </span>
+                  </Link>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </CardContent>
         </Card>
 
