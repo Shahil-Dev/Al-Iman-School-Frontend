@@ -3,7 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/src/context/LanguageContext";
 import { UserProvider } from "@/src/context/UserContext";
-import { ThemeProvider } from "@/src/components/ui/ThemeProvider"; // <--- ThemeProvider ইম্পোর্ট করুন
+import { ThemeProvider } from "@/src/components/ui/ThemeProvider";
+import { Toaster } from "sonner"; // <--- Sonner Toaster ইম্পোর্ট
 import { NavbarMain } from "../components/ui/Navbar";
 
 const geistSans = Geist({
@@ -41,7 +42,8 @@ export default function RootLayout({
           <UserProvider>
             <LanguageProvider>
               <NavbarMain></NavbarMain>
-              {children}
+              {children }
+              <Toaster position="top-right" richColors closeButton />
             </LanguageProvider>
           </UserProvider>
         </ThemeProvider>

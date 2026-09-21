@@ -14,12 +14,17 @@ import {
   FaUser,
   FaSave,
   FaFilter,
+  FaExclamationTriangle,
+  FaHashtag,
+  FaIdBadge,
+  FaGraduationCap,
 } from "react-icons/fa";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { StudentService } from "@/src/Services/studentService";
-import academicService from "@/src/Services/academicService";
+import { academicService } from "@/src/Services/academicService";
+import { toast } from "sonner";
 
 export default function StudentManagementPage() {
   const { language } = useLanguage();
@@ -30,11 +35,12 @@ export default function StudentManagementPage() {
 
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedClassId, setSelectedClassId] = useState("ALL"); 
+  const [selectedClassId, setSelectedClassId] = useState("ALL");
 
   // Modals state
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -54,6 +60,7 @@ export default function StudentManagementPage() {
     loadClasses();
   }, []);
 
+  // 2. Load Students from Backend with Dynamic Search & Class Filter
   const fetchStudents = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -64,7 +71,9 @@ export default function StudentManagementPage() {
       });
       setStudents(res.data || []);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch students");
+      const msg = err.response?.data?.message || "Failed to fetch students";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -73,7 +82,7 @@ export default function StudentManagementPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchStudents();
-    }, 400); // Debounce search
+    }, 400);
     return () => clearTimeout(timer);
   }, [fetchStudents]);
 
@@ -91,12 +100,16 @@ export default function StudentManagementPage() {
     setIsDetailsModalOpen(true);
   };
 
-  // Handle Update Student Action
+  // Handle Update Student Action with Toast
   const handleUpdateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedStudent) return;
 
     setActionLoading(true);
+    const toastId = toast.loading(
+      language === "bn" ? "তথ্য আপডেট হচ্ছে..." : "Updating student profile..."
+    );
+
     try {
       await StudentService.updateStudent(selectedStudent.id, {
         firstName: editFormData.firstName,
@@ -106,33 +119,54 @@ export default function StudentManagementPage() {
         rollNo: Number(editFormData.rollNo),
       });
 
+      toast.success(
+        language === "bn"
+          ? "শিক্ষার্থীর তথ্য সফলভাবে আপডেট হয়েছে!"
+          : "Student profile updated successfully!",
+        { id: toastId }
+      );
       setIsEditing(false);
       setIsDetailsModalOpen(false);
-      fetchStudents(); // Refresh List
+      fetchStudents();
     } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to update student profile");
+      toast.error(
+        err.response?.data?.message || "Failed to update student profile",
+        { id: toastId }
+      );
     } finally {
       setActionLoading(false);
     }
   };
 
-  // Handle Delete Action
-  const handleDeleteStudent = async (id: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this student profile permanently?",
-      )
-    ) {
-      return;
-    }
+  // Trigger Delete Modal
+  const handlePromptDelete = () => {
+    setIsDeleteConfirmOpen(true);
+  };
+
+  // Confirm Delete Action with Toast
+  const handleConfirmDelete = async () => {
+    if (!selectedStudent) return;
 
     setActionLoading(true);
+    const toastId = toast.loading(
+      language === "bn" ? "প্রোফাইল মোছা হচ্ছে..." : "Deleting student profile..."
+    );
+
     try {
-      await StudentService.deleteStudent(id);
+      await StudentService.deleteStudent(selectedStudent.id);
+      toast.success(
+        language === "bn"
+          ? "শিক্ষার্থীর প্রোফাইল মুছে ফেলা হয়েছে!"
+          : "Student profile deleted successfully!",
+        { id: toastId }
+      );
+      setIsDeleteConfirmOpen(false);
       setIsDetailsModalOpen(false);
-      fetchStudents(); // Refresh List
+      fetchStudents();
     } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to delete student");
+      toast.error(err.response?.data?.message || "Failed to delete student", {
+        id: toastId,
+      });
     } finally {
       setActionLoading(false);
     }
@@ -141,17 +175,17 @@ export default function StudentManagementPage() {
   return (
     <div className="space-y-6 font-sans">
       {/* Header & Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/40">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2.5">
-            <FaUserGraduate className="text-primary text-2xl" />
-            <span>
-              {language === "bn"
-                ? "শিক্ষার্থী ব্যবস্থাপনা"
-                : "Student Management"}
+          <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-primary/10 text-primary shadow-sm border border-primary/20">
+              <FaUserGraduate className="text-xl" />
+            </div>
+            <span className="tracking-tight">
+              {language === "bn" ? "শিক্ষার্থী ব্যবস্থাপনা" : "Student Management"}
             </span>
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
             {language === "bn"
               ? "লাইভ ব্যাকেন্ড থেকে শিক্ষার্থীদের তথ্য ফিল্টার, বিস্তারিত দেখা ও পরিচালনা করুন"
               : "Search, filter by dynamic class, view details and manage students"}
@@ -160,31 +194,31 @@ export default function StudentManagementPage() {
       </div>
 
       {/* Search & Dynamic Class Filter Bar */}
-      <Card className="border-border/60 shadow-sm rounded-2xl bg-card">
-        <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          {/* Left: Search Bar */}
+      <Card className="border-border/60 shadow-sm rounded-2xl bg-card/80 backdrop-blur-sm transition-all duration-200">
+        <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-3.5">
           <div className="relative w-full sm:w-80">
-            <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
+            <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs pointer-events-none transition-colors" />
             <input
               type="text"
               placeholder={
                 language === "bn"
-                  ? "নাম, রোল বা আইডি দিয়ে খুঁজুন..."
+                  ? "নাম, রোল বা আইডি দিয়ে খুঁজুন..."
                   : "Search by name, roll or ID..."
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-4 py-2 text-xs rounded-xl border border-input bg-background w-full focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
+              className="pl-9 pr-4 py-2.5 text-xs rounded-xl border border-border/80 bg-background/50 w-full focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground transition-all placeholder:text-muted-foreground/70"
             />
           </div>
 
-          {/* Right: Dynamic Class Filter */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <FaFilter className="text-muted-foreground text-xs shrink-0" />
+          <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            <div className="p-2 rounded-xl bg-muted/40 border border-border/60 text-muted-foreground shrink-0">
+              <FaFilter className="text-xs" />
+            </div>
             <select
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
-              className="px-3.5 py-2 text-xs rounded-xl border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary w-full sm:w-48 font-semibold cursor-pointer"
+              className="px-3.5 py-2.5 text-xs rounded-xl border border-border/80 bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-full sm:w-52 font-semibold cursor-pointer transition-all hover:bg-muted/30"
             >
               <option value="ALL">
                 {language === "bn" ? "সকল ক্লাস (All Classes)" : "All Classes"}
@@ -200,89 +234,95 @@ export default function StudentManagementPage() {
       </Card>
 
       {/* Student List Data Table */}
-      <Card className="border-border/60 shadow-sm rounded-2xl bg-card overflow-hidden">
+      <Card className="border-border/60 shadow-sm rounded-2xl bg-card overflow-hidden transition-all duration-200">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-muted/50 text-muted-foreground border-b border-border font-semibold">
-                <th className="p-4">Roll / ID</th>
+              <tr className="bg-muted/50 text-muted-foreground border-b border-border/60 font-semibold uppercase tracking-wider text-[11px]">
+                <th className="p-4 pl-6">Roll / ID</th>
                 <th className="p-4">Student Name</th>
                 <th className="p-4">Class & Section</th>
                 <th className="p-4">Guardian Phone</th>
-                <th className="p-4 text-right">Actions</th>
+                <th className="p-4 pr-6 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/50 text-foreground font-medium">
+            <tbody className="divide-y divide-border/40 text-foreground font-medium">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="text-center p-8">
-                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                      <FaSpinner className="animate-spin text-lg text-primary" />
-                      <span>Loading live student records...</span>
+                  <td colSpan={5} className="text-center p-12">
+                    <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
+                      <FaSpinner className="animate-spin text-2xl text-primary" />
+                      <span className="text-xs font-semibold">Loading live student records...</span>
                     </div>
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="text-center p-8 text-destructive font-semibold"
-                  >
-                    {error}
+                  <td colSpan={5} className="text-center p-12">
+                    <div className="inline-flex items-center gap-2 p-3 rounded-xl bg-destructive/10 text-destructive font-semibold border border-destructive/20 text-xs">
+                      <FaExclamationTriangle className="text-base shrink-0" />
+                      <span>{error}</span>
+                    </div>
                   </td>
                 </tr>
               ) : students.length > 0 ? (
                 students.map((student) => (
                   <tr
                     key={student.id}
-                    className="hover:bg-muted/30 transition-colors"
+                    className="hover:bg-muted/30 transition-colors duration-150 group"
                   >
-                    <td className="p-4">
-                      <span className="font-bold text-foreground">
-                        Roll: {student.rollNo}
-                      </span>
-                      <span className="block text-[10px] text-muted-foreground">
-                        {student.studentIdNo}
-                      </span>
+                    <td className="p-4 pl-6">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-bold text-foreground inline-flex items-center gap-1">
+                          <FaHashtag className="text-[10px] text-primary/70" />
+                          <span>Roll: {student.rollNo}</span>
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/90 font-mono tracking-tight flex items-center gap-1">
+                          <FaIdBadge className="text-[9px]" />
+                          <span>{student.studentIdNo}</span>
+                        </span>
+                      </div>
                     </td>
                     <td className="p-4">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-xs shrink-0 shadow-sm group-hover:bg-primary group-hover:text-primary-foreground transition-all">
                           {student.firstName?.charAt(0) || "S"}
                         </div>
-                        <span className="font-semibold text-foreground">
+                        <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
                           {student.firstName} {student.lastName}
                         </span>
                       </div>
                     </td>
                     <td className="p-4">
-                      {student.class?.name || "N/A"} (
-                      {student.section?.name || "N/A"})
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/50 border border-border/40 text-[11px] font-semibold text-foreground">
+                        <FaGraduationCap className="text-primary text-xs" />
+                        <span>{student.class?.name || "N/A"}</span>
+                        <span className="text-muted-foreground font-normal">
+                          ({student.section?.name || "N/A"})
+                        </span>
+                      </span>
                     </td>
-                    <td className="p-4 text-muted-foreground">
+                    <td className="p-4 text-muted-foreground font-mono">
                       {student.phone || student.parent?.phone || "N/A"}
                     </td>
-                    <td className="p-4 text-right space-x-1.5">
+                    <td className="p-4 pr-6 text-right space-x-1.5">
                       <Button
                         onClick={() => handleOpenDetails(student)}
                         variant="outline"
-                        className="px-3 py-1.5 h-auto text-[11px] rounded-xl flex items-center gap-1.5 inline-flex"
+                        className="px-3 py-1.5 h-auto text-[11px] rounded-xl border-border/70 hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all flex items-center gap-1.5 inline-flex shadow-2xs"
                       >
                         <FaEye className="text-primary text-xs" />
-                        <span>
-                          {language === "bn" ? "বিস্তারিত" : "Details"}
-                        </span>
+                        <span>{language === "bn" ? "বিস্তারিত" : "Details"}</span>
                       </Button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="text-center p-8 text-muted-foreground font-medium"
-                  >
-                    No student records found matching your criteria.
+                  <td colSpan={5} className="text-center p-12 text-muted-foreground font-medium">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <p className="text-xs">No student records found matching your criteria.</p>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -291,68 +331,64 @@ export default function StudentManagementPage() {
         </div>
       </Card>
 
-      {/* Comprehensive Student Details & Action Modal */}
+      {/* Comprehensive Student Details Modal */}
       {isDetailsModalOpen && selectedStudent && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <Card className="max-w-xl w-full bg-card border-border shadow-2xl rounded-2xl overflow-hidden my-8">
-            {/* Modal Topbar */}
-            <div className="p-5 border-b border-border flex items-center justify-between bg-muted/30">
-              <div className="flex items-center gap-2">
-                <FaUserGraduate className="text-primary text-lg" />
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-all animate-in fade-in duration-200">
+          <Card className="max-w-xl w-full bg-card/95 border-border/80 shadow-2xl rounded-2xl overflow-hidden my-8 backdrop-blur-xl">
+            <div className="p-5 border-b border-border/60 flex items-center justify-between bg-muted/40">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                  <FaUserGraduate className="text-base" />
+                </div>
                 <h3 className="text-sm font-bold text-foreground">
-                  {isEditing
-                    ? "Edit Student Information"
-                    : "Student Detailed Profile"}
+                  {isEditing ? "Edit Student Information" : "Student Detailed Profile"}
                 </h3>
               </div>
               <button
                 onClick={() => setIsDetailsModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-lg"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted/80 p-2 rounded-xl transition-all"
               >
                 <FaTimes />
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="p-6 space-y-6">
-              {/* Profile Card Header */}
-              <div className="flex items-center gap-4 p-4 rounded-2xl bg-primary/5 border border-primary/10">
-                <div className="w-14 h-14 rounded-2xl bg-primary/20 text-primary flex items-center justify-center font-bold text-xl shrink-0">
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 shadow-xs">
+                <div className="w-16 h-16 rounded-2xl bg-primary/20 text-primary border border-primary/30 flex items-center justify-center font-bold text-2xl shrink-0 shadow-inner overflow-hidden">
                   {selectedStudent.photoUrl ? (
                     <img
                       src={selectedStudent.photoUrl}
                       alt="Student"
-                      className="w-full h-full object-cover rounded-2xl"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
                     selectedStudent.firstName?.charAt(0) || "S"
                   )}
                 </div>
-                <div className="space-y-0.5">
-                  <h4 className="text-base font-bold text-foreground">
+                <div className="space-y-1">
+                  <h4 className="text-base font-bold text-foreground leading-tight">
                     {selectedStudent.firstName} {selectedStudent.lastName}
                   </h4>
-                  <p className="text-xs text-muted-foreground">
-                    ID:{" "}
-                    <span className="font-semibold text-foreground">
-                      {selectedStudent.studentIdNo}
-                    </span>
+                  <p className="text-xs text-muted-foreground font-mono">
+                    ID: <span className="font-semibold text-foreground">{selectedStudent.studentIdNo}</span>
                   </p>
-                  <p className="text-[11px] text-primary font-semibold">
-                    {selectedStudent.class?.name} | Section:{" "}
-                    {selectedStudent.section?.name} | Roll:{" "}
-                    {selectedStudent.rollNo}
+                  <p className="text-[11px] text-primary font-semibold flex items-center gap-1.5 pt-0.5">
+                    <span className="px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20">
+                      {selectedStudent.class?.name}
+                    </span>
+                    <span>•</span>
+                    <span>Section: {selectedStudent.section?.name}</span>
+                    <span>•</span>
+                    <span>Roll: {selectedStudent.rollNo}</span>
                   </p>
                 </div>
               </div>
 
-              {/* View Mode vs Edit Mode */}
               {!isEditing ? (
-                /* READ-ONLY DETAILS VIEW */
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
-                      <p className="text-[10px] text-muted-foreground uppercase font-semibold flex items-center gap-1.5 mb-1">
+                    <div className="p-3.5 rounded-xl bg-muted/30 border border-border/50 transition-colors hover:border-border">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5 mb-1.5">
                         <FaUser className="text-xs text-primary" /> Gender & DOB
                       </p>
                       <p className="text-xs font-semibold text-foreground">
@@ -363,36 +399,33 @@ export default function StudentManagementPage() {
                       </p>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
-                      <p className="text-[10px] text-muted-foreground uppercase font-semibold flex items-center gap-1.5 mb-1">
-                        <FaPhone className="text-xs text-primary" /> Phone
-                        Number
+                    <div className="p-3.5 rounded-xl bg-muted/30 border border-border/50 transition-colors hover:border-border">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5 mb-1.5">
+                        <FaPhone className="text-xs text-primary" /> Phone Number
                       </p>
-                      <p className="text-xs font-semibold text-foreground">
+                      <p className="text-xs font-semibold text-foreground font-mono">
                         {selectedStudent.phone || "No phone provided"}
                       </p>
                     </div>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
-                    <p className="text-[10px] text-muted-foreground uppercase font-semibold flex items-center gap-1.5 mb-1">
-                      <FaMapMarkerAlt className="text-xs text-primary" />{" "}
-                      Residential Address
+                  <div className="p-3.5 rounded-xl bg-muted/30 border border-border/50 transition-colors hover:border-border">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5 mb-1.5">
+                      <FaMapMarkerAlt className="text-xs text-primary" /> Residential Address
                     </p>
-                    <p className="text-xs font-semibold text-foreground">
+                    <p className="text-xs font-semibold text-foreground leading-relaxed">
                       {selectedStudent.address || "No address on record"}
                     </p>
                   </div>
 
-                  {/* Guardian Section */}
                   {selectedStudent.parent && (
-                    <div className="p-4 rounded-xl bg-card border border-border/70 space-y-2">
-                      <h5 className="text-xs font-bold text-foreground">
+                    <div className="p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-2.5">
+                      <h5 className="text-xs font-bold text-foreground border-b border-border/40 pb-2">
                         Parent / Guardian Details
                       </h5>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="grid grid-cols-2 gap-3 text-xs">
                         <div>
-                          <span className="text-muted-foreground block text-[10px]">
+                          <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
                             Father Name
                           </span>
                           <span className="font-semibold text-foreground">
@@ -400,7 +433,7 @@ export default function StudentManagementPage() {
                           </span>
                         </div>
                         <div>
-                          <span className="text-muted-foreground block text-[10px]">
+                          <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
                             Mother Name
                           </span>
                           <span className="font-semibold text-foreground">
@@ -411,25 +444,19 @@ export default function StudentManagementPage() {
                     </div>
                   )}
 
-                  {/* Modal Action Controls */}
-                  <div className="flex items-center justify-between pt-4 border-t border-border">
+                  <div className="flex items-center justify-between pt-4 border-t border-border/60">
                     <Button
-                      onClick={() => handleDeleteStudent(selectedStudent.id)}
-                      disabled={actionLoading}
+                      onClick={handlePromptDelete}
                       variant="destructive"
-                      className="px-4 py-2 text-xs rounded-xl flex items-center gap-1.5"
+                      className="px-4 py-2 h-auto text-xs rounded-xl flex items-center gap-2 bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive hover:text-destructive-foreground transition-all shadow-2xs"
                     >
-                      {actionLoading ? (
-                        <FaSpinner className="animate-spin" />
-                      ) : (
-                        <FaTrashAlt />
-                      )}
+                      <FaTrashAlt />
                       <span>Delete Profile</span>
                     </Button>
 
                     <Button
                       onClick={() => setIsEditing(true)}
-                      className="bg-primary text-primary-foreground px-4 py-2 text-xs rounded-xl flex items-center gap-1.5"
+                      className="bg-primary text-primary-foreground px-4 py-2 h-auto text-xs rounded-xl flex items-center gap-2 hover:bg-primary/90 transition-all shadow-sm shadow-primary/20"
                     >
                       <FaEdit />
                       <span>Edit Profile</span>
@@ -437,123 +464,135 @@ export default function StudentManagementPage() {
                   </div>
                 </div>
               ) : (
-                /* EDIT FORM VIEW */
                 <form onSubmit={handleUpdateStudent} className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-semibold text-foreground">
                         First Name
                       </label>
                       <input
                         type="text"
                         required
                         value={editFormData.firstName}
-                        onChange={(e) =>
-                          setEditFormData({
-                            ...editFormData,
-                            firstName: e.target.value,
-                          })
-                        }
-                        className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
+                        onChange={(e) => setEditFormData({ ...editFormData, firstName: e.target.value })}
+                        className="w-full p-2.5 text-xs rounded-xl border border-border/80 bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-semibold text-foreground">
                         Last Name
                       </label>
                       <input
                         type="text"
                         required
                         value={editFormData.lastName}
-                        onChange={(e) =>
-                          setEditFormData({
-                            ...editFormData,
-                            lastName: e.target.value,
-                          })
-                        }
-                        className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
+                        onChange={(e) => setEditFormData({ ...editFormData, lastName: e.target.value })}
+                        className="w-full p-2.5 text-xs rounded-xl border border-border/80 bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-semibold text-foreground">
                         Roll Number
                       </label>
                       <input
                         type="number"
                         required
                         value={editFormData.rollNo}
-                        onChange={(e) =>
-                          setEditFormData({
-                            ...editFormData,
-                            rollNo: e.target.value,
-                          })
-                        }
-                        className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
+                        onChange={(e) => setEditFormData({ ...editFormData, rollNo: e.target.value })}
+                        className="w-full p-2.5 text-xs rounded-xl border border-border/80 bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-semibold text-foreground">
                         Phone Number
                       </label>
                       <input
                         type="text"
                         value={editFormData.phone}
-                        onChange={(e) =>
-                          setEditFormData({
-                            ...editFormData,
-                            phone: e.target.value,
-                          })
-                        }
-                        className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
+                        onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                        className="w-full p-2.5 text-xs rounded-xl border border-border/80 bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-foreground mb-1">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-foreground">
                       Address
                     </label>
                     <textarea
                       rows={2}
                       value={editFormData.address}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          address: e.target.value,
-                        })
-                      }
-                      className="w-full p-2.5 text-xs rounded-xl border border-input bg-background text-foreground"
+                      onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+                      className="w-full p-2.5 text-xs rounded-xl border border-border/80 bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
                     />
                   </div>
 
-                  {/* Edit Form Buttons */}
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => setIsEditing(false)}
-                      className="px-4 py-2 text-xs rounded-xl"
+                      className="px-4 py-2 h-auto text-xs rounded-xl border-border/80 hover:bg-muted/80 transition-all"
                     >
                       Cancel
                     </Button>
                     <Button
                       type="submit"
                       disabled={actionLoading}
-                      className="bg-primary text-primary-foreground px-4 py-2 text-xs rounded-xl flex items-center gap-1.5"
+                      className="bg-primary text-primary-foreground px-4 py-2 h-auto text-xs rounded-xl flex items-center gap-2 hover:bg-primary/90 transition-all shadow-sm shadow-primary/20"
                     >
-                      {actionLoading ? (
-                        <FaSpinner className="animate-spin" />
-                      ) : (
-                        <FaSave />
-                      )}
+                      {actionLoading ? <FaSpinner className="animate-spin" /> : <FaSave />}
                       <span>Save Changes</span>
                     </Button>
                   </div>
                 </form>
               )}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Modern Alert Delete Confirmation Modal */}
+      {isDeleteConfirmOpen && selectedStudent && (
+        <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-md flex items-center justify-center p-4 transition-all animate-in fade-in duration-200">
+          <Card className="max-w-sm w-full bg-card/95 border-destructive/30 shadow-2xl rounded-2xl overflow-hidden p-6 text-center space-y-4 backdrop-blur-xl">
+            <div className="w-14 h-14 rounded-full bg-destructive/10 text-destructive border border-destructive/20 flex items-center justify-center mx-auto text-2xl shadow-xs">
+              <FaExclamationTriangle />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-base font-bold text-foreground">
+                {language === "bn" ? "আপনি কি নিশ্চিত?" : "Are you absolutely sure?"}
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {language === "bn"
+                  ? `${selectedStudent.firstName} ${selectedStudent.lastName} এর প্রোফাইল চিরতরে মুছে যাবে। এই কাজটি আর ফিরিয়ে আনা সম্ভব নয়।`
+                  : `This action will permanently delete ${selectedStudent.firstName} ${selectedStudent.lastName}'s student account and all related history.`}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-2.5 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                className="w-full h-auto py-2.5 text-xs rounded-xl border-border/80 hover:bg-muted/80 transition-all"
+              >
+                {language === "bn" ? "বাতিল" : "Cancel"}
+              </Button>
+              <Button
+                type="button"
+                disabled={actionLoading}
+                onClick={handleConfirmDelete}
+                variant="destructive"
+                className="w-full h-auto py-2.5 text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all"
+              >
+                {actionLoading ? <FaSpinner className="animate-spin" /> : <FaTrashAlt />}
+                <span>{language === "bn" ? "হ্যাঁ, মুছুন" : "Confirm Delete"}</span>
+              </Button>
             </div>
           </Card>
         </div>
