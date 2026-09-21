@@ -30,7 +30,7 @@ export default function AdmissionsManagementPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters & Search
+  // Active Tab Filter (PENDING, APPROVED, REJECTED)
   const [activeTab, setActiveTab] = useState<"PENDING" | "APPROVED" | "REJECTED">("PENDING");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClassId, setSelectedClassId] = useState("ALL");
@@ -48,7 +48,7 @@ export default function AdmissionsManagementPage() {
     rollNo: 1,
   });
 
-  // Load Classes
+  // Load Classes List
   useEffect(() => {
     async function loadClasses() {
       try {
@@ -61,7 +61,7 @@ export default function AdmissionsManagementPage() {
     loadClasses();
   }, []);
 
-  // Fetch Admissions
+  // Fetch Admissions strictly by Active Tab Status
   const fetchAdmissions = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -84,7 +84,7 @@ export default function AdmissionsManagementPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchAdmissions();
-    }, 400);
+    }, 300);
     return () => clearTimeout(timer);
   }, [fetchAdmissions]);
 
@@ -111,7 +111,7 @@ export default function AdmissionsManagementPage() {
     if (!selectedAdmission) return;
 
     setActionLoading(true);
-    const toastId = toast.loading("Approving admission & generating student profile...");
+    const toastId = toast.loading("Approving admission & creating student profile...");
 
     try {
       await admissionApi.approveAdmission(selectedAdmission.id, {
@@ -119,9 +119,9 @@ export default function AdmissionsManagementPage() {
         rollNo: Number(approvalData.rollNo) || undefined,
       });
 
-      toast.success("Admission Approved! Student Account and Invoice Created.", { id: toastId });
+      toast.success("Admission Approved! Student Account Created.", { id: toastId });
       setIsModalOpen(false);
-      fetchAdmissions();
+      fetchAdmissions(); // Refresh List
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to approve admission", { id: toastId });
     } finally {
@@ -133,19 +133,19 @@ export default function AdmissionsManagementPage() {
   const handleReject = async () => {
     if (!selectedAdmission) return;
     if (!rejectReason.trim()) {
-      toast.error("Please provide a reason for rejection!");
+      toast.error("Please enter a reason for rejection!");
       return;
     }
 
     setActionLoading(true);
-    const toastId = toast.loading("Rejecting application & sending email...");
+    const toastId = toast.loading("Rejecting application...");
 
     try {
       await admissionApi.rejectAdmission(selectedAdmission.id, rejectReason);
 
-      toast.success("Admission application rejected.", { id: toastId });
+      toast.success("Admission Application Rejected Successfully.", { id: toastId });
       setIsModalOpen(false);
-      fetchAdmissions();
+      fetchAdmissions(); // Refresh List
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to reject application", { id: toastId });
     } finally {
@@ -163,8 +163,8 @@ export default function AdmissionsManagementPage() {
         </h1>
         <p className="text-xs text-muted-foreground mt-1">
           {language === "bn"
-            ? "অনলাইন ভর্তি আবেদন, পেমেন্ট ট্রানজেকশন যাচাই ও এক ক্লিকে স্টুডেন্ট প্রোফাইল খুলুন"
-            : "Review applications, verify bKash/Nagad transactions, and create student profiles"}
+            ? "অনলাইন ভর্তি আবেদন পর্যালোচনা, অনুমোদন ও রিজেক্ট করুন"
+            : "Review applications, approve student accounts, or reject applications"}
         </p>
       </div>
 
@@ -239,7 +239,7 @@ export default function AdmissionsManagementPage() {
                   <td colSpan={5} className="text-center p-8">
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <FaSpinner className="animate-spin text-lg text-primary" />
-                      <span>Fetching applications...</span>
+                      <span>Loading applications...</span>
                     </div>
                   </td>
                 </tr>
@@ -321,7 +321,7 @@ export default function AdmissionsManagementPage() {
               <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-2">
                 <div className="flex items-center gap-2 text-emerald-600 font-bold">
                   <FaMoneyCheckAlt />
-                  <span>Payment Information (bKash/Nagad)</span>
+                  <span>Payment Information</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-[11px]">
                   <div>
@@ -339,7 +339,7 @@ export default function AdmissionsManagementPage() {
                 </div>
               </div>
 
-              {/* Guardian & Address Info */}
+              {/* Guardian Info */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
                   <p className="text-[10px] text-muted-foreground uppercase font-semibold">Guardian Info</p>
@@ -351,7 +351,7 @@ export default function AdmissionsManagementPage() {
                 </div>
               </div>
 
-              {/* Section & Roll Assignment Form (Only if Status is PENDING) */}
+              {/* Section & Roll Form (Only for PENDING) */}
               {selectedAdmission.status === "PENDING" && !showRejectInput && (
                 <div className="p-4 rounded-xl bg-card border border-border/80 space-y-3">
                   <h4 className="font-bold text-foreground">Assign Section & Roll (Optional)</h4>
@@ -422,7 +422,7 @@ export default function AdmissionsManagementPage() {
                 </div>
               )}
 
-              {/* Modal Action Footer */}
+              {/* Action Buttons */}
               {!showRejectInput && (
                 <div className="flex items-center justify-between pt-4 border-t border-border">
                   {selectedAdmission.status === "PENDING" ? (
