@@ -2,21 +2,18 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import {
   FaGraduationCap,
   FaChalkboardTeacher,
   FaUserFriends,
-  FaUser,
   FaEnvelope,
   FaLock,
   FaPhone,
-  FaIdCard,
-  FaBuilding,
-  FaBook,
-  FaVenusMars,
-  FaTint,
-  FaCamera,
+  FaBriefcase,
+  FaUserTie,
+  FaUserCircle,
   FaArrowLeft,
   FaCheckCircle,
   FaSpinner,
@@ -24,39 +21,36 @@ import {
   FaMoon,
   FaGlobe,
 } from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion";
-import axiosInstance from "@/src/lib/axiosInstance";
+import { motion } from "framer-motion";
+
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Input } from "@base-ui/react";
 import { Button } from "@/src/components/ui/button";
+import { ParentService } from "@/src/Services/parentService";
 
 type LangType = "EN" | "BN";
 
-export default function TeacherRegisterPage() {
+export default function ParentRegisterPage() {
+  const router = useRouter();
+  const { theme, setTheme } = useTheme();
+
   const [formData, setFormData] = useState({
-    name: "",
+    fatherName: "",
+    motherName: "",
     email: "",
     password: "",
     confirmPassword: "",
     phone: "",
-    designation: "Assistant Teacher",
-    department: "",
-    qualification: "",
-    gender: "MALE",
-    bloodGroup: "A+",
-    nidOrPassport: "",
-    photoUrl: "",
+    occupation: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [lang, setLang] = useState<LangType>("EN");
 
   const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle("dark");
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   const cycleLanguage = () => {
@@ -65,9 +59,7 @@ export default function TeacherRegisterPage() {
     setLang(langs[nextIdx]);
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -84,26 +76,21 @@ export default function TeacherRegisterPage() {
 
     try {
       const payload = {
-        name: formData.name,
+        fatherName: formData.fatherName,
+        motherName: formData.motherName,
         email: formData.email,
         password: formData.password,
         phone: formData.phone,
-        designation: formData.designation,
-        department: formData.department,
-        qualification: formData.qualification,
-        gender: formData.gender,
-        bloodGroup: formData.bloodGroup,
-        nidOrPassport: formData.nidOrPassport,
-        photoUrl: formData.photoUrl,
+        occupation: formData.occupation,
       };
 
-      await axiosInstance.post("/teachers/register", payload);
+      await ParentService.registerParent(payload);
       setIsSubmitted(true);
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
           err.message ||
-          "Registration failed! Please check your input."
+          "Registration failed! Please verify backend endpoint /parents/register"
       );
     } finally {
       setLoading(false);
@@ -112,7 +99,7 @@ export default function TeacherRegisterPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4 font-sans relative overflow-hidden transition-colors duration-300">
-      {/* Background Subtle Grid Pattern */}
+      {/* Background Grid */}
       <div
         className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
         style={{
@@ -121,17 +108,18 @@ export default function TeacherRegisterPage() {
         }}
       />
 
-      {/* Arabic Typography Watermark Background */}
+      {/* Watermark */}
       <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] dark:opacity-[0.04] pointer-events-none select-none overflow-hidden">
         <span className="text-[16vw] font-serif tracking-widest text-[#c9a961] whitespace-nowrap dir-rtl">
           العلم نور والجهل ظلام
         </span>
       </div>
 
-      {/* Header Controls: Theme & Language Toggle */}
+      {/* Header Controls */}
       <div className="absolute top-5 right-5 z-20 flex items-center gap-3">
         <button
           onClick={cycleLanguage}
+          type="button"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card/80 text-xs font-medium text-foreground shadow-sm hover:border-[#c9a961] transition-all"
         >
           <FaGlobe className="text-[#c9a961]" />
@@ -140,9 +128,10 @@ export default function TeacherRegisterPage() {
 
         <button
           onClick={toggleTheme}
+          type="button"
           className="p-2.5 rounded-xl border border-border bg-card/80 text-foreground shadow-sm hover:border-[#c9a961] transition-all"
         >
-          {isDarkMode ? (
+          {theme === "dark" ? (
             <FaSun className="text-amber-400 text-sm" />
           ) : (
             <FaMoon className="text-slate-700 text-sm" />
@@ -156,7 +145,7 @@ export default function TeacherRegisterPage() {
         transition={{ duration: 0.5 }}
         className="max-w-2xl w-full space-y-6 relative z-10 my-10"
       >
-        {/* Header Branding */}
+        {/* Header */}
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block">
             <div className="p-3.5 bg-gradient-to-br from-[#c9a961] to-[#9a7b38] text-white rounded-2xl shadow-xl">
@@ -164,29 +153,30 @@ export default function TeacherRegisterPage() {
             </div>
           </Link>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
-            Al-Iman School Teacher Application
+            Al-Iman School Parent Registration
           </h1>
           <p className="text-xs text-muted-foreground tracking-wide uppercase font-semibold">
-            طلب انضمام المعلمين
+            تسجيل اولياء الامور
           </p>
         </div>
 
-        {/* Registration Type Switcher Tabs */}
+        {/* Toggle Switcher */}
         <div className="flex items-center justify-center gap-2 p-1.5 bg-muted rounded-2xl max-w-sm mx-auto border border-border">
           <button
             type="button"
-            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold bg-card text-[#c9a961] shadow-sm border border-[#c9a961]/20"
+            onClick={() => router.push("/teacher-register")}
+            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
           >
             <FaChalkboardTeacher className="text-sm" />
             <span>Teacher Form</span>
           </button>
-          <Link
-            href="/parent-register"
-            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+          <button
+            type="button"
+            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold bg-card text-[#c9a961] shadow-sm border border-[#c9a961]/20 cursor-default"
           >
             <FaUserFriends className="text-sm" />
             <span>Parent Form</span>
-          </Link>
+          </button>
         </div>
 
         <Card className="border-border shadow-2xl rounded-2xl overflow-hidden bg-card/95 backdrop-blur-md">
@@ -201,10 +191,10 @@ export default function TeacherRegisterPage() {
                   <FaCheckCircle />
                 </div>
                 <h2 className="text-xl font-bold text-foreground">
-                  Registration Submitted Successfully!
+                  Parent Account Created Successfully!
                 </h2>
                 <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-                  Your application for teacher registration has been sent to the Admin Panel. Once reviewed and approved by the Super Admin, you will receive confirmation and be able to log in.
+                  Your parent account has been registered. Once approved by the administration, you can log in to view your child's academic updates.
                 </p>
                 <div className="pt-4">
                   <Link
@@ -223,29 +213,12 @@ export default function TeacherRegisterPage() {
                   </div>
                 )}
 
-                {/* Section 1: Credentials */}
+                {/* Section 1 */}
                 <div className="space-y-4">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-[#c9a961] border-b border-border pb-1">
                     1. Account Credentials
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Full Name *
-                      </label>
-                      <div className="relative">
-                        <FaUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <Input
-                          name="name"
-                          required
-                          placeholder="e.g. Md. Abdur Rahman"
-                          value={formData.name}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
                     <div>
                       <label className="block text-xs font-semibold mb-1">
                         Email Address *
@@ -256,8 +229,25 @@ export default function TeacherRegisterPage() {
                           name="email"
                           type="email"
                           required
-                          placeholder="teacher@al-iman.com"
+                          placeholder="parent@example.com"
                           value={formData.email}
+                          onChange={handleChange}
+                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">
+                        Mobile Phone Number *
+                      </label>
+                      <div className="relative">
+                        <FaPhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
+                        <Input
+                          name="phone"
+                          required
+                          placeholder="01700000000"
+                          value={formData.phone}
                           onChange={handleChange}
                           className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
                         />
@@ -302,137 +292,24 @@ export default function TeacherRegisterPage() {
                   </div>
                 </div>
 
-                {/* Section 2: Professional Info */}
+                {/* Section 2 */}
                 <div className="space-y-4">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-[#c9a961] border-b border-border pb-1">
-                    2. Professional Information
+                    2. Parent Profile Information
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Designation *
-                      </label>
-                      <div className="relative">
-                        <FaBuilding className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <Input
-                          name="designation"
-                          required
-                          placeholder="Senior / Assistant Teacher"
-                          value={formData.designation}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Department / Specialty
-                      </label>
-                      <div className="relative">
-                        <FaBook className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <Input
-                          name="department"
-                          placeholder="e.g. Arabic, Mathematics"
-                          value={formData.department}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Qualification
-                      </label>
-                      <Input
-                        name="qualification"
-                        placeholder="e.g. M.A in Arabic, B.Sc"
-                        value={formData.qualification}
-                        onChange={handleChange}
-                        className="px-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section 3: Personal & Verification Details */}
-                <div className="space-y-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#c9a961] border-b border-border pb-1">
-                    3. Personal Details
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Mobile Number *
-                      </label>
-                      <div className="relative">
-                        <FaPhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <Input
-                          name="phone"
-                          required
-                          placeholder="01700000000"
-                          value={formData.phone}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Gender *
-                      </label>
-                      <div className="relative">
-                        <FaVenusMars className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <select
-                          name="gender"
-                          value={formData.gender}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none cursor-pointer"
-                        >
-                          <option value="MALE">MALE</option>
-                          <option value="FEMALE">FEMALE</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Blood Group
-                      </label>
-                      <div className="relative">
-                        <FaTint className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <select
-                          name="bloodGroup"
-                          value={formData.bloodGroup}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none cursor-pointer"
-                        >
-                          <option value="A+">A+</option>
-                          <option value="A-">A-</option>
-                          <option value="B+">B+</option>
-                          <option value="B-">B-</option>
-                          <option value="O+">O+</option>
-                          <option value="O-">O-</option>
-                          <option value="AB+">AB+</option>
-                          <option value="AB-">AB-</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold mb-1">
-                        NID or Passport Number
+                        Father's Name *
                       </label>
                       <div className="relative">
-                        <FaIdCard className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
+                        <FaUserTie className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
                         <Input
-                          name="nidOrPassport"
-                          placeholder="Enter NID or Passport No"
-                          value={formData.nidOrPassport}
+                          name="fatherName"
+                          required
+                          placeholder="e.g. Md. Rafiqul Islam"
+                          value={formData.fatherName}
                           onChange={handleChange}
                           className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
                         />
@@ -441,18 +318,35 @@ export default function TeacherRegisterPage() {
 
                     <div>
                       <label className="block text-xs font-semibold mb-1">
-                        Profile Photo URL
+                        Mother's Name *
                       </label>
                       <div className="relative">
-                        <FaCamera className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
+                        <FaUserCircle className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
                         <Input
-                          name="photoUrl"
-                          placeholder="https://..."
-                          value={formData.photoUrl}
+                          name="motherName"
+                          required
+                          placeholder="e.g. Sultana Begum"
+                          value={formData.motherName}
                           onChange={handleChange}
                           className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
                         />
                       </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">
+                      Occupation (Optional)
+                    </label>
+                    <div className="relative">
+                      <FaBriefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
+                      <Input
+                        name="occupation"
+                        placeholder="e.g. Businessman, Government Official, Doctor"
+                        value={formData.occupation}
+                        onChange={handleChange}
+                        className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
+                      />
                     </div>
                   </div>
                 </div>
@@ -465,10 +359,10 @@ export default function TeacherRegisterPage() {
                   {loading ? (
                     <>
                       <FaSpinner className="animate-spin text-sm" />
-                      Submitting Application...
+                      Registering Parent Account...
                     </>
                   ) : (
-                    "Submit Teacher Application"
+                    "Register Parent Account"
                   )}
                 </Button>
               </form>
