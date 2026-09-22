@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -17,17 +17,23 @@ import {
   FaSignOutAlt,
   FaBars,
   FaTimes,
-  FaBell,
   FaHome,
-  FaSun,
-  FaMoon,
-  FaGlobe,
+  FaChevronDown,
+  FaUserClock,
+  FaUsers,
 } from "react-icons/fa";
 
-type NavItem = {
+type SubNavItem = {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+};
+
+type NavItem = {
+  label: string;
+  href?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  subItems?: SubNavItem[];
 };
 
 export default function DashboardLayout({
@@ -36,15 +42,26 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { user, logout } = useUser();
-  const { language, setLanguage } = useLanguage();
-  const { theme, setTheme } = useTheme();
+  const { language } = useLanguage();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [openSubMenu, setOpenSubMenu] = useState<string | null>(null);
   const prefersReducedMotion = useReducedMotion();
 
   const isBn = language === "bn";
 
-  const getNavItems = (): NavItem[] => {
+  // Auto-expand menu if current pathname matches any sub-item
+  useEffect(() => {
+    if (pathname.includes("/dashboard/teachers") || pathname.includes("/dashboard/pending-teachers")) {
+      setOpenSubMenu("teachers");
+    }
+  }, [pathname]);
+
+  const toggleSubMenu = (key: string) => {
+    setOpenSubMenu((prev) => (prev === key ? null : key));
+  };
+
+  const getNavItems = (): (NavItem & { key?: string })[] => {
     const role = user?.role || "SUPER_ADMIN";
 
     if (role === "SUPER_ADMIN" || role === "ADMIN") {
@@ -52,8 +69,24 @@ export default function DashboardLayout({
         { label: isBn ? "ওভারভিউ" : "Overview", href: "/Dashboard/admin", icon: FaHome },
         { label: isBn ? "ভর্তি আবেদন" : "Admissions", href: "/Dashboard/admissions", icon: FaUserGraduate },
         { label: isBn ? "শিক্ষার্থী ব্যবস্থাপনা" : "Students", href: "/Dashboard/students", icon: FaUserGraduate },
-        { label: isBn ? "শিক্ষক তালিকা" : "Teachers", href: "/Dashboard/teachers", icon: FaChalkboardTeacher },
-        { label: isBn ? "একাডেমিক সেটআপ" : "Academic", href: "/Dashboard /academic", icon: FaBook },
+        {
+          key: "teachers",
+          label: isBn ? "শিক্ষক" : "Teachers",
+          icon: FaChalkboardTeacher,
+          subItems: [
+            {
+              label: isBn ? "শিক্ষক তালিকা" : "All Teachers",
+              href: "/Dashboard/teachers",
+              icon: FaUsers,
+            },
+            {
+              label: isBn ? "আবেদন ও অনুমোদন" : "Pending Approvals",
+              href: "/Dashboard/pending-teachers",
+              icon: FaUserClock,
+            },
+          ],
+        },
+        { label: isBn ? "একাডেমিক সেটআপ" : "Academic", href: "/Dashboard/academic", icon: FaBook },
         { label: isBn ? "হিসাব বিভাগ" : "Accounts", href: "/Dashboard/accounts", icon: FaFileInvoiceDollar },
       ];
     }
@@ -146,69 +179,123 @@ export default function DashboardLayout({
               {isBn ? "মেনু" : "Menu"}
             </p>
 
-            <ul className="space-y-0.5">
-              <AnimatePresence initial={false}>
-                {navItems.map((item, idx) => {
-                  const Icon = item.icon;
-                  const isActive = pathname === item.href;
+            <ul className="space-y-1">
+              {navItems.map((item, idx) => {
+                const Icon = item.icon;
+                const isSubMenu = !!item.subItems;
+                const isExpanded = openSubMenu === item.key;
+                const isActive = item.href ? pathname === item.href : false;
+                const isChildActive = item.subItems?.some((sub) => pathname === sub.href);
+
+                if (isSubMenu) {
                   return (
-                    <motion.li
-                      key={item.href}
-                      initial={
-                        prefersReducedMotion
-                          ? false
-                          : { opacity: 0, y: 4 }
-                      }
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        duration: prefersReducedMotion ? 0 : 0.22,
-                        delay: prefersReducedMotion ? 0 : idx * 0.025,
-                        ease: [0.32, 0.72, 0, 1],
-                      }}
-                    >
-                      <Link
-                        href={item.href}
-                        onClick={() => setSidebarOpen(false)}
-                        aria-current={isActive ? "page" : undefined}
-                        className={`relative flex items-center gap-3 pl-3 pr-2.5 py-2 rounded-lg text-[13px] font-medium tracking-tight transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                          isActive
-                            ? "text-foreground"
+                    <li key={item.key || idx} className="space-y-1">
+                      <button
+                        onClick={() => item.key && toggleSubMenu(item.key)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium tracking-tight transition-colors duration-150 ${
+                          isChildActive
+                            ? "text-primary font-semibold bg-primary/5"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                         }`}
                       >
-                        {isActive && (
-                          <motion.span
-                            layoutId="nav-active"
-                            transition={spring}
-                            className="absolute inset-0 rounded-lg bg-primary/10 ring-1 ring-primary/20"
-                            aria-hidden="true"
-                          />
+                        <div className="flex items-center gap-3">
+                          <Icon className={`text-[12.5px] ${isChildActive ? "text-primary" : ""}`} />
+                          <span>{item.label}</span>
+                        </div>
+                        <FaChevronDown
+                          className={`text-[10px] transition-transform duration-200 ${
+                            isExpanded ? "rotate-180 text-primary" : "text-muted-foreground"
+                          }`}
+                        />
+                      </button>
+
+                      {/* Nested Sub-Menu Items */}
+                      <AnimatePresence initial={false}>
+                        {isExpanded && (
+                          <motion.ul
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="pl-4 space-y-1 border-l-2 border-border/60 ml-4 overflow-hidden"
+                          >
+                            {item.subItems?.map((sub) => {
+                              const SubIcon = sub.icon;
+                              const isSubActive = pathname === sub.href;
+
+                              return (
+                                <li key={sub.href}>
+                                  <Link
+                                    href={sub.href}
+                                    onClick={() => setSidebarOpen(false)}
+                                    className={`relative flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors ${
+                                      isSubActive
+                                        ? "text-primary bg-primary/10 font-semibold"
+                                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                    }`}
+                                  >
+                                    <SubIcon className="text-[11px]" />
+                                    <span>{sub.label}</span>
+                                  </Link>
+                                </li>
+                              );
+                            })}
+                          </motion.ul>
                         )}
-                        {isActive && (
-                          <motion.span
-                            layoutId="nav-active-bar"
-                            transition={spring}
-                            className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[2px] rounded-full bg-primary"
-                            aria-hidden="true"
-                          />
-                        )}
-                        <motion.span
-                          className="relative shrink-0"
-                          whileHover={prefersReducedMotion ? undefined : { scale: 1.06 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                        >
-                          <Icon
-                            className={`text-[12.5px] ${
-                              isActive ? "text-primary" : ""
-                            }`}
-                          />
-                        </motion.span>
-                        <span className="relative truncate">{item.label}</span>
-                      </Link>
-                    </motion.li>
+                      </AnimatePresence>
+                    </li>
                   );
-                })}
-              </AnimatePresence>
+                }
+
+                return (
+                  <motion.li
+                    key={item.href}
+                    initial={prefersReducedMotion ? false : { opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: prefersReducedMotion ? 0 : 0.22,
+                      delay: prefersReducedMotion ? 0 : idx * 0.025,
+                      ease: [0.32, 0.72, 0, 1],
+                    }}
+                  >
+                    <Link
+                      href={item.href || "#"}
+                      onClick={() => setSidebarOpen(false)}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`relative flex items-center gap-3 pl-3 pr-2.5 py-2 rounded-lg text-[13px] font-medium tracking-tight transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        isActive
+                          ? "text-foreground font-semibold"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                      }`}
+                    >
+                      {isActive && (
+                        <motion.span
+                          layoutId="nav-active"
+                          transition={spring}
+                          className="absolute inset-0 rounded-lg bg-primary/10 ring-1 ring-primary/20"
+                          aria-hidden="true"
+                        />
+                      )}
+                      {isActive && (
+                        <motion.span
+                          layoutId="nav-active-bar"
+                          transition={spring}
+                          className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[2px] rounded-full bg-primary"
+                          aria-hidden="true"
+                        />
+                      )}
+                      <motion.span
+                        className="relative shrink-0"
+                        whileHover={prefersReducedMotion ? undefined : { scale: 1.06 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                      >
+                        <Icon className={`text-[12.5px] ${isActive ? "text-primary" : ""}`} />
+                      </motion.span>
+                      <span className="relative truncate">{item.label}</span>
+                    </Link>
+                  </motion.li>
+                );
+              })}
             </ul>
           </nav>
         </div>

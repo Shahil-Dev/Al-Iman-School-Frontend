@@ -11,6 +11,12 @@ import {
   FaGraduationCap,
   FaCheckCircle,
   FaTimes,
+  FaEye,
+  FaBuilding,
+  FaBook,
+  FaVenusMars,
+  FaTint,
+  FaUser,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import axiosInstance from "@/src/lib/axiosInstance";
@@ -40,6 +46,7 @@ export default function PendingTeachersPage() {
   const [teachers, setTeachers] = useState<PendingTeacher[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [selectedTeacher, setSelectedTeacher] = useState<PendingTeacher | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Fetch all pending teacher requests
@@ -75,8 +82,11 @@ export default function PendingTeachersPage() {
         text: "Teacher approved successfully! Account is now active.",
       });
 
-      // Remove approved teacher from UI list
+      // Remove approved teacher from UI list & close modal
       setTeachers((prev) => prev.filter((t) => t.id !== teacherProfileId));
+      if (selectedTeacher?.id === teacherProfileId) {
+        setSelectedTeacher(null);
+      }
     } catch (err: any) {
       setMessage({
         type: "error",
@@ -97,7 +107,7 @@ export default function PendingTeachersPage() {
             <span>Pending Teacher Approvals</span>
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Review and approve pending teacher registration applications for Al-Iman School.
+            Review detailed teacher applications and approve qualified candidates for Al-Iman School.
           </p>
         </div>
         <div className="px-4 py-2 rounded-xl bg-[#c9a961]/10 border border-[#c9a961]/20 text-[#c9a961] text-xs font-bold w-fit">
@@ -155,7 +165,7 @@ export default function PendingTeachersPage() {
             >
               <Card className="border-border shadow-md hover:shadow-lg transition-all rounded-2xl bg-card overflow-hidden">
                 <CardContent className="p-5 space-y-4">
-                  {/* Teacher Card Top Details */}
+                  {/* Teacher Profile Quick View */}
                   <div className="flex items-start gap-3.5">
                     <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden shrink-0 border border-border flex items-center justify-center text-[#c9a961] font-bold text-lg">
                       {teacher.photoUrl ? (
@@ -179,7 +189,7 @@ export default function PendingTeachersPage() {
                     </div>
                   </div>
 
-                  {/* Metadata Fields */}
+                  {/* Summary Attributes */}
                   <div className="space-y-2 pt-2 border-t border-border text-xs text-muted-foreground">
                     <div className="flex items-center gap-2 truncate">
                       <FaEnvelope className="text-[#c9a961] shrink-0" />
@@ -189,36 +199,29 @@ export default function PendingTeachersPage() {
                       <FaPhone className="text-[#c9a961] shrink-0" />
                       <span>{teacher.phone}</span>
                     </div>
-                    {teacher.qualification && (
-                      <div className="flex items-center gap-2 truncate">
-                        <FaGraduationCap className="text-[#c9a961] shrink-0" />
-                        <span className="truncate">{teacher.qualification}</span>
-                      </div>
-                    )}
-                    {teacher.nidOrPassport && (
-                      <div className="flex items-center gap-2 truncate">
-                        <FaIdCard className="text-[#c9a961] shrink-0" />
-                        <span className="truncate">NID: {teacher.nidOrPassport}</span>
-                      </div>
-                    )}
                   </div>
 
-                  {/* Action Button */}
-                  <div className="pt-2">
+                  {/* Action Buttons: Show Details & Approve */}
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <Button
+                      onClick={() => setSelectedTeacher(teacher)}
+                      className="bg-card hover:bg-muted text-foreground border border-border h-9 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <FaEye className="text-xs text-[#c9a961]" />
+                      <span>Show Details</span>
+                    </Button>
+
                     <Button
                       onClick={() => handleApprove(teacher.id)}
                       disabled={approvingId === teacher.id}
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-9 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5"
                     >
                       {approvingId === teacher.id ? (
-                        <>
-                          <FaSpinner className="animate-spin text-xs" />
-                          <span>Approving...</span>
-                        </>
+                        <FaSpinner className="animate-spin text-xs" />
                       ) : (
                         <>
                           <FaUserCheck className="text-xs" />
-                          <span>Approve Teacher</span>
+                          <span>Approve</span>
                         </>
                       )}
                     </Button>
@@ -229,6 +232,143 @@ export default function PendingTeachersPage() {
           ))}
         </div>
       )}
+
+      {/* Detail Modal Dialog */}
+      <AnimatePresence>
+        {selectedTeacher && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-card border border-border shadow-2xl rounded-2xl max-w-lg w-full overflow-hidden relative"
+            >
+              {/* Modal Header */}
+              <div className="p-5 bg-muted/40 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-2 text-foreground font-bold text-base">
+                  <FaUser className="text-[#c9a961]" />
+                  <span>Teacher Application Details</span>
+                </div>
+                <button
+                  onClick={() => setSelectedTeacher(null)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+                {/* Profile Avatar & Primary Info */}
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border">
+                  <div className="w-16 h-16 rounded-xl bg-card border border-border overflow-hidden flex items-center justify-center text-[#c9a961] font-bold text-2xl shrink-0">
+                    {selectedTeacher.photoUrl ? (
+                      <img
+                        src={selectedTeacher.photoUrl}
+                        alt={selectedTeacher.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      selectedTeacher.name.charAt(0)
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-foreground">{selectedTeacher.name}</h3>
+                    <p className="text-xs text-[#c9a961] font-bold mt-0.5">{selectedTeacher.designation}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Applied: {new Date(selectedTeacher.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Professional Info */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#c9a961]">
+                    Professional Info
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3 text-xs bg-card p-3 rounded-xl border border-border">
+                    <div>
+                      <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Department</span>
+                      <span className="font-medium text-foreground flex items-center gap-1.5 mt-0.5">
+                        <FaBook className="text-[#c9a961]" /> {selectedTeacher.department || "N/A"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Qualification</span>
+                      <span className="font-medium text-foreground flex items-center gap-1.5 mt-0.5">
+                        <FaGraduationCap className="text-[#c9a961]" /> {selectedTeacher.qualification || "N/A"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Personal & Verification Info */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#c9a961]">
+                    Personal Details
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3 text-xs bg-card p-3 rounded-xl border border-border">
+                    <div>
+                      <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Email</span>
+                      <span className="font-medium text-foreground flex items-center gap-1.5 mt-0.5 truncate">
+                        <FaEnvelope className="text-[#c9a961] shrink-0" /> {selectedTeacher.user.email}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Phone</span>
+                      <span className="font-medium text-foreground flex items-center gap-1.5 mt-0.5">
+                        <FaPhone className="text-[#c9a961]" /> {selectedTeacher.phone}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Gender</span>
+                      <span className="font-medium text-foreground flex items-center gap-1.5 mt-0.5">
+                        <FaVenusMars className="text-[#c9a961]" /> {selectedTeacher.gender}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Blood Group</span>
+                      <span className="font-medium text-foreground flex items-center gap-1.5 mt-0.5">
+                        <FaTint className="text-[#c9a961]" /> {selectedTeacher.bloodGroup || "N/A"}
+                      </span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground block text-[10px] uppercase font-semibold">NID / Passport</span>
+                      <span className="font-medium text-foreground flex items-center gap-1.5 mt-0.5">
+                        <FaIdCard className="text-[#c9a961]" /> {selectedTeacher.nidOrPassport || "N/A"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 bg-muted/40 border-t border-border flex items-center justify-end gap-3">
+                <Button
+                  onClick={() => setSelectedTeacher(null)}
+                  className="bg-card hover:bg-muted text-foreground border border-border text-xs px-4 h-9 rounded-xl"
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => handleApprove(selectedTeacher.id)}
+                  disabled={approvingId === selectedTeacher.id}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-5 h-9 rounded-xl font-bold flex items-center gap-2"
+                >
+                  {approvingId === selectedTeacher.id ? (
+                    <FaSpinner className="animate-spin text-xs" />
+                  ) : (
+                    <>
+                      <FaUserCheck />
+                      <span>Approve Teacher</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
