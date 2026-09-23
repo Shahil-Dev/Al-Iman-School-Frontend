@@ -18,6 +18,8 @@ import {
   FaHashtag,
   FaIdBadge,
   FaGraduationCap,
+  FaKey,
+  FaEnvelope,
 } from "react-icons/fa";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { Card, CardContent } from "@/src/components/ui/card";
@@ -69,7 +71,7 @@ export default function StudentManagementPage() {
         searchTerm: searchTerm || undefined,
         classId: selectedClassId !== "ALL" ? selectedClassId : undefined,
       });
-      setStudents(res.data || []);
+      setStudents(res.data || res || []);
     } catch (err: any) {
       const msg = err.response?.data?.message || "Failed to fetch students";
       setError(msg);
@@ -100,7 +102,7 @@ export default function StudentManagementPage() {
     setIsDetailsModalOpen(true);
   };
 
-  // Handle Update Student Action with Toast
+  // Handle Update Student Action
   const handleUpdateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedStudent) return;
@@ -143,7 +145,7 @@ export default function StudentManagementPage() {
     setIsDeleteConfirmOpen(true);
   };
 
-  // Confirm Delete Action with Toast
+  // Confirm Delete Action
   const handleConfirmDelete = async () => {
     if (!selectedStudent) return;
 
@@ -187,8 +189,8 @@ export default function StudentManagementPage() {
           </h1>
           <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
             {language === "bn"
-              ? "লাইভ ব্যাকেন্ড থেকে শিক্ষার্থীদের তথ্য ফিল্টার, বিস্তারিত দেখা ও পরিচালনা করুন"
-              : "Search, filter by dynamic class, view details and manage students"}
+              ? "ভর্তি হওয়া শিক্ষার্থীদের তথ্য ফিল্টার, বিস্তারিত দেখা ও পরিচালনা করুন"
+              : "Search, filter by class, view details and manage registered students"}
           </p>
         </div>
       </div>
@@ -202,8 +204,8 @@ export default function StudentManagementPage() {
               type="text"
               placeholder={
                 language === "bn"
-                  ? "নাম, রোল বা আইডি দিয়ে খুঁজুন..."
-                  : "Search by name, roll or ID..."
+                  ? "নাম, কোড, রোল বা মোবাইল দিয়ে খুঁজুন..."
+                  : "Search by name, student code, roll or phone..."
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -239,10 +241,10 @@ export default function StudentManagementPage() {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-muted/50 text-muted-foreground border-b border-border/60 font-semibold uppercase tracking-wider text-[11px]">
-                <th className="p-4 pl-6">Roll / ID</th>
+                <th className="p-4 pl-6">Code & Roll</th>
                 <th className="p-4">Student Name</th>
                 <th className="p-4">Class & Section</th>
-                <th className="p-4">Guardian Phone</th>
+                <th className="p-4">Phone / Contact</th>
                 <th className="p-4 pr-6 text-right">Actions</th>
               </tr>
             </thead>
@@ -252,7 +254,7 @@ export default function StudentManagementPage() {
                   <td colSpan={5} className="text-center p-12">
                     <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
                       <FaSpinner className="animate-spin text-2xl text-primary" />
-                      <span className="text-xs font-semibold">Loading live student records...</span>
+                      <span className="text-xs font-semibold">Loading student records...</span>
                     </div>
                   </td>
                 </tr>
@@ -273,13 +275,13 @@ export default function StudentManagementPage() {
                   >
                     <td className="p-4 pl-6">
                       <div className="flex flex-col gap-0.5">
-                        <span className="font-bold text-foreground inline-flex items-center gap-1">
-                          <FaHashtag className="text-[10px] text-primary/70" />
-                          <span>Roll: {student.rollNo}</span>
+                        <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1">
+                          <FaIdBadge className="text-[10px]" />
+                          <span>{student.studentCode || student.studentIdNo}</span>
                         </span>
-                        <span className="text-[10px] text-muted-foreground/90 font-mono tracking-tight flex items-center gap-1">
-                          <FaIdBadge className="text-[9px]" />
-                          <span>{student.studentIdNo}</span>
+                        <span className="text-[10px] text-muted-foreground/90 font-semibold tracking-tight flex items-center gap-1">
+                          <FaHashtag className="text-[9px] text-primary/70" />
+                          <span>Roll: {student.rollNo}</span>
                         </span>
                       </div>
                     </td>
@@ -288,9 +290,16 @@ export default function StudentManagementPage() {
                         <div className="w-8 h-8 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-xs shrink-0 shadow-sm group-hover:bg-primary group-hover:text-primary-foreground transition-all">
                           {student.firstName?.charAt(0) || "S"}
                         </div>
-                        <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                          {student.firstName} {student.lastName}
-                        </span>
+                        <div>
+                          <span className="font-semibold text-foreground group-hover:text-primary transition-colors block">
+                            {student.firstName} {student.lastName}
+                          </span>
+                          {student.user?.email && (
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <FaEnvelope className="text-[9px]" /> {student.user.email}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="p-4">
@@ -370,7 +379,7 @@ export default function StudentManagementPage() {
                     {selectedStudent.firstName} {selectedStudent.lastName}
                   </h4>
                   <p className="text-xs text-muted-foreground font-mono">
-                    ID: <span className="font-semibold text-foreground">{selectedStudent.studentIdNo}</span>
+                    Code: <span className="font-bold text-emerald-700 dark:text-emerald-400">{selectedStudent.studentCode}</span> | ID: <span className="font-semibold text-foreground">{selectedStudent.studentIdNo}</span>
                   </p>
                   <p className="text-[11px] text-primary font-semibold flex items-center gap-1.5 pt-0.5">
                     <span className="px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20">
@@ -386,6 +395,17 @@ export default function StudentManagementPage() {
 
               {!isEditing ? (
                 <div className="space-y-4">
+                  {/* Student Login Credentials Card */}
+                  <div className="p-3.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 space-y-1">
+                    <p className="text-[10px] text-emerald-900 dark:text-emerald-300 uppercase tracking-wider font-bold flex items-center gap-1.5">
+                      <FaKey className="text-xs" /> Access & Credentials
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                      <p><b>PIN:</b> <span className="text-emerald-700 dark:text-emerald-400 font-bold">{selectedStudent.pin || "123456"}</span></p>
+                      <p><b>Email:</b> {selectedStudent.user?.email || "No Portal Account"}</p>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="p-3.5 rounded-xl bg-muted/30 border border-border/50 transition-colors hover:border-border">
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5 mb-1.5">
@@ -418,31 +438,30 @@ export default function StudentManagementPage() {
                     </p>
                   </div>
 
-                  {selectedStudent.parent && (
-                    <div className="p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-2.5">
-                      <h5 className="text-xs font-bold text-foreground border-b border-border/40 pb-2">
-                        Parent / Guardian Details
-                      </h5>
-                      <div className="grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                          <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
-                            Father Name
-                          </span>
-                          <span className="font-semibold text-foreground">
-                            {selectedStudent.parent.fatherName || "N/A"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
-                            Mother Name
-                          </span>
-                          <span className="font-semibold text-foreground">
-                            {selectedStudent.parent.motherName || "N/A"}
-                          </span>
-                        </div>
+                  {/* Parents Info */}
+                  <div className="p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-2.5">
+                    <h5 className="text-xs font-bold text-foreground border-b border-border/40 pb-2">
+                      Parents Information
+                    </h5>
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
+                          Father Name
+                        </span>
+                        <span className="font-semibold text-foreground">
+                          {selectedStudent.fatherName || selectedStudent.parent?.fatherName || "N/A"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
+                          Mother Name
+                        </span>
+                        <span className="font-semibold text-foreground">
+                          {selectedStudent.motherName || selectedStudent.parent?.motherName || "N/A"}
+                        </span>
                       </div>
                     </div>
-                  )}
+                  </div>
 
                   <div className="flex items-center justify-between pt-4 border-t border-border/60">
                     <Button
@@ -555,7 +574,7 @@ export default function StudentManagementPage() {
         </div>
       )}
 
-      {/* Modern Alert Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {isDeleteConfirmOpen && selectedStudent && (
         <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-md flex items-center justify-center p-4 transition-all animate-in fade-in duration-200">
           <Card className="max-w-sm w-full bg-card/95 border-destructive/30 shadow-2xl rounded-2xl overflow-hidden p-6 text-center space-y-4 backdrop-blur-xl">
@@ -569,8 +588,8 @@ export default function StudentManagementPage() {
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {language === "bn"
-                  ? `${selectedStudent.firstName} ${selectedStudent.lastName} এর প্রোফাইল চিরতরে মুছে যাবে। এই কাজটি আর ফিরিয়ে আনা সম্ভব নয়।`
-                  : `This action will permanently delete ${selectedStudent.firstName} ${selectedStudent.lastName}'s student account and all related history.`}
+                  ? `${selectedStudent.firstName} ${selectedStudent.lastName} এর প্রোফাইল চিরতরে মুছে যাবে।`
+                  : `This action will permanently delete ${selectedStudent.firstName} ${selectedStudent.lastName}'s student account and profile.`}
               </p>
             </div>
 
