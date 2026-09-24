@@ -58,7 +58,7 @@ export interface IAdmissionPayload {
 }
 
 export interface IAdmissionFilterParams {
-  status?: "PENDING" | "APPROVED" | "REJECTED";
+  status?: string;
   classId?: string;
   searchTerm?: string;
 }
@@ -73,8 +73,23 @@ export const trackAdmissionStatus = async (identifier: string) => {
   return response.data;
 };
 
-export const getAllAdmissions = async (params?: IAdmissionFilterParams) => {
-  const response = await axiosInstance.get("/admissions", { params });
+// getAllApplications (Updated Function Name & Clean Params Filter)
+export const getAllApplications = async (params?: IAdmissionFilterParams) => {
+  const cleanParams: Record<string, string> = {};
+
+  if (params?.status && params.status !== "ALL") {
+    cleanParams.status = params.status;
+  }
+  if (params?.classId && params.classId !== "ALL") {
+    cleanParams.classId = params.classId;
+  }
+  if (params?.searchTerm && params.searchTerm.trim() !== "") {
+    cleanParams.searchTerm = params.searchTerm.trim();
+  }
+
+  const response = await axiosInstance.get("/admissions", {
+    params: cleanParams,
+  });
   return response.data;
 };
 
@@ -82,7 +97,7 @@ export const approveAdmission = async (
   id: string,
   payload?: { sectionId?: string; rollNo?: number }
 ) => {
-  const response = await axiosInstance.patch(`/admissions/approve/${id}`, payload);
+  const response = await axiosInstance.patch(`/admissions/approve/${id}`, payload || {});
   return response.data;
 };
 
@@ -94,7 +109,10 @@ export const rejectAdmission = async (id: string, reason: string) => {
 export const admissionApi = {
   submitAdmission,
   trackAdmissionStatus,
-  getAllAdmissions,
+  getAllApplications, // Updated export reference
+  getAllAdmissions: getAllApplications, // Alias included for safety
   approveAdmission,
   rejectAdmission,
 };
+
+export default admissionApi;
