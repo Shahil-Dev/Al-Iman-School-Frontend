@@ -58,7 +58,10 @@ export default function AdminOverviewPage() {
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
           return (
-            <Card key={idx} className="border-border/60 shadow-sm rounded-2xl bg-card">
+            <Card
+              key={idx}
+              className="border-border/60 shadow-sm rounded-2xl bg-card"
+            >
               <CardContent className="p-5 flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-muted-foreground">
@@ -102,6 +105,8 @@ export default function AdminOverviewPage() {
             </button>
           </div>
         </CardContent>
+
+        
       </Card>
     </div>
   );
