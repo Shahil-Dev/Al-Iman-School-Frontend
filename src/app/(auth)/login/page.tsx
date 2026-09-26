@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, memo } from "react";
+import React, { useState, useCallback, memo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Cookies from "js-cookie";
@@ -109,7 +109,8 @@ const RoleButton = memo(
 
 RoleButton.displayName = "RoleButton";
 
-export default function LoginPage() {
+// 🟢 Component containing useSearchParams & Login Logic
+function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setUser } = useUser();
@@ -426,5 +427,21 @@ export default function LoginPage() {
         </motion.div>
       </motion.div>
     </div>
+  );
+}
+
+// 🟢 Default Page Export wrapped in Suspense Boundary
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center text-xs text-muted-foreground gap-2">
+          <FaSpinner className="animate-spin text-[#c9a961] text-base" />
+          <span>Loading Login Page...</span>
+        </div>
+      }
+    >
+      <LoginFormContent />
+    </Suspense>
   );
 }

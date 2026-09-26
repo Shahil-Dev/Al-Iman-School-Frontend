@@ -9,6 +9,7 @@ import {
   FaSpinner,
   FaGraduationCap,
   FaSave,
+  FaLock,
 } from "react-icons/fa";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
@@ -32,6 +33,12 @@ export default function AttendanceManagementPage() {
   const [attendanceMap, setAttendanceMap] = useState<
     Record<string, "PRESENT" | "ABSENT" | "LATE">
   >({});
+  
+  // 🔒 Lock system: Track statuses already saved in DB
+  const [savedAttendanceMap, setSavedAttendanceMap] = useState<
+    Record<string, "PRESENT" | "ABSENT" | "LATE">
+  >({});
+
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -69,8 +76,7 @@ export default function AttendanceManagementPage() {
 
     setLoading(true);
     try {
-      // Get registered students for class & section
-      const studentRes = await axiosInstance.get("/student-profiles", {
+      const studentRes = await axiosInstance.get("/students", {
         params: { classId: selectedClass, sectionId: selectedSection },
       });
       const rawStudents = studentRes?.data?.data || studentRes?.data || [];
@@ -83,13 +89,11 @@ export default function AttendanceManagementPage() {
       );
       const existingData = existingAttRes?.data || [];
 
-      // Map existing attendance statuses
       const existingMap: Record<string, "PRESENT" | "ABSENT" | "LATE"> = {};
       existingData.forEach((att: any) => {
         existingMap[att.studentId] = att.status;
       });
 
-      // Default everyone to PRESENT if no previous attendance record exists
       const initialMap: Record<string, "PRESENT" | "ABSENT" | "LATE"> = {};
       rawStudents.forEach((stu: any) => {
         initialMap[stu.id] = existingMap[stu.id] || "PRESENT";
@@ -97,6 +101,7 @@ export default function AttendanceManagementPage() {
 
       setStudents(rawStudents);
       setAttendanceMap(initialMap);
+      setSavedAttendanceMap(existingMap); // Store current saved database state
     } catch (err: any) {
       toast.error(
         err?.response?.data?.message || "Failed to fetch student attendance data!"
@@ -110,6 +115,12 @@ export default function AttendanceManagementPage() {
     studentId: string,
     status: "PRESENT" | "ABSENT" | "LATE"
   ) => {
+    // 🔒 Security Check: If already saved as PRESENT, lock modifications
+    if (savedAttendanceMap[studentId] === "PRESENT") {
+      toast.warning("This student is already marked as PRESENT and cannot be changed!");
+      return;
+    }
+
     setAttendanceMap((prev) => ({
       ...prev,
       [studentId]: status,
@@ -117,18 +128,26 @@ export default function AttendanceManagementPage() {
   };
 
   const handleMarkAll = (status: "PRESENT" | "ABSENT" | "LATE") => {
-    const updatedMap: Record<string, "PRESENT" | "ABSENT" | "LATE"> = {};
+    const updatedMap: Record<string, "PRESENT" | "ABSENT" | "LATE"> = { ...attendanceMap };
+    
     students.forEach((stu) => {
-      updatedMap[stu.id] = status;
+      // Only change if not locked as PRESENT
+      if (savedAttendanceMap[stu.id] !== "PRESENT") {
+        updatedMap[stu.id] = status;
+      }
     });
+
     setAttendanceMap(updatedMap);
   };
 
   const handleSubmitAttendance = async () => {
-    if (students.length === 0) return;
+    if (students.length === 0) {
+      toast.error("No students found to mark attendance!");
+      return;
+    }
 
     setSubmitting(true);
-    const toastId = toast.loading("Submitting attendance & triggering WhatsApp notifications...");
+    const toastId = toast.loading("Submitting attendance & triggering WhatsApp alerts...");
 
     try {
       const payload = {
@@ -141,11 +160,20 @@ export default function AttendanceManagementPage() {
         })),
       };
 
-      await attendanceService.takeAttendance(payload);
+      const res = await attendanceService.takeAttendance(payload);
+
+      // Lock current state in memory after successful save
+      const newlySavedMap = { ...savedAttendanceMap };
+      Object.keys(attendanceMap).forEach((stuId) => {
+        newlySavedMap[stuId] = attendanceMap[stuId];
+      });
+      setSavedAttendanceMap(newlySavedMap);
+
       toast.success("Attendance saved & WhatsApp notifications sent!", {
         id: toastId,
       });
     } catch (err: any) {
+      console.error("❌ Attendance Submission Error:", err?.response?.data || err);
       toast.error(
         err?.response?.data?.message || "Failed to submit attendance!",
         { id: toastId }
@@ -266,14 +294,21 @@ export default function AttendanceManagementPage() {
               <tbody className="divide-y divide-border">
                 {students.map((stu) => {
                   const currentStatus = attendanceMap[stu.id] || "PRESENT";
+                  const isLockedPresent = savedAttendanceMap[stu.id] === "PRESENT";
+
                   return (
                     <tr key={stu.id} className="hover:bg-muted/40 transition-colors">
                       <td className="p-3.5 font-bold">{stu.rollNo}</td>
                       <td className="p-3.5 font-mono text-emerald-700 font-bold">
                         {stu.studentIdNo}
                       </td>
-                      <td className="p-3.5 font-semibold">
-                        {stu.firstName} {stu.lastName}
+                      <td className="p-3.5 font-semibold flex items-center gap-2">
+                        <span>{stu.firstName} {stu.lastName}</span>
+                        {isLockedPresent && (
+                          <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <FaLock size={8} /> Verified Present
+                          </span>
+                        )}
                       </td>
                       <td className="p-3.5 flex justify-center gap-2">
                         <button
@@ -290,24 +325,26 @@ export default function AttendanceManagementPage() {
 
                         <button
                           type="button"
+                          disabled={isLockedPresent}
                           onClick={() => handleStatusChange(stu.id, "ABSENT")}
                           className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold border transition-all ${
                             currentStatus === "ABSENT"
                               ? "bg-rose-600 text-white border-rose-600"
                               : "bg-background text-muted-foreground border-input hover:bg-rose-50"
-                          }`}
+                          } ${isLockedPresent ? "opacity-30 cursor-not-allowed hover:bg-transparent" : ""}`}
                         >
                           <FaTimes /> Absent
                         </button>
 
                         <button
                           type="button"
+                          disabled={isLockedPresent}
                           onClick={() => handleStatusChange(stu.id, "LATE")}
                           className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold border transition-all ${
                             currentStatus === "LATE"
                               ? "bg-amber-500 text-white border-amber-500"
                               : "bg-background text-muted-foreground border-input hover:bg-amber-50"
-                          }`}
+                          } ${isLockedPresent ? "opacity-30 cursor-not-allowed hover:bg-transparent" : ""}`}
                         >
                           <FaClock /> Late
                         </button>

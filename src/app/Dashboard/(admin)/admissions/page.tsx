@@ -8,9 +8,7 @@ import {
   FaSearch,
   FaFilter,
   FaEye,
-  FaUniversity,
   FaPhoneAlt,
-  FaMoneyBillWave,
   FaExclamationTriangle,
   FaGraduationCap,
 } from "react-icons/fa";
@@ -37,38 +35,40 @@ export default function AdminAdmissionManagementPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   // Load Applications & Classes
- // Load Applications & Classes
-const fetchData = async () => {
-  setLoading(true);
-  try {
-    const [appRes, classRes] = await Promise.all([
-      admissionApi.getAllApplications({
-        status: statusFilter,
-        classId: classFilter,
-        searchTerm,
-      }),
-      academicService.getAllClasses(),
-    ]);
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // 🟢 Build clean query parameters without "ALL" literal values
+      const queryParams: any = {};
+      if (statusFilter && statusFilter !== "ALL") queryParams.status = statusFilter;
+      if (classFilter && classFilter !== "ALL") queryParams.classId = classFilter;
+      if (searchTerm && searchTerm.trim() !== "") queryParams.searchTerm = searchTerm.trim();
 
-    // Extracting correctly nested data array
-    const rawApplications = appRes?.data || appRes || [];
-    const applicationsData = Array.isArray(rawApplications)
-      ? rawApplications
-      : rawApplications.data || [];
+      const [appRes, classRes] = await Promise.all([
+        admissionApi.getAllApplications(queryParams),
+        academicService.getAllClasses(),
+      ]);
 
-    const rawClasses = classRes?.data || classRes || [];
-    const classesData = Array.isArray(rawClasses)
-      ? rawClasses
-      : rawClasses.data || [];
+      // Extracting correctly nested data array
+      const rawApplications = appRes?.data || appRes || [];
+      const applicationsData = Array.isArray(rawApplications)
+        ? rawApplications
+        : rawApplications.data || [];
 
-    setApplications(applicationsData);
-    setClassesList(classesData);
-  } catch (err: any) {
-    toast.error(err?.response?.data?.message || "Failed to load admission data");
-  } finally {
-    setLoading(false);
-  }
-};
+      const rawClasses = classRes?.data || classRes || [];
+      const classesData = Array.isArray(rawClasses)
+        ? rawClasses
+        : rawClasses.data || [];
+
+      setApplications(applicationsData);
+      setClassesList(classesData);
+    } catch (err: any) {
+      console.error("Error loading admissions:", err);
+      toast.error(err?.response?.data?.message || "Failed to load admission data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -127,7 +127,7 @@ const fetchData = async () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-emerald-800 to-teal-900 text-white p-6 rounded-2xl shadow-md">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <FaGraduationCap  />
+            <FaGraduationCap />
             <span>Admission Applications Management</span>
           </h1>
           <p className="text-xs text-emerald-100/80 mt-1">
@@ -150,7 +150,7 @@ const fetchData = async () => {
                 placeholder="Search by Name, Phone, TrxID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-input bg-background focus:ring-2 focus:ring-emerald-500/20"
+                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-input bg-background focus:ring-2 focus:ring-emerald-500/20 text-black"
               />
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             </div>
@@ -161,7 +161,7 @@ const fetchData = async () => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-input bg-background font-semibold"
+                className="w-full p-2.5 rounded-xl border border-input bg-background font-semibold text-black"
               >
                 <option value="ALL">All Statuses</option>
                 <option value="PENDING">Pending</option>
@@ -175,7 +175,7 @@ const fetchData = async () => {
               <select
                 value={classFilter}
                 onChange={(e) => setClassFilter(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-input bg-background font-semibold"
+                className="w-full p-2.5 rounded-xl border border-input bg-background font-semibold text-black"
               >
                 <option value="ALL">All Classes</option>
                 {classesList.map((cls) => (
@@ -385,7 +385,7 @@ const fetchData = async () => {
               placeholder="e.g. Invalid Transaction ID (TrxID) or duplicate payment submission."
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-input bg-background text-xs"
+              className="w-full p-2.5 rounded-xl border border-input bg-background text-xs text-black"
             />
 
             <div className="flex justify-end gap-2">
