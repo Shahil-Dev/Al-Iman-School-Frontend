@@ -21,6 +21,24 @@ import {
   FaChevronDown,
   FaUserClock,
   FaUsers,
+  FaUserPlus,
+  FaGraduationCap,
+  FaSun,
+  FaMoon,
+  FaGlobe,
+  FaUserTie,
+  FaClipboardList,
+  FaMoneyCheckAlt,
+  FaReceipt,
+  FaIdCard,
+  FaBell,
+  FaSms,
+  FaClock,
+  FaPoll,
+  FaChartLine,
+  FaLayerGroup,
+  FaUniversity,
+  FaComments,
 } from "react-icons/fa";
 
 type SubNavItem = {
@@ -42,7 +60,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { user, logout } = useUser();
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [openSubMenu, setOpenSubMenu] = useState<string | null>(null);
@@ -50,10 +69,41 @@ export default function DashboardLayout({
 
   const isBn = language === "bn";
 
-  // Auto-expand menu if current pathname matches any sub-item
+  // Auto-expand active sub-menu on page load or navigation
   useEffect(() => {
-    if (pathname.includes("/dashboard/teachers") || pathname.includes("/dashboard/pending-teachers")) {
-      setOpenSubMenu("teachers");
+    if (
+      pathname.includes("/Dashboard/admissions") ||
+      pathname.includes("/Dashboard/students")
+    ) {
+      setOpenSubMenu("students");
+    } else if (
+      pathname.includes("/Dashboard/teachers") ||
+      pathname.includes("/Dashboard/pending-teachers") ||
+      pathname.includes("/Dashboard/parents")
+    ) {
+      setOpenSubMenu("users_hr");
+    } else if (pathname.includes("/Dashboard/attendance")) {
+      setOpenSubMenu("attendance");
+    } else if (
+      pathname.includes("/Dashboard/exams") ||
+      pathname.includes("/Dashboard/marks")
+    ) {
+      setOpenSubMenu("exams");
+    } else if (pathname.includes("/Dashboard/academic")) {
+      setOpenSubMenu("academic");
+    } else if (
+      pathname.includes("/Dashboard/accounts") ||
+      pathname.includes("/Dashboard/payroll") ||
+      pathname.includes("/Dashboard/payments")
+    ) {
+      setOpenSubMenu("accounts");
+    } else if (
+      pathname.includes("/Dashboard/documents") ||
+      pathname.includes("/Dashboard/notices") ||
+      pathname.includes("/Dashboard/sms") ||
+      pathname.includes("/Dashboard/reviews")
+    ) {
+      setOpenSubMenu("communication");
     }
   }, [pathname]);
 
@@ -61,17 +111,43 @@ export default function DashboardLayout({
     setOpenSubMenu((prev) => (prev === key ? null : key));
   };
 
+  // Dynamic Navigation Items mapped with Backend API Modules
   const getNavItems = (): (NavItem & { key?: string })[] => {
     const role = user?.role || "SUPER_ADMIN";
 
+    // 🔴 1. SUPER_ADMIN & ADMIN
     if (role === "SUPER_ADMIN" || role === "ADMIN") {
       return [
-        { label: isBn ? "ওভারভিউ" : "Overview", href: "/Dashboard/admin", icon: FaHome },
-        { label: isBn ? "ভর্তি আবেদন" : "Admissions", href: "/Dashboard/admissions", icon: FaUserGraduate },
-        { label: isBn ? "শিক্ষার্থী ব্যবস্থাপনা" : "Students", href: "/Dashboard/students", icon: FaUserGraduate },
         {
-          key: "teachers",
-          label: isBn ? "শিক্ষক" : "Teachers",
+          label: isBn ? "ওভারভিউ ও অ্যানালিটিক্স" : "Overview & Analytics",
+          href: "/Dashboard/admin",
+          icon: FaChartLine,
+        },
+        {
+          key: "students",
+          label: isBn ? "শিক্ষার্থী ব্যবস্থাপনা" : "Student Management",
+          icon: FaUserGraduate,
+          subItems: [
+            {
+              label: isBn ? "অনলাইন ভর্তি আবেদন" : "Admission Applications",
+              href: "/Dashboard/admissions",
+              icon: FaUserPlus,
+            },
+            {
+              label: isBn ? "শিক্ষার্থী তালিকা" : "Enrolled Students",
+              href: "/Dashboard/students",
+              icon: FaGraduationCap,
+            },
+            {
+              label: isBn ? "নতুন শিক্ষার্থী যোগ" : "Create Student",
+              href: "/Dashboard/students/create",
+              icon: FaUserPlus,
+            },
+          ],
+        },
+        {
+          key: "users_hr",
+          label: isBn ? "শিক্ষক ও অভিভাবক" : "Teachers & Parents",
           icon: FaChalkboardTeacher,
           subItems: [
             {
@@ -80,42 +156,277 @@ export default function DashboardLayout({
               icon: FaUsers,
             },
             {
-              label: isBn ? "আবেদন ও অনুমোদন" : "Pending Approvals",
+              label: isBn ? "পেন্ডিং শিক্ষক আবেদন" : "Pending Teacher Approvals",
               href: "/Dashboard/pending-teachers",
               icon: FaUserClock,
             },
+            {
+              label: isBn ? "অভিভাবক ডাটাবেজ" : "Parent Accounts",
+              href: "/Dashboard/parents",
+              icon: FaUserTie,
+            },
           ],
         },
-        { label: isBn ? "একাডেমিক সেটআপ" : "Academic", href: "/Dashboard/academic", icon: FaBook },
-        { label: isBn ? "হিসাব বিভাগ" : "Accounts", href: "/Dashboard/accounts", icon: FaFileInvoiceDollar },
+        {
+          key: "attendance",
+          label: isBn ? "উপস্থিতি ব্যবস্থাপনা" : "Attendance System",
+          icon: FaCalendarCheck,
+          subItems: [
+            {
+              label: isBn ? "উপস্থিতি ইনপুট" : "Take Attendance",
+              href: "/Dashboard/attendance/take",
+              icon: FaClipboardList,
+            },
+            {
+              label: isBn ? "উপস্থিতি রেকর্ডস" : "Attendance Records",
+              href: "/Dashboard/attendance/records",
+              icon: FaCalendarCheck,
+            },
+          ],
+        },
+        {
+          key: "exams",
+          label: isBn ? "পরীক্ষা ও ফলাফল" : "Exams & Results",
+          icon: FaPoll,
+          subItems: [
+            {
+              label: isBn ? "পরীক্ষা সেটআপ" : "Exams Management",
+              href: "/Dashboard/exams",
+              icon: FaBook,
+            },
+            {
+              label: isBn ? "মার্কস এন্ট্রি" : "Mark Entry",
+              href: "/Dashboard/marks/entry",
+              icon: FaClipboardList,
+            },
+            {
+              label: isBn ? "মার্কশিট ও রেজাল্ট" : "Student Marksheets",
+              href: "/Dashboard/exams/marksheet",
+              icon: FaPoll,
+            },
+          ],
+        },
+        {
+          key: "academic",
+          label: isBn ? "একাডেমিক সেটআপ" : "Academic Infrastructure",
+          icon: FaUniversity,
+          subItems: [
+            {
+              label: isBn ? "শিক্ষাবর্ষ (Session)" : "Academic Years",
+              href: "/Dashboard/academic/years",
+              icon: FaCalendarCheck,
+            },
+            {
+              label: isBn ? "শ্রেণি ও শাখা" : "Classes & Sections",
+              href: "/Dashboard/academic/classes",
+              icon: FaLayerGroup,
+            },
+            {
+              label: isBn ? "বিষয়সমূহ" : "Subjects",
+              href: "/Dashboard/academic/subjects",
+              icon: FaBook,
+            },
+            {
+              label: isBn ? "ক্লাস রুটিন" : "Class Routines",
+              href: "/Dashboard/academic/routines",
+              icon: FaClock,
+            },
+          ],
+        },
+        {
+          key: "accounts",
+          label: isBn ? "হিসাব ও ফি বিভাগ" : "Finance & Accounts",
+          icon: FaFileInvoiceDollar,
+          subItems: [
+            {
+              label: isBn ? "ইনভয়েস তৈরি" : "Create Invoice",
+              href: "/Dashboard/payments/create-invoice",
+              icon: FaReceipt,
+            },
+            {
+              label: isBn ? "ফি কালেকশন" : "Collect Payments",
+              href: "/Dashboard/payments/collect",
+              icon: FaMoneyCheckAlt,
+            },
+            {
+              label: isBn ? "বকেয়া রিপোর্ট" : "Due Fees Report",
+              href: "/Dashboard/accounts/due-report",
+              icon: FaFileInvoiceDollar,
+            },
+            {
+              label: isBn ? "পে-রোল (Payroll)" : "Staff Payroll",
+              href: "/Dashboard/payroll",
+              icon: FaMoneyCheckAlt,
+            },
+          ],
+        },
+        {
+          key: "communication",
+          label: isBn ? "ডকুমেন্ট ও অ্যালার্ট" : "Documents & Communication",
+          icon: FaBell,
+          subItems: [
+            {
+              label: isBn ? "আইডি কার্ড ও প্রশংসা" : "ID Card & Testimonials",
+              href: "/Dashboard/documents/id-card",
+              icon: FaIdCard,
+            },
+            {
+              label: isBn ? "নোটিশ বোর্ড" : "Notice Board",
+              href: "/Dashboard/notices",
+              icon: FaBell,
+            },
+            {
+              label: isBn ? "এসএমএস / ইমেইল অ্যালার্ট" : "SMS & Email Alerts",
+              href: "/Dashboard/notifications",
+              icon: FaSms,
+            },
+            {
+              label: isBn ? "অভিভাবক রিভিউ" : "Public Reviews",
+              href: "/Dashboard/reviews",
+              icon: FaComments,
+            },
+          ],
+        },
       ];
     }
 
+    // 🟢 2. TEACHER
     if (role === "TEACHER") {
       return [
-        { label: isBn ? "ওভারভিউ" : "Overview", href: "/Dashboard/teacher", icon: FaHome },
-        { label: isBn ? "হাজিরা ইনপুট" : "Attendance", href: "/Dashboard/teacher/attendance", icon: FaCalendarCheck },
-        { label: isBn ? "নম্বর এন্ট্রি" : "Marks Entry", href: "/Dashboard/teacher/marks", icon: FaBook },
+        {
+          label: isBn ? "ওভারভিউ" : "Teacher Overview",
+          href: "/Dashboard/teacher",
+          icon: FaHome,
+        },
+        {
+          label: isBn ? "শিক্ষার্থী উপস্থিতি" : "Take Attendance",
+          href: "/Dashboard/attendance/take",
+          icon: FaCalendarCheck,
+        },
+        {
+          label: isBn ? "পরীক্ষার নম্বর এন্ট্রি" : "Marks Entry",
+          href: "/Dashboard/marks/entry",
+          icon: FaClipboardList,
+        },
+        {
+          label: isBn ? "ক্লাস রুটিন" : "Class Routine",
+          href: "/Dashboard/academic/routines",
+          icon: FaClock,
+        },
+        {
+          label: isBn ? "নোটিশসমূহ" : "Notices",
+          href: "/Dashboard/notices",
+          icon: FaBell,
+        },
       ];
     }
 
+    // 🟡 3. ACCOUNTS
     if (role === "ACCOUNTS") {
       return [
-        { label: isBn ? "ওভারভিউ" : "Overview", href: "/Dashboard/accounts", icon: FaHome },
-        { label: isBn ? "ফি কালেকশন" : "Fee Collections", href: "/Dashboard/accounts/fees", icon: FaFileInvoiceDollar },
-        { label: isBn ? "পে-রোল" : "Payrolls", href: "/Dashboard/accounts/payroll", icon: FaFileInvoiceDollar },
+        {
+          label: isBn ? "ওভারভিউ" : "Accounts Overview",
+          href: "/Dashboard/accounts",
+          icon: FaHome,
+        },
+        {
+          label: isBn ? "ভর্তি আবেদন যাচাই" : "Admissions Check",
+          href: "/Dashboard/admissions",
+          icon: FaUserPlus,
+        },
+        {
+          label: isBn ? "ফি কালেকশন" : "Fee Collections",
+          href: "/Dashboard/payments/collect",
+          icon: FaFileInvoiceDollar,
+        },
+        {
+          label: isBn ? "ইনভয়েস তৈরি" : "Generate Invoices",
+          href: "/Dashboard/payments/create-invoice",
+          icon: FaReceipt,
+        },
+        {
+          label: isBn ? "বকেয়া তালিকা" : "Student Due Reports",
+          href: "/Dashboard/accounts/due-report",
+          icon: FaFileInvoiceDollar,
+        },
+        {
+          label: isBn ? "শিক্ষক ও স্টাফ পে-রোল" : "Payrolls",
+          href: "/Dashboard/payroll",
+          icon: FaMoneyCheckAlt,
+        },
       ];
     }
 
+    // 🔵 4. PARENT
+    if (role === "PARENT") {
+      return [
+        {
+          label: isBn ? "আমার সন্তান" : "My Children",
+          href: "/Dashboard/parent",
+          icon: FaUserTie,
+        },
+        {
+          label: isBn ? "উপস্থিতি ট্র্যাকার" : "Attendance Summary",
+          href: "/Dashboard/parent/attendance",
+          icon: FaCalendarCheck,
+        },
+        {
+          label: isBn ? "ফলাফল ও মার্কশিট" : "Child Results",
+          href: "/Dashboard/parent/results",
+          icon: FaPoll,
+        },
+        {
+          label: isBn ? "অনলাইন ফি ও ইনভয়েস" : "Fees & Receipts",
+          href: "/Dashboard/parent/fees",
+          icon: FaFileInvoiceDollar,
+        },
+        {
+          label: isBn ? "মতামত/রিভিউ প্রদান" : "Post Review",
+          href: "/Dashboard/reviews",
+          icon: FaComments,
+        },
+      ];
+    }
+
+    // 🟣 5. STUDENT (DEFAULT)
     return [
-      { label: isBn ? "আমার প্রোফাইল" : "My Profile", href: "/Dashboard/student", icon: FaHome },
-      { label: isBn ? "ফলাফল" : "Results", href: "/Dashboard/student/results", icon: FaBook },
+      {
+        label: isBn ? "আমার প্রোফাইল" : "My Profile",
+        href: "/Dashboard/student",
+        icon: FaHome,
+      },
+      {
+        label: isBn ? "ক্লাস রুটিন" : "Class Routine",
+        href: "/Dashboard/student/routine",
+        icon: FaClock,
+      },
+      {
+        label: isBn ? "আমার উপস্থিতি" : "My Attendance",
+        href: "/Dashboard/student/attendance",
+        icon: FaCalendarCheck,
+      },
+      {
+        label: isBn ? "আমার ফলাফল" : "My Marksheet",
+        href: "/Dashboard/student/results",
+        icon: FaPoll,
+      },
+      {
+        label: isBn ? "আমার আইডি কার্ড" : "Digital ID Card",
+        href: "/Dashboard/student/id-card",
+        icon: FaIdCard,
+      },
+      {
+        label: isBn ? "টিউশন ফি ও বকেয়া" : "Invoices & Fees",
+        href: "/Dashboard/student/fees",
+        icon: FaFileInvoiceDollar,
+      },
     ];
   };
 
   const navItems = getNavItems();
   const roleLabel = user?.role || "SUPER_ADMIN";
-  const userInitial = user?.name?.charAt(0)?.toUpperCase() || roleLabel.charAt(0);
+  const userInitial =
+    user?.name?.charAt(0)?.toUpperCase() || roleLabel.charAt(0);
 
   const spring = prefersReducedMotion
     ? { type: "tween" as const, duration: 0 }
@@ -141,7 +452,7 @@ export default function DashboardLayout({
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:sticky lg:top-0 lg:h-screen inset-y-0 left-0 z-50 w-[264px] shrink-0 bg-card border-r border-border flex flex-col justify-between ${
+        className={`fixed lg:sticky lg:top-0 lg:h-screen inset-y-0 left-0 z-50 w-[270px] shrink-0 bg-card border-r border-border flex flex-col justify-between ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
         style={{
@@ -173,10 +484,10 @@ export default function DashboardLayout({
             </button>
           </div>
 
-          {/* Navigation */}
-          <nav aria-label="Primary" className="p-3">
+          {/* Navigation Menu */}
+          <nav aria-label="Primary" className="p-3 overflow-y-auto max-h-[calc(100vh-140px)]">
             <p className="px-3 pt-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
-              {isBn ? "মেনু" : "Menu"}
+              {isBn ? "ন্যাভিগেশন মেনু" : "Navigation"}
             </p>
 
             <ul className="space-y-1">
@@ -185,7 +496,9 @@ export default function DashboardLayout({
                 const isSubMenu = !!item.subItems;
                 const isExpanded = openSubMenu === item.key;
                 const isActive = item.href ? pathname === item.href : false;
-                const isChildActive = item.subItems?.some((sub) => pathname === sub.href);
+                const isChildActive = item.subItems?.some(
+                  (sub) => pathname === sub.href
+                );
 
                 if (isSubMenu) {
                   return (
@@ -194,17 +507,23 @@ export default function DashboardLayout({
                         onClick={() => item.key && toggleSubMenu(item.key)}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium tracking-tight transition-colors duration-150 ${
                           isChildActive
-                            ? "text-primary font-semibold bg-primary/5"
+                            ? "text-primary font-semibold bg-primary/10"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <Icon className={`text-[12.5px] ${isChildActive ? "text-primary" : ""}`} />
-                          <span>{item.label}</span>
+                        <div className="flex items-center gap-3 truncate">
+                          <Icon
+                            className={`text-[12.5px] shrink-0 ${
+                              isChildActive ? "text-primary" : ""
+                            }`}
+                          />
+                          <span className="truncate">{item.label}</span>
                         </div>
                         <FaChevronDown
-                          className={`text-[10px] transition-transform duration-200 ${
-                            isExpanded ? "rotate-180 text-primary" : "text-muted-foreground"
+                          className={`text-[10px] shrink-0 transition-transform duration-200 ${
+                            isExpanded
+                              ? "rotate-180 text-primary"
+                              : "text-muted-foreground"
                           }`}
                         />
                       </button>
@@ -217,7 +536,7 @@ export default function DashboardLayout({
                             animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="pl-4 space-y-1 border-l-2 border-border/60 ml-4 overflow-hidden"
+                            className="pl-3 space-y-1 border-l-2 border-border/60 ml-4 overflow-hidden"
                           >
                             {item.subItems?.map((sub) => {
                               const SubIcon = sub.icon;
@@ -234,8 +553,8 @@ export default function DashboardLayout({
                                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                     }`}
                                   >
-                                    <SubIcon className="text-[11px]" />
-                                    <span>{sub.label}</span>
+                                    <SubIcon className="text-[11px] shrink-0" />
+                                    <span className="truncate">{sub.label}</span>
                                   </Link>
                                 </li>
                               );
@@ -250,7 +569,9 @@ export default function DashboardLayout({
                 return (
                   <motion.li
                     key={item.href}
-                    initial={prefersReducedMotion ? false : { opacity: 0, y: 4 }}
+                    initial={
+                      prefersReducedMotion ? false : { opacity: 0, y: 4 }
+                    }
                     animate={{ opacity: 1, y: 0 }}
                     transition={{
                       duration: prefersReducedMotion ? 0 : 0.22,
@@ -286,10 +607,20 @@ export default function DashboardLayout({
                       )}
                       <motion.span
                         className="relative shrink-0"
-                        whileHover={prefersReducedMotion ? undefined : { scale: 1.06 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                        whileHover={
+                          prefersReducedMotion ? undefined : { scale: 1.06 }
+                        }
+                        transition={{
+                          type: "spring",
+                          stiffness: 400,
+                          damping: 22,
+                        }}
                       >
-                        <Icon className={`text-[12.5px] ${isActive ? "text-primary" : ""}`} />
+                        <Icon
+                          className={`text-[12.5px] ${
+                            isActive ? "text-primary" : ""
+                          }`}
+                        />
                       </motion.span>
                       <span className="relative truncate">{item.label}</span>
                     </Link>
@@ -300,8 +631,8 @@ export default function DashboardLayout({
           </nav>
         </div>
 
-        {/* User + Logout */}
-        <div className="p-3 border-t border-border">
+        {/* User Profile Footer + Logout */}
+        <div className="p-3 border-t border-border space-y-2">
           <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-muted/40">
             <div className="w-8 h-8 rounded-full bg-primary/12 text-primary flex items-center justify-center font-semibold text-[11px] ring-1 ring-primary/20 shrink-0">
               {userInitial}
@@ -318,7 +649,7 @@ export default function DashboardLayout({
 
           <button
             onClick={logout}
-            className="mt-2 w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12.5px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12.5px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <FaSignOutAlt className="text-[12.5px] shrink-0" />
             <span>{isBn ? "লগআউট" : "Sign Out"}</span>
@@ -326,9 +657,9 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      {/* Main */}
+      {/* Main Content Viewport */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
+        {/* Top Header Navbar */}
         <header className="h-16 bg-card/80 supports-[backdrop-filter]:bg-card/70 backdrop-blur-md border-b border-border sticky top-0 z-30">
           <div className="h-full flex items-center justify-between px-4 lg:px-8">
             <div className="flex items-center gap-3 min-w-0">
@@ -346,10 +677,13 @@ export default function DashboardLayout({
                 {isBn ? "ড্যাশবোর্ড ম্যানেজমেন্ট" : "Dashboard Management"}
               </h1>
             </div>
+
+            {/* Language & Theme Controls */}
+            
           </div>
         </header>
 
-        {/* Page Content */}
+        {/* Dynamic Page Content Render */}
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto">{children}</main>
       </div>
     </div>
