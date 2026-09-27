@@ -116,7 +116,7 @@ export default function DashboardLayout({
     const role = user?.role || "SUPER_ADMIN";
 
     // 🔴 1. SUPER_ADMIN & ADMIN
-    if (role === "SUPER_ADMIN" || role === "ADMIN") {
+    if (role === "SUPER_ADMIN" ) {
       return [
         {
           label: isBn ? "ওভারভিউ ও অ্যানালিটিক্স" : "Overview & Analytics",
@@ -174,7 +174,7 @@ export default function DashboardLayout({
           subItems: [
             {
               label: isBn ? "উপস্থিতি ইনপুট" : "Take Attendance",
-              href: "/Dashboard/attendance/take",
+              href: "/Dashboard/attendance",
               icon: FaClipboardList,
             },
             {
@@ -185,8 +185,8 @@ export default function DashboardLayout({
           ],
         },
         {
-          key: "exams",
-          label: isBn ? "পরীক্ষা ও ফলাফল" : "Exams & Results",
+          key: "add subject and exams",
+          label: isBn ? "বিষয়, পরীক্ষা ও ফলাফল" : "Exams & Results",
           icon: FaPoll,
           subItems: [
             {
@@ -195,8 +195,13 @@ export default function DashboardLayout({
               icon: FaBook,
             },
             {
+              label: isBn ? "বিষয় সেটআপ" : "Subjects Management",
+              href: "/Dashboard/academic/subjects",
+              icon: FaBook,
+            },
+            {
               label: isBn ? "মার্কস এন্ট্রি" : "Mark Entry",
-              href: "/Dashboard/marks/entry",
+              href: "/Dashboard/marks",
               icon: FaClipboardList,
             },
             {
@@ -208,30 +213,10 @@ export default function DashboardLayout({
         },
         {
           key: "academic",
+          href:"/Dashboard/academic",
           label: isBn ? "একাডেমিক সেটআপ" : "Academic Infrastructure",
           icon: FaUniversity,
-          subItems: [
-            {
-              label: isBn ? "শিক্ষাবর্ষ (Session)" : "Academic Years",
-              href: "/Dashboard/academic/years",
-              icon: FaCalendarCheck,
-            },
-            {
-              label: isBn ? "শ্রেণি ও শাখা" : "Classes & Sections",
-              href: "/Dashboard/academic/classes",
-              icon: FaLayerGroup,
-            },
-            {
-              label: isBn ? "বিষয়সমূহ" : "Subjects",
-              href: "/Dashboard/academic/subjects",
-              icon: FaBook,
-            },
-            {
-              label: isBn ? "ক্লাস রুটিন" : "Class Routines",
-              href: "/Dashboard/academic/routines",
-              icon: FaClock,
-            },
-          ],
+         
         },
         {
           key: "accounts",
@@ -289,6 +274,13 @@ export default function DashboardLayout({
         },
       ];
     }
+
+
+
+
+
+
+
 
     // 🟢 2. TEACHER
     if (role === "TEACHER") {
@@ -630,6 +622,7 @@ export default function DashboardLayout({
             </ul>
           </nav>
         </div>
+      
 
         {/* User Profile Footer + Logout */}
         <div className="p-3 border-t border-border space-y-2">
