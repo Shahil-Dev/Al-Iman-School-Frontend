@@ -10,10 +10,16 @@ export interface IStudentUpdatePayload {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  altPhone?: string;
   address?: string;
+  permanentAddress?: string;
   rollNo?: number;
   gender?: string;
   dob?: string;
+  bloodGroup?: string;
+  religion?: string;
+  fatherName?: string;
+  motherName?: string;
   classId?: string;
   sectionId?: string;
 }

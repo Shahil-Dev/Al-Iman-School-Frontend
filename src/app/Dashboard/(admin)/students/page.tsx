@@ -20,6 +20,11 @@ import {
   FaGraduationCap,
   FaKey,
   FaEnvelope,
+  FaTint,
+  FaGlobe,
+  FaIdCard,
+  FaBriefcase,
+  FaPassport,
 } from "react-icons/fa";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { Card, CardContent } from "@/src/components/ui/card";
@@ -54,7 +59,8 @@ export default function StudentManagementPage() {
     async function loadClasses() {
       try {
         const res = await academicService.getAllClasses();
-        setClassesList(res?.data || res || []);
+        const rawClasses = res?.data?.data || res?.data || res || [];
+        setClassesList(Array.isArray(rawClasses) ? rawClasses : []);
       } catch (err) {
         console.error("Failed to load classes for filter dropdown:", err);
       }
@@ -68,12 +74,17 @@ export default function StudentManagementPage() {
     setError(null);
     try {
       const res = await StudentService.getAllStudents({
-        searchTerm: searchTerm || undefined,
+        searchTerm: searchTerm.trim() || undefined,
         classId: selectedClassId !== "ALL" ? selectedClassId : undefined,
       });
-      setStudents(res.data || res || []);
+
+      // Safely extract students array from standard backend response structure
+      const rawData = res?.data?.data || res?.data || res || [];
+      const studentArray = Array.isArray(rawData) ? rawData : [];
+
+      setStudents(studentArray);
     } catch (err: any) {
-      const msg = err.response?.data?.message || "Failed to fetch students";
+      const msg = err.response?.data?.message || "Failed to fetch student records";
       setError(msg);
       toast.error(msg);
     } finally {
@@ -95,8 +106,14 @@ export default function StudentManagementPage() {
       firstName: student.firstName || "",
       lastName: student.lastName || "",
       phone: student.phone || "",
+      altPhone: student.altPhone || "",
       address: student.address || "",
+      permanentAddress: student.permanentAddress || "",
       rollNo: student.rollNo || 0,
+      bloodGroup: student.bloodGroup || "",
+      religion: student.religion || "",
+      fatherName: student.fatherName || "",
+      motherName: student.motherName || "",
     });
     setIsEditing(false);
     setIsDetailsModalOpen(true);
@@ -117,8 +134,14 @@ export default function StudentManagementPage() {
         firstName: editFormData.firstName,
         lastName: editFormData.lastName,
         phone: editFormData.phone,
+        altPhone: editFormData.altPhone,
         address: editFormData.address,
+        permanentAddress: editFormData.permanentAddress,
         rollNo: Number(editFormData.rollNo),
+        bloodGroup: editFormData.bloodGroup,
+        religion: editFormData.religion,
+        fatherName: editFormData.fatherName,
+        motherName: editFormData.motherName,
       });
 
       toast.success(
@@ -189,7 +212,7 @@ export default function StudentManagementPage() {
           </h1>
           <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
             {language === "bn"
-              ? "ভর্তি হওয়া শিক্ষার্থীদের তথ্য ফিল্টার, বিস্তারিত দেখা ও পরিচালনা করুন"
+              ? "ভর্তি হওয়া শিক্ষার্থীদের তথ্য ফিল্টার, বিস্তারিত দেখা ও পরিচালনা করুন"
               : "Search, filter by class, view details and manage registered students"}
           </p>
         </div>
@@ -204,7 +227,7 @@ export default function StudentManagementPage() {
               type="text"
               placeholder={
                 language === "bn"
-                  ? "নাম, কোড, রোল বা মোবাইল দিয়ে খুঁজুন..."
+                  ? "নাম, কোড, রোল বা মোবাইল দিয়ে খুঁজুন..."
                   : "Search by name, student code, roll or phone..."
               }
               value={searchTerm}
@@ -268,69 +291,74 @@ export default function StudentManagementPage() {
                   </td>
                 </tr>
               ) : students.length > 0 ? (
-                students.map((student) => (
-                  <tr
-                    key={student.id}
-                    className="hover:bg-muted/30 transition-colors duration-150 group"
-                  >
-                    <td className="p-4 pl-6">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1">
-                          <FaIdBadge className="text-[10px]" />
-                          <span>{student.studentCode || student.studentIdNo}</span>
-                        </span>
-                        <span className="text-[10px] text-muted-foreground/90 font-semibold tracking-tight flex items-center gap-1">
-                          <FaHashtag className="text-[9px] text-primary/70" />
-                          <span>Roll: {student.rollNo}</span>
-                        </span>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-xs shrink-0 shadow-sm group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                          {student.firstName?.charAt(0) || "S"}
-                        </div>
-                        <div>
-                          <span className="font-semibold text-foreground group-hover:text-primary transition-colors block">
-                            {student.firstName} {student.lastName}
+                students.map((student) => {
+                  const fullName = `${student.firstName || ""} ${student.lastName || ""}`.trim() || "Student";
+                  return (
+                    <tr
+                      key={student.id}
+                      className="hover:bg-muted/30 transition-colors duration-150 group"
+                    >
+                      <td className="p-4 pl-6">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1">
+                            <FaIdBadge className="text-[10px]" />
+                            <span>{student.studentCode || student.studentIdNo || "N/A"}</span>
                           </span>
-                          {student.user?.email && (
-                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                              <FaEnvelope className="text-[9px]" /> {student.user.email}
+                          <span className="text-[10px] text-muted-foreground/90 font-semibold tracking-tight flex items-center gap-1">
+                            <FaHashtag className="text-[9px] text-primary/70" />
+                            <span>Roll: {student.rollNo ?? 0}</span>
+                          </span>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-xs shrink-0 shadow-sm group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                            {fullName.charAt(0)}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-foreground group-hover:text-primary transition-colors block">
+                              {fullName}
+                            </span>
+                            {student.user?.email && (
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <FaEnvelope className="text-[9px]" /> {student.user.email}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/50 border border-border/40 text-[11px] font-semibold text-foreground">
+                          <FaGraduationCap className="text-primary text-xs" />
+                          <span>{student.class?.name || "Unassigned"}</span>
+                          {student.section?.name && (
+                            <span className="text-muted-foreground font-normal">
+                              ({student.section.name})
                             </span>
                           )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/50 border border-border/40 text-[11px] font-semibold text-foreground">
-                        <FaGraduationCap className="text-primary text-xs" />
-                        <span>{student.class?.name || "N/A"}</span>
-                        <span className="text-muted-foreground font-normal">
-                          ({student.section?.name || "N/A"})
                         </span>
-                      </span>
-                    </td>
-                    <td className="p-4 text-muted-foreground font-mono">
-                      {student.phone || student.parent?.phone || "N/A"}
-                    </td>
-                    <td className="p-4 pr-6 text-right space-x-1.5">
-                      <Button
-                        onClick={() => handleOpenDetails(student)}
-                        variant="outline"
-                        className="px-3 py-1.5 h-auto text-[11px] rounded-xl border-border/70 hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all flex items-center gap-1.5 inline-flex shadow-2xs"
-                      >
-                        <FaEye className="text-primary text-xs" />
-                        <span>{language === "bn" ? "বিস্তারিত" : "Details"}</span>
-                      </Button>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="p-4 text-muted-foreground font-mono">
+                        {student.phone || student.parent?.phone || "N/A"}
+                      </td>
+                      <td className="p-4 pr-6 text-right space-x-1.5">
+                        <Button
+                          onClick={() => handleOpenDetails(student)}
+                          variant="outline"
+                          className="px-3 py-1.5 h-auto text-[11px] rounded-xl border-border/70 hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all flex items-center gap-1.5 inline-flex shadow-2xs"
+                        >
+                          <FaEye className="text-primary text-xs" />
+                          <span>{language === "bn" ? "বিস্তারিত" : "Details"}</span>
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={5} className="text-center p-12 text-muted-foreground font-medium">
                     <div className="flex flex-col items-center justify-center gap-2">
-                      <p className="text-xs">No student records found matching your criteria.</p>
+                      <p className="text-xs">No enrolled student records found.</p>
                     </div>
                   </td>
                 </tr>
@@ -343,7 +371,7 @@ export default function StudentManagementPage() {
       {/* Comprehensive Student Details Modal */}
       {isDetailsModalOpen && selectedStudent && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-all animate-in fade-in duration-200">
-          <Card className="max-w-xl w-full bg-card/95 border-border/80 shadow-2xl rounded-2xl overflow-hidden my-8 backdrop-blur-xl">
+          <Card className="max-w-2xl w-full bg-card/95 border-border/80 shadow-2xl rounded-2xl overflow-hidden my-8 backdrop-blur-xl">
             <div className="p-5 border-b border-border/60 flex items-center justify-between bg-muted/40">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
@@ -361,7 +389,8 @@ export default function StudentManagementPage() {
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+              {/* Header Info */}
               <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 shadow-xs">
                 <div className="w-16 h-16 rounded-2xl bg-primary/20 text-primary border border-primary/30 flex items-center justify-center font-bold text-2xl shrink-0 shadow-inner overflow-hidden">
                   {selectedStudent.photoUrl ? (
@@ -371,7 +400,7 @@ export default function StudentManagementPage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    selectedStudent.firstName?.charAt(0) || "S"
+                    (selectedStudent.firstName || "S").charAt(0)
                   )}
                 </div>
                 <div className="space-y-1">
@@ -383,19 +412,19 @@ export default function StudentManagementPage() {
                   </p>
                   <p className="text-[11px] text-primary font-semibold flex items-center gap-1.5 pt-0.5">
                     <span className="px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20">
-                      {selectedStudent.class?.name}
+                      {selectedStudent.class?.name || "N/A"}
                     </span>
                     <span>•</span>
-                    <span>Section: {selectedStudent.section?.name}</span>
+                    <span>Section: {selectedStudent.section?.name || "N/A"}</span>
                     <span>•</span>
-                    <span>Roll: {selectedStudent.rollNo}</span>
+                    <span>Roll: {selectedStudent.rollNo ?? 0}</span>
                   </p>
                 </div>
               </div>
 
               {!isEditing ? (
                 <div className="space-y-4">
-                  {/* Student Login Credentials Card */}
+                  {/* Student Access Credentials Card */}
                   <div className="p-3.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 space-y-1">
                     <p className="text-[10px] text-emerald-900 dark:text-emerald-300 uppercase tracking-wider font-bold flex items-center gap-1.5">
                       <FaKey className="text-xs" /> Access & Credentials
@@ -406,63 +435,120 @@ export default function StudentManagementPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="p-3.5 rounded-xl bg-muted/30 border border-border/50 transition-colors hover:border-border">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5 mb-1.5">
-                        <FaUser className="text-xs text-primary" /> Gender & DOB
-                      </p>
-                      <p className="text-xs font-semibold text-foreground">
-                        {selectedStudent.gender || "N/A"} |{" "}
-                        {selectedStudent.dob
-                          ? new Date(selectedStudent.dob).toLocaleDateString()
-                          : "N/A"}
-                      </p>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-muted/30 border border-border/50 transition-colors hover:border-border">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5 mb-1.5">
-                        <FaPhone className="text-xs text-primary" /> Phone Number
-                      </p>
-                      <p className="text-xs font-semibold text-foreground font-mono">
-                        {selectedStudent.phone || "No phone provided"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-muted/30 border border-border/50 transition-colors hover:border-border">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5 mb-1.5">
-                      <FaMapMarkerAlt className="text-xs text-primary" /> Residential Address
-                    </p>
-                    <p className="text-xs font-semibold text-foreground leading-relaxed">
-                      {selectedStudent.address || "No address on record"}
-                    </p>
-                  </div>
-
-                  {/* Parents Info */}
+                  {/* Personal & Identification Info */}
                   <div className="p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-2.5">
-                    <h5 className="text-xs font-bold text-foreground border-b border-border/40 pb-2">
-                      Parents Information
+                    <h5 className="text-xs font-bold text-foreground border-b border-border/40 pb-2 flex items-center gap-1.5">
+                      <FaUser className="text-primary" /> Personal Information
                     </h5>
-                    <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                       <div>
-                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
-                          Father Name
-                        </span>
+                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Gender</span>
+                        <span className="font-semibold text-foreground">{selectedStudent.gender || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Date of Birth</span>
                         <span className="font-semibold text-foreground">
-                          {selectedStudent.fatherName || selectedStudent.parent?.fatherName || "N/A"}
+                          {selectedStudent.dob ? new Date(selectedStudent.dob).toLocaleDateString() : "N/A"}
                         </span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
-                          Mother Name
+                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Blood Group</span>
+                        <span className="font-semibold text-foreground flex items-center gap-1">
+                          <FaTint className="text-rose-500 text-[10px]" /> {selectedStudent.bloodGroup || "N/A"}
                         </span>
-                        <span className="font-semibold text-foreground">
-                          {selectedStudent.motherName || selectedStudent.parent?.motherName || "N/A"}
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Religion</span>
+                        <span className="font-semibold text-foreground">{selectedStudent.religion || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Nationality</span>
+                        <span className="font-semibold text-foreground flex items-center gap-1">
+                          <FaGlobe className="text-primary text-[10px]" /> {selectedStudent.nationality || "Bangladeshi"}
                         </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Birth Reg No</span>
+                        <span className="font-semibold font-mono text-foreground">{selectedStudent.birthRegNo || "N/A"}</span>
                       </div>
                     </div>
                   </div>
 
+                  {/* Contact & Address Details */}
+                  <div className="p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-2.5">
+                    <h5 className="text-xs font-bold text-foreground border-b border-border/40 pb-2 flex items-center gap-1.5">
+                      <FaMapMarkerAlt className="text-primary" /> Contact & Address
+                    </h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold flex items-center gap-1">
+                          <FaPhone className="text-primary text-[9px]" /> Main Phone
+                        </span>
+                        <span className="font-semibold text-foreground font-mono">{selectedStudent.phone || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold flex items-center gap-1">
+                          <FaPhone className="text-primary text-[9px]" /> Alt Phone
+                        </span>
+                        <span className="font-semibold text-foreground font-mono">{selectedStudent.altPhone || "N/A"}</span>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Present Address</span>
+                        <span className="font-semibold text-foreground">{selectedStudent.address || "N/A"}</span>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Permanent Address</span>
+                        <span className="font-semibold text-foreground">{selectedStudent.permanentAddress || "N/A"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Parents Information */}
+                  <div className="p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-2.5">
+                    <h5 className="text-xs font-bold text-foreground border-b border-border/40 pb-2 flex items-center gap-1.5">
+                      <FaIdCard className="text-primary" /> Parents Information
+                    </h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div className="p-2.5 rounded-lg bg-muted/30 border border-border/40 space-y-1">
+                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Father Details</span>
+                        <p className="font-semibold text-foreground">{selectedStudent.fatherName || selectedStudent.parent?.fatherName || "N/A"}</p>
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                          <FaBriefcase className="text-[9px]" /> {selectedStudent.fatherOccupation || "N/A"}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground font-mono">NID: {selectedStudent.fatherNid || "N/A"}</p>
+                      </div>
+
+                      <div className="p-2.5 rounded-lg bg-muted/30 border border-border/40 space-y-1">
+                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Mother Details</span>
+                        <p className="font-semibold text-foreground">{selectedStudent.motherName || selectedStudent.parent?.motherName || "N/A"}</p>
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                          <FaBriefcase className="text-[9px]" /> {selectedStudent.motherOccupation || "N/A"}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground font-mono">NID: {selectedStudent.motherNid || "N/A"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional / Passport Details */}
+                  {(selectedStudent.passportNo || selectedStudent.prevInstituteName) && (
+                    <div className="p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-2.5">
+                      <h5 className="text-xs font-bold text-foreground border-b border-border/40 pb-2 flex items-center gap-1.5">
+                        <FaPassport className="text-primary" /> Additional Details
+                      </h5>
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Passport No</span>
+                          <span className="font-semibold text-foreground font-mono">{selectedStudent.passportNo || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Previous Institute</span>
+                          <span className="font-semibold text-foreground">{selectedStudent.prevInstituteName || "N/A"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
                   <div className="flex items-center justify-between pt-4 border-t border-border/60">
                     <Button
                       onClick={handlePromptDelete}
@@ -486,9 +572,7 @@ export default function StudentManagementPage() {
                 <form onSubmit={handleUpdateStudent} className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="block text-xs font-semibold text-foreground">
-                        First Name
-                      </label>
+                      <label className="block text-xs font-semibold text-foreground">First Name</label>
                       <input
                         type="text"
                         required
@@ -498,12 +582,9 @@ export default function StudentManagementPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-xs font-semibold text-foreground">
-                        Last Name
-                      </label>
+                      <label className="block text-xs font-semibold text-foreground">Last Name</label>
                       <input
                         type="text"
-                        required
                         value={editFormData.lastName}
                         onChange={(e) => setEditFormData({ ...editFormData, lastName: e.target.value })}
                         className="w-full p-2.5 text-xs rounded-xl border border-border/80 bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
@@ -513,9 +594,7 @@ export default function StudentManagementPage() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="block text-xs font-semibold text-foreground">
-                        Roll Number
-                      </label>
+                      <label className="block text-xs font-semibold text-foreground">Roll Number</label>
                       <input
                         type="number"
                         required
@@ -525,9 +604,19 @@ export default function StudentManagementPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-xs font-semibold text-foreground">
-                        Phone Number
-                      </label>
+                      <label className="block text-xs font-semibold text-foreground">Blood Group</label>
+                      <input
+                        type="text"
+                        value={editFormData.bloodGroup}
+                        onChange={(e) => setEditFormData({ ...editFormData, bloodGroup: e.target.value })}
+                        className="w-full p-2.5 text-xs rounded-xl border border-border/80 bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-semibold text-foreground">Phone Number</label>
                       <input
                         type="text"
                         value={editFormData.phone}
@@ -535,12 +624,40 @@ export default function StudentManagementPage() {
                         className="w-full p-2.5 text-xs rounded-xl border border-border/80 bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
                       />
                     </div>
+                    <div className="space-y-1">
+                      <label className="block text-xs font-semibold text-foreground">Alt Phone Number</label>
+                      <input
+                        type="text"
+                        value={editFormData.altPhone}
+                        onChange={(e) => setEditFormData({ ...editFormData, altPhone: e.target.value })}
+                        className="w-full p-2.5 text-xs rounded-xl border border-border/80 bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-semibold text-foreground">Father Name</label>
+                      <input
+                        type="text"
+                        value={editFormData.fatherName}
+                        onChange={(e) => setEditFormData({ ...editFormData, fatherName: e.target.value })}
+                        className="w-full p-2.5 text-xs rounded-xl border border-border/80 bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-xs font-semibold text-foreground">Mother Name</label>
+                      <input
+                        type="text"
+                        value={editFormData.motherName}
+                        onChange={(e) => setEditFormData({ ...editFormData, motherName: e.target.value })}
+                        className="w-full p-2.5 text-xs rounded-xl border border-border/80 bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-xs font-semibold text-foreground">
-                      Address
-                    </label>
+                    <label className="block text-xs font-semibold text-foreground">Present Address</label>
                     <textarea
                       rows={2}
                       value={editFormData.address}
@@ -588,8 +705,8 @@ export default function StudentManagementPage() {
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {language === "bn"
-                  ? `${selectedStudent.firstName} ${selectedStudent.lastName} এর প্রোফাইল চিরতরে মুছে যাবে।`
-                  : `This action will permanently delete ${selectedStudent.firstName} ${selectedStudent.lastName}'s student account and profile.`}
+                  ? `${selectedStudent.firstName || ""} ${selectedStudent.lastName || ""} এর প্রোফাইল চিরতরে মুছে যাবে।`
+                  : `This action will permanently delete ${selectedStudent.firstName || ""} ${selectedStudent.lastName || ""}'s student account.`}
               </p>
             </div>
 
