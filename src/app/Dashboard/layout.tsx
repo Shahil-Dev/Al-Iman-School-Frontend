@@ -277,7 +277,7 @@ export default function DashboardLayout({
         },
         {
           label: isBn ? "শিক্ষার্থী উপস্থিতি" : "Take Attendance",
-          href: "/Dashboard/attendance/take",
+          href: "/Dashboard/attendance",
           icon: FaCalendarCheck,
         },
         {
