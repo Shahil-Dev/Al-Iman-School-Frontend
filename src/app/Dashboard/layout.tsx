@@ -138,11 +138,6 @@ export default function DashboardLayout({
               href: "/Dashboard/students",
               icon: FaGraduationCap,
             },
-            {
-              label: isBn ? "নতুন শিক্ষার্থী যোগ" : "Create Student",
-              href: "/Dashboard/students/create",
-              icon: FaUserPlus,
-            },
           ],
         },
         {
