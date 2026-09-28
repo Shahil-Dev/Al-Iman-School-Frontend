@@ -231,13 +231,7 @@ export default function AdminOverviewPage() {
               <span>{isBn ? "অনলাইন আবেদন যাচাই" : "Approve Admissions"}</span>
             </Link>
 
-            <Link
-              href="/Dashboard/students/create"
-              className="px-4 py-2.5 bg-muted text-foreground text-xs font-semibold rounded-xl hover:bg-muted/80 transition-all flex items-center gap-2 border border-border/50"
-            >
-              <FaPlus className="text-xs text-primary" />
-              <span>{isBn ? "নতুন শিক্ষার্থী ভর্তি" : "Add New Student"}</span>
-            </Link>
+          
 
             <Link
               href="/Dashboard/payments/create-invoice"
