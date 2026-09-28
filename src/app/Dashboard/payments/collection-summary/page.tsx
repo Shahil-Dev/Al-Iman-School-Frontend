@@ -16,14 +16,12 @@ export default function CollectionSummaryPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch all invoices (which include payment transactions)
     axiosInstance
       .get("/payments")
       .then((res) => {
         const invoiceData = res.data?.data || [];
         setInvoices(invoiceData);
 
-        // Extract all paid transactions from all invoices
         const allTransactions: any[] = [];
         let totalSum = 0;
 
@@ -39,9 +37,6 @@ export default function CollectionSummaryPage() {
               });
               totalSum += tx.amount || 0;
             });
-          } else if (inv.paidAmount > 0) {
-            // Fallback for direct paid invoices
-            totalSum += inv.paidAmount;
           }
         });
 
