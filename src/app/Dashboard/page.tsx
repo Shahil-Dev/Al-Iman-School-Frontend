@@ -21,7 +21,7 @@ export default function DashboardEntryPage() {
         router.replace("/Dashboard/accounts");
         break;
       case "TEACHER":
-        router.replace("/Dashboard/teacher");
+        router.replace("/Dashboard/TeacherDashboard");
         break;
       case "STUDENT":
       case "PARENT":

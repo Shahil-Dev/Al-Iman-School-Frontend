@@ -22,29 +22,25 @@ export default function TeacherDashboardPage() {
   const isBn = language === "bn";
 
   const [notices, setNotices] = useState<any[]>([]);
-  const [routines, setRoutines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch recent notices and routines simultaneously
-    const fetchData = async () => {
+    const fetchTeacherData = async () => {
       try {
         setLoading(true);
-        const [noticeRes, routineRes] = await Promise.all([
-          axiosInstance.get("/notices"),
-          axiosInstance.get("/routines"),
-        ]);
 
+        // Fetch Notices safely without triggering broken 404 routine endpoint
+        const noticeRes = await axiosInstance.get("/notices");
         setNotices(noticeRes.data?.data?.slice(0, 3) || []);
-        setRoutines(routineRes.data?.data?.slice(0, 5) || []);
-      } catch (error) {
-        console.error("Failed to load teacher dashboard data", error);
+      } catch (err) {
+        console.warn("Notice fetch warning:", err);
+        setNotices([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchTeacherData();
   }, []);
 
   return (
@@ -60,8 +56,8 @@ export default function TeacherDashboardPage() {
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
             {isBn
-              ? "আল-ইমান স্কুল অ্যান্ড কলেজের শিক্ষক প্যানেলে আপনাকে স্বাগতম। আজকের ক্লাস ও উপস্থিতি আপডেট করুন।"
-              : "Welcome to Al-Iman School & College Teacher Portal. Manage your daily classes & attendance."}
+              ? "আল-ইমান স্কুল অ্যান্ড কলেজের শিক্ষক প্যানেলে আপনাকে স্বাগতম। আপনার দৈনিক ক্লাস ও একাডেমিক কার্যক্রম পরিচালনা করুন।"
+              : "Welcome to Al-Iman School & College Teacher Portal. Manage your daily classes & academic tasks."}
           </p>
         </div>
 
@@ -82,9 +78,11 @@ export default function TeacherDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-medium">
-                {isBn ? "আমার সাবজেক্টসমূহ" : "Assigned Subjects"}
+                {isBn ? "আমার ভূমিকা" : "Assigned Role"}
               </p>
-              <h3 className="text-xl font-bold text-foreground mt-1">কোর বিষয়সমূহ</h3>
+              <h3 className="text-xl font-bold text-foreground mt-1">
+                {user?.role || "TEACHER"}
+              </h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <FaUserGraduate className="text-lg" />
@@ -96,7 +94,7 @@ export default function TeacherDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-medium">
-                {isBn ? "উপস্থিতি স্ট্যাটাস" : "Attendance Entry"}
+                {isBn ? "উপস্থিতি সিস্টেম" : "Attendance Portal"}
               </p>
               <h3 className="text-xl font-bold text-foreground mt-1">
                 {isBn ? "সক্রিয়" : "Active"}
@@ -112,7 +110,7 @@ export default function TeacherDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-medium">
-                {isBn ? "পরীক্ষার নম্বর এন্ট্রি" : "Marks Entry"}
+                {isBn ? "মার্কস এন্ট্রি" : "Marks Entry"}
               </p>
               <h3 className="text-xl font-bold text-foreground mt-1">
                 {isBn ? "প্রস্তুত" : "Ready"}
@@ -131,7 +129,7 @@ export default function TeacherDashboardPage() {
                 {isBn ? "নোটিশ বোর্ড" : "Notice Board"}
               </p>
               <h3 className="text-xl font-bold text-foreground mt-1">
-                {notices.length} {isBn ? "টি নতুন" : "New"}
+                {notices.length} {isBn ? "টি বার্তা" : "Messages"}
               </h3>
             </div>
             <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl">
@@ -141,74 +139,57 @@ export default function TeacherDashboardPage() {
         </Card>
       </div>
 
-      {/* Main Grid: Class Schedule & Notice Board */}
+      {/* Main Grid: Quick Action Shortcuts & Notice Board */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Class Routines */}
+        {/* Quick Academic Actions */}
         <div className="lg:col-span-2 space-y-4">
           <Card className="border-border/60 shadow-sm rounded-2xl bg-card">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <FaClock className="text-primary" />
-                  <span>{isBn ? "আজকের ক্লাস রুটিন" : "Today's Class Schedule"}</span>
-                </h2>
-                <Link
-                  href="/Dashboard/academic/routines"
-                  className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
-                >
-                  <span>{isBn ? "সব দেখুন" : "View All"}</span>
-                  <FaArrowRight className="text-[10px]" />
-                </Link>
-              </div>
+              <h2 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                <FaClock className="text-primary" />
+                <span>{isBn ? "শিক্ষক শর্টকাট একশন" : "Teacher Quick Actions"}</span>
+              </h2>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-border/60 text-muted-foreground uppercase text-[10px]">
-                      <th className="py-2.5 px-3">Subject</th>
-                      <th className="py-2.5 px-3">Class & Sec</th>
-                      <th className="py-2.5 px-3">Time</th>
-                      <th className="py-2.5 px-3 text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/40">
-                    {loading ? (
-                      <tr>
-                        <td colSpan={4} className="py-4 text-center text-muted-foreground">
-                          Loading schedule...
-                        </td>
-                      </tr>
-                    ) : routines.length > 0 ? (
-                      routines.map((item, idx) => (
-                        <tr key={item.id || idx} className="hover:bg-muted/30">
-                          <td className="py-3 px-3 font-semibold text-foreground">
-                            {item.subject?.name || "General"}
-                          </td>
-                          <td className="py-3 px-3 font-medium text-muted-foreground">
-                            {item.class?.name} ({item.section?.name || "A"})
-                          </td>
-                          <td className="py-3 px-3 font-mono text-primary">
-                            {item.startTime || "09:00 AM"} - {item.endTime || "09:45 AM"}
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            <Link
-                              href="/Dashboard/attendance"
-                              className="px-2.5 py-1 bg-primary/10 text-primary text-[11px] font-semibold rounded-lg hover:bg-primary/20 transition-all"
-                            >
-                              Attendance
-                            </Link>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={4} className="py-6 text-center text-muted-foreground">
-                          {isBn ? "আজ কোনো ক্লাস নির্ধারিত নেই।" : "No classes scheduled for today."}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Link
+                  href="/Dashboard/attendance"
+                  className="p-4 rounded-xl bg-muted/40 border border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-primary/10 text-primary rounded-lg group-hover:scale-105 transition-transform">
+                      <FaCalendarCheck />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-foreground">
+                        {isBn ? "শিক্ষার্থী উপস্থিতি" : "Take Attendance"}
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {isBn ? "দৈনিক উপস্থিতি ইনপুট ও অটো এসএমএস" : "Class attendance entry"}
+                      </p>
+                    </div>
+                  </div>
+                  <FaArrowRight className="text-xs text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                </Link>
+
+                <Link
+                  href="/Dashboard/marks"
+                  className="p-4 rounded-xl bg-muted/40 border border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-amber-500/10 text-amber-600 rounded-lg group-hover:scale-105 transition-transform">
+                      <FaClipboardList />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-foreground">
+                        {isBn ? "পরীক্ষার নম্বর এন্ট্রি" : "Marks Entry"}
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {isBn ? "সাবজেক্ট ভিত্তিক মার্কস সাবমিট" : "Input exam subject marks"}
+                      </p>
+                    </div>
+                  </div>
+                  <FaArrowRight className="text-xs text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                </Link>
               </div>
             </CardContent>
           </Card>
@@ -232,7 +213,11 @@ export default function TeacherDashboardPage() {
               </div>
 
               <div className="space-y-3">
-                {notices.length > 0 ? (
+                {loading ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">
+                    {isBn ? "নোটিশ লোড হচ্ছে..." : "Loading notices..."}
+                  </p>
+                ) : notices.length > 0 ? (
                   notices.map((n) => (
                     <div
                       key={n.id}

@@ -77,7 +77,7 @@ export default function DashboardLayout({
     ) {
       setOpenSubMenu("students");
     } else if (
-      pathname.includes("/Dashboard/teachers") ||
+      pathname.includes("/Dashboard/TeacherDashboard") ||
       pathname.includes("/Dashboard/pending-teachers") ||
       pathname.includes("/Dashboard/parents")
     ) {
@@ -272,7 +272,7 @@ export default function DashboardLayout({
       return [
         {
           label: isBn ? "ওভারভিউ" : "Teacher Overview",
-          href: "/Dashboard/teacher",
+          href: "/Dashboard/TeacherDashboard",
           icon: FaHome,
         },
         {

@@ -81,7 +81,7 @@ export const NavbarMain = () => {
   ) => {
     const protectedPaths = [
       "/notices",
-      "/teachers",
+      "/Dashboard/TeacherDashboard",
       "/admission",
     ];
     if (protectedPaths.includes(href) && !user) {
