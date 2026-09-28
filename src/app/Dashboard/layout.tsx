@@ -226,7 +226,7 @@ export default function DashboardLayout({
             },
             {
               label: isBn ? "ফি কালেকশন" : "Collect Payments",
-              href: "/Dashboard/payments/collect",
+              href: "/Dashboard/payments/collection-summary",
               icon: FaMoneyCheckAlt,
             },
             {
@@ -313,7 +313,7 @@ export default function DashboardLayout({
         },
         {
           label: isBn ? "ফি কালেকশন" : "Fee Collections",
-          href: "/Dashboard/payments/collect",
+          href: "/Dashboard/payments/collection-summary",
           icon: FaFileInvoiceDollar,
         },
         {
