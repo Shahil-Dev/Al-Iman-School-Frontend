@@ -16,6 +16,17 @@ export interface ICreateSectionPayload {
   classId: string; // Reference to Class ID
 }
 
+export interface ICreateRoutineSlotPayload {
+  day: string; // e.g., "SUNDAY"
+  startTime: string; // e.g., "09:00 AM"
+  endTime: string; // e.g., "09:45 AM"
+  classId: string; // Reference to Class ID
+  sectionId: string; // Reference to Section ID
+  subjectId: string; // Reference to Subject ID
+  teacherId?: string; // Optional reference to Teacher ID
+  roomNo?: string; // e.g., "101"
+}
+
 // --- Academic Year API Calls ---
 export const createAcademicYear = async (payload: ICreateAcademicYearPayload) => {
   const response = await axiosInstance.post("/academic/create-year", payload);
@@ -49,6 +60,17 @@ export const getAllSections = async () => {
   return response.data;
 };
 
+// --- Routine API Calls ---
+export const createRoutineSlot = async (payload: ICreateRoutineSlotPayload) => {
+  const response = await axiosInstance.post("/routines/create-slot", payload);
+  return response.data;
+};
+
+export const getClassRoutine = async (classId: string, sectionId: string) => {
+  const response = await axiosInstance.get(`/routines/${classId}/${sectionId}`);
+  return response.data;
+};
+
 export const academicService = {
   createAcademicYear,
   getAllAcademicYears,
@@ -56,6 +78,8 @@ export const academicService = {
   getAllClasses,
   createSection,
   getAllSections,
+  createRoutineSlot,
+  getClassRoutine,
 };
 
 export default academicService;

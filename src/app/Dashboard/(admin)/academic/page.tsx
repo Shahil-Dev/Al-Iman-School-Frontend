@@ -8,7 +8,7 @@ import {
   FaLayerGroup,
   FaSpinner,
   FaClock,
-  FaBook,
+  FaSearch,
 } from "react-icons/fa";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
@@ -22,6 +22,13 @@ export default function AcademicManagementPage() {
   const [sections, setSections] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Routine View State
+  const [viewClassId, setViewClassId] = useState("");
+  const [viewSectionId, setViewSectionId] = useState("");
+  const [viewSections, setViewSections] = useState<any[]>([]);
+  const [routines, setRoutines] = useState<any[]>([]);
+  const [loadingRoutines, setLoadingRoutines] = useState(false);
 
   // Form States
   const [yearForm, setYearForm] = useState({ year: new Date().getFullYear() });
@@ -75,6 +82,9 @@ export default function AcademicManagementPage() {
         if (!routineForm.classId) {
           setRoutineForm((prev) => ({ ...prev, classId: loadedClasses[0].id }));
         }
+        if (!viewClassId) {
+          setViewClassId(loadedClasses[0].id);
+        }
       }
     } catch (err) {
       toast.error("Failed to load academic setup data!");
@@ -104,6 +114,46 @@ export default function AcademicManagementPage() {
       })
       .catch(() => setSections([]));
   }, [routineForm.classId]);
+
+  // Load Sections for View Routine Section Filter
+  useEffect(() => {
+    if (!viewClassId) {
+      setViewSections([]);
+      setViewSectionId("");
+      return;
+    }
+    axiosInstance
+      .get(`/academic/sections?classId=${viewClassId}`)
+      .then((res) => {
+        const secList = res.data?.data || [];
+        setViewSections(secList);
+        if (secList.length > 0) {
+          setViewSectionId(secList[0].id);
+        }
+      })
+      .catch(() => setViewSections([]));
+  }, [viewClassId]);
+
+  // Fetch Class Routine List
+  const fetchRoutines = async () => {
+    if (!viewClassId || !viewSectionId) return;
+    setLoadingRoutines(true);
+    try {
+      const res = await academicService.getClassRoutine(viewClassId, viewSectionId);
+      setRoutines(res?.data || []);
+    } catch (err) {
+      console.warn("No routine found or endpoint error", err);
+      setRoutines([]);
+    } finally {
+      setLoadingRoutines(false);
+    }
+  };
+
+  useEffect(() => {
+    if (viewClassId && viewSectionId) {
+      fetchRoutines();
+    }
+  }, [viewClassId, viewSectionId]);
 
   // Submit Academic Year
   const handleCreateYear = async (e: React.FormEvent) => {
@@ -162,7 +212,7 @@ export default function AcademicManagementPage() {
     }
   };
 
-  // Submit Class Routine Slot
+  // Submit Class Routine Slot via academicService
   const handleCreateRoutineSlot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!routineForm.classId || !routineForm.sectionId || !routineForm.subjectId) {
@@ -171,8 +221,11 @@ export default function AcademicManagementPage() {
     }
     setSubmittingRoutine(true);
     try {
-      await axiosInstance.post("/routines/create-slot", routineForm);
+      const { roomNo, ...payload } = routineForm;
+
+      await academicService.createRoutineSlot(payload);
       toast.success("Class Routine Slot created successfully!");
+      fetchRoutines();
     } catch (err: any) {
       toast.error(
         err?.response?.data?.message || "Failed to create routine slot",
@@ -486,7 +539,103 @@ export default function AcademicManagementPage() {
         </CardContent>
       </Card>
 
-      {/* Class & Section List Preview Table */}
+      {/* 5. Routines List Table */}
+      <Card className="border-border shadow-sm rounded-2xl overflow-hidden">
+        <CardContent className="p-6 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-3">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <FaClock className="text-emerald-600" />
+              <span>Created Class Routines</span>
+            </h3>
+
+            {/* Filter controls */}
+            <div className="flex items-center gap-2">
+              <select
+                value={viewClassId}
+                onChange={(e) => setViewClassId(e.target.value)}
+                className="p-2 rounded-xl border border-input bg-background text-xs font-semibold"
+              >
+                <option value="">Select Class</option>
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={viewSectionId}
+                onChange={(e) => setViewSectionId(e.target.value)}
+                className="p-2 rounded-xl border border-input bg-background text-xs font-semibold"
+              >
+                <option value="">Select Section</option>
+                {viewSections.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+
+              <Button
+                type="button"
+                onClick={fetchRoutines}
+                disabled={loadingRoutines || !viewClassId || !viewSectionId}
+                className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs px-3 py-2 rounded-xl"
+              >
+                {loadingRoutines ? <FaSpinner className="animate-spin" /> : <FaSearch />} Filter
+              </Button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground uppercase text-[10px]">
+                  <th className="py-2.5 px-3">Day</th>
+                  <th className="py-2.5 px-3">Time Slot</th>
+                  <th className="py-2.5 px-3">Subject</th>
+                  <th className="py-2.5 px-3">Subject Code</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                {loadingRoutines ? (
+                  <tr>
+                    <td colSpan={4} className="py-6 text-center text-muted-foreground">
+                      <FaSpinner className="animate-spin inline mr-2 text-emerald-600" />
+                      Loading class routines...
+                    </td>
+                  </tr>
+                ) : routines.length > 0 ? (
+                  routines.map((item, idx) => (
+                    <tr key={item.id || idx} className="hover:bg-muted/30">
+                      <td className="py-3 px-3 font-bold text-foreground uppercase">
+                        {item.day}
+                      </td>
+                      <td className="py-3 px-3 font-mono text-emerald-700 font-semibold">
+                        {item.startTime} - {item.endTime}
+                      </td>
+                      <td className="py-3 px-3 font-semibold text-foreground">
+                        {item.subject?.name || "N/A"}
+                      </td>
+                      <td className="py-3 px-3 font-mono text-muted-foreground">
+                        {item.subject?.code || "N/A"}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="py-6 text-center text-muted-foreground">
+                      No routine slots found for selected class and section.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 6. Class & Section List Preview Table */}
       <Card className="border-border shadow-sm rounded-2xl overflow-hidden">
         <CardContent className="p-6 space-y-4">
           <h3 className="text-sm font-bold text-foreground border-b pb-2">
