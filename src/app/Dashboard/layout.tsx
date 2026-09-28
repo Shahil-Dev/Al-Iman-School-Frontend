@@ -116,7 +116,7 @@ export default function DashboardLayout({
     const role = user?.role || "SUPER_ADMIN";
 
     // 🔴 1. SUPER_ADMIN & ADMIN
-    if (role === "SUPER_ADMIN" ) {
+    if (role === "SUPER_ADMIN") {
       return [
         {
           label: isBn ? "ওভারভিউ ও অ্যানালিটিক্স" : "Overview & Analytics",
@@ -156,7 +156,9 @@ export default function DashboardLayout({
               icon: FaUsers,
             },
             {
-              label: isBn ? "পেন্ডিং শিক্ষক আবেদন" : "Pending Teacher Approvals",
+              label: isBn
+                ? "পেন্ডিং শিক্ষক আবেদন"
+                : "Pending Teacher Approvals",
               href: "/Dashboard/pending-teachers",
               icon: FaUserClock,
             },
@@ -213,10 +215,9 @@ export default function DashboardLayout({
         },
         {
           key: "academic",
-          href:"/Dashboard/academic",
+          href: "/Dashboard/academic",
           label: isBn ? "একাডেমিক সেটআপ" : "Academic Infrastructure",
           icon: FaUniversity,
-         
         },
         {
           key: "accounts",
@@ -252,7 +253,7 @@ export default function DashboardLayout({
           subItems: [
             {
               label: isBn ? "আইডি কার্ড ও প্রশংসা" : "ID Card & Testimonials",
-              href: "/Dashboard/documents/id-card",
+              href: "/Dashboard/documents",
               icon: FaIdCard,
             },
             {
@@ -260,27 +261,16 @@ export default function DashboardLayout({
               href: "/Dashboard/notices",
               icon: FaBell,
             },
-            {
-              label: isBn ? "এসএমএস / ইমেইল অ্যালার্ট" : "SMS & Email Alerts",
-              href: "/Dashboard/notifications",
-              icon: FaSms,
-            },
+
             {
               label: isBn ? "অভিভাবক রিভিউ" : "Public Reviews",
-              href: "/Dashboard/reviews",
+              href: "/Dashboard/reviews/approval",
               icon: FaComments,
             },
           ],
         },
       ];
     }
-
-
-
-
-
-
-
 
     // 🟢 2. TEACHER
     if (role === "TEACHER") {
@@ -464,7 +454,8 @@ export default function DashboardLayout({
                 <FaUserShield className="text-[13px]" />
               </span>
               <span>
-                Al-Iman <span className="text-muted-foreground font-normal">ERP</span>
+                Al-Iman{" "}
+                <span className="text-muted-foreground font-normal">ERP</span>
               </span>
             </Link>
             <button
@@ -477,7 +468,10 @@ export default function DashboardLayout({
           </div>
 
           {/* Navigation Menu */}
-          <nav aria-label="Primary" className="p-3 overflow-y-auto max-h-[calc(100vh-140px)]">
+          <nav
+            aria-label="Primary"
+            className="p-3 overflow-y-auto max-h-[calc(100vh-140px)]"
+          >
             <p className="px-3 pt-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
               {isBn ? "ন্যাভিগেশন মেনু" : "Navigation"}
             </p>
@@ -489,7 +483,7 @@ export default function DashboardLayout({
                 const isExpanded = openSubMenu === item.key;
                 const isActive = item.href ? pathname === item.href : false;
                 const isChildActive = item.subItems?.some(
-                  (sub) => pathname === sub.href
+                  (sub) => pathname === sub.href,
                 );
 
                 if (isSubMenu) {
@@ -546,7 +540,9 @@ export default function DashboardLayout({
                                     }`}
                                   >
                                     <SubIcon className="text-[11px] shrink-0" />
-                                    <span className="truncate">{sub.label}</span>
+                                    <span className="truncate">
+                                      {sub.label}
+                                    </span>
                                   </Link>
                                 </li>
                               );
@@ -622,7 +618,6 @@ export default function DashboardLayout({
             </ul>
           </nav>
         </div>
-      
 
         {/* User Profile Footer + Logout */}
         <div className="p-3 border-t border-border space-y-2">
@@ -672,7 +667,6 @@ export default function DashboardLayout({
             </div>
 
             {/* Language & Theme Controls */}
-            
           </div>
         </header>
 
