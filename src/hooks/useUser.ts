@@ -11,7 +11,6 @@ export function useUser() {
     async function fetchUserProfile() {
       const token = Cookies.get("accessToken");
 
-      // ১. টোকেন না থাকলে এপিআই কল করারই দরকার নেই (লুপ ঠেকাবে)
       if (!token || token === "undefined" || token === "null") {
         setUser(null);
         setLoading(false);
