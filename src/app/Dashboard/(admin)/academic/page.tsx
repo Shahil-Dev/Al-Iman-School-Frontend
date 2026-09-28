@@ -7,17 +7,20 @@ import {
   FaCalendarAlt,
   FaLayerGroup,
   FaSpinner,
-  FaExclamationTriangle,
-  FaCheck,
+  FaClock,
+  FaBook,
 } from "react-icons/fa";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { academicService } from "@/src/Services/academicService";
+import axiosInstance from "@/src/lib/axiosInstance";
 import { toast } from "sonner";
 
 export default function AcademicManagementPage() {
   const [academicYears, setAcademicYears] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
+  const [sections, setSections] = useState<any[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Form States
@@ -25,24 +28,39 @@ export default function AcademicManagementPage() {
   const [classForm, setClassForm] = useState({ name: "", academicYearId: "" });
   const [sectionForm, setSectionForm] = useState({ name: "", classId: "" });
 
+  // Routine Form State
+  const [routineForm, setRoutineForm] = useState({
+    day: "SUNDAY",
+    startTime: "09:00 AM",
+    endTime: "09:45 AM",
+    classId: "",
+    sectionId: "",
+    subjectId: "",
+    roomNo: "101",
+  });
+
   const [submittingYear, setSubmittingYear] = useState(false);
   const [submittingClass, setSubmittingClass] = useState(false);
   const [submittingSection, setSubmittingSection] = useState(false);
+  const [submittingRoutine, setSubmittingRoutine] = useState(false);
 
-  // Load All Data
+  // Load All Initial Data
   const loadData = async () => {
     setLoading(true);
     try {
-      const [yearRes, classRes] = await Promise.all([
+      const [yearRes, classRes, subjectRes] = await Promise.all([
         academicService.getAllAcademicYears().catch(() => ({ data: [] })),
         academicService.getAllClasses().catch(() => ({ data: [] })),
+        axiosInstance.get("/subjects").catch(() => ({ data: { data: [] } })),
       ]);
 
       const loadedYears = yearRes?.data || yearRes || [];
       const loadedClasses = classRes?.data || classRes || [];
+      const loadedSubjects = subjectRes?.data?.data || [];
 
       setAcademicYears(loadedYears);
       setClasses(loadedClasses);
+      setSubjects(loadedSubjects);
 
       if (loadedYears.length > 0 && !classForm.academicYearId) {
         setClassForm((prev) => ({
@@ -50,8 +68,13 @@ export default function AcademicManagementPage() {
           academicYearId: loadedYears[0].id,
         }));
       }
-      if (loadedClasses.length > 0 && !sectionForm.classId) {
-        setSectionForm((prev) => ({ ...prev, classId: loadedClasses[0].id }));
+      if (loadedClasses.length > 0) {
+        if (!sectionForm.classId) {
+          setSectionForm((prev) => ({ ...prev, classId: loadedClasses[0].id }));
+        }
+        if (!routineForm.classId) {
+          setRoutineForm((prev) => ({ ...prev, classId: loadedClasses[0].id }));
+        }
       }
     } catch (err) {
       toast.error("Failed to load academic setup data!");
@@ -63,6 +86,24 @@ export default function AcademicManagementPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Load Sections when Class selected in Routine Form
+  useEffect(() => {
+    if (!routineForm.classId) {
+      setSections([]);
+      return;
+    }
+    axiosInstance
+      .get(`/academic/sections?classId=${routineForm.classId}`)
+      .then((res) => {
+        const secList = res.data?.data || [];
+        setSections(secList);
+        if (secList.length > 0) {
+          setRoutineForm((prev) => ({ ...prev, sectionId: secList[0].id }));
+        }
+      })
+      .catch(() => setSections([]));
+  }, [routineForm.classId]);
 
   // Submit Academic Year
   const handleCreateYear = async (e: React.FormEvent) => {
@@ -121,6 +162,26 @@ export default function AcademicManagementPage() {
     }
   };
 
+  // Submit Class Routine Slot
+  const handleCreateRoutineSlot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!routineForm.classId || !routineForm.sectionId || !routineForm.subjectId) {
+      toast.error("Please select Class, Section and Subject!");
+      return;
+    }
+    setSubmittingRoutine(true);
+    try {
+      await axiosInstance.post("/routines/create-slot", routineForm);
+      toast.success("Class Routine Slot created successfully!");
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.message || "Failed to create routine slot",
+      );
+    } finally {
+      setSubmittingRoutine(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans">
       {/* Header Banner */}
@@ -128,11 +189,10 @@ export default function AcademicManagementPage() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <FaGraduationCap />
-            <span>Academic Setup Management</span>
+            <span>Academic Setup & Routine Management</span>
           </h1>
           <p className="text-xs text-emerald-100/80 mt-1">
-            Create Academic Years, Classes, and Sections required for student
-            admissions.
+            Create Academic Years, Classes, Sections, and Class Routines.
           </p>
         </div>
       </div>
@@ -305,6 +365,126 @@ export default function AcademicManagementPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 4. Class Routine Creator Form */}
+      <Card className="border-border shadow-sm rounded-2xl">
+        <CardContent className="p-6 space-y-4">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2 border-b pb-2">
+            <FaClock className="text-emerald-600" />
+            <span>4. Create Class Routine Slot</span>
+          </h3>
+
+          <form onSubmit={handleCreateRoutineSlot} className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+            <div>
+              <label className="block font-semibold mb-1">Day *</label>
+              <select
+                value={routineForm.day}
+                onChange={(e) => setRoutineForm({ ...routineForm, day: e.target.value })}
+                className="w-full p-2.5 rounded-xl border border-input bg-background font-semibold"
+              >
+                <option value="SUNDAY">Sunday</option>
+                <option value="MONDAY">Monday</option>
+                <option value="TUESDAY">Tuesday</option>
+                <option value="WEDNESDAY">Wednesday</option>
+                <option value="THURSDAY">Thursday</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1">Class *</label>
+              <select
+                required
+                value={routineForm.classId}
+                onChange={(e) => setRoutineForm({ ...routineForm, classId: e.target.value })}
+                className="w-full p-2.5 rounded-xl border border-input bg-background font-semibold"
+              >
+                <option value="">Select Class</option>
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1">Section *</label>
+              <select
+                required
+                value={routineForm.sectionId}
+                onChange={(e) => setRoutineForm({ ...routineForm, sectionId: e.target.value })}
+                className="w-full p-2.5 rounded-xl border border-input bg-background font-semibold"
+              >
+                <option value="">Select Section</option>
+                {sections.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1">Subject *</label>
+              <select
+                required
+                value={routineForm.subjectId}
+                onChange={(e) => setRoutineForm({ ...routineForm, subjectId: e.target.value })}
+                className="w-full p-2.5 rounded-xl border border-input bg-background font-semibold"
+              >
+                <option value="">Select Subject</option>
+                {subjects.map((sb) => (
+                  <option key={sb.id} value={sb.id}>
+                    {sb.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1">Start Time (e.g., 09:00 AM)</label>
+              <input
+                type="text"
+                required
+                value={routineForm.startTime}
+                onChange={(e) => setRoutineForm({ ...routineForm, startTime: e.target.value })}
+                className="w-full p-2.5 rounded-xl border border-input bg-background font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1">End Time (e.g., 09:45 AM)</label>
+              <input
+                type="text"
+                required
+                value={routineForm.endTime}
+                onChange={(e) => setRoutineForm({ ...routineForm, endTime: e.target.value })}
+                className="w-full p-2.5 rounded-xl border border-input bg-background font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1">Room No</label>
+              <input
+                type="text"
+                value={routineForm.roomNo}
+                onChange={(e) => setRoutineForm({ ...routineForm, roomNo: e.target.value })}
+                className="w-full p-2.5 rounded-xl border border-input bg-background font-mono"
+              />
+            </div>
+
+            <div className="flex items-end">
+              <Button
+                type="submit"
+                disabled={submittingRoutine}
+                className="w-full bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold py-2.5"
+              >
+                {submittingRoutine ? <FaSpinner className="animate-spin" /> : <FaPlus />} Add Routine Slot
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
       {/* Class & Section List Preview Table */}
       <Card className="border-border shadow-sm rounded-2xl overflow-hidden">

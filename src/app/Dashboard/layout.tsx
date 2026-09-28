@@ -287,7 +287,7 @@ export default function DashboardLayout({
         },
         {
           label: isBn ? "ক্লাস রুটিন" : "Class Routine",
-          href: "/Dashboard/academic/routines",
+          href: "/Dashboard/my-routine",
           icon: FaClock,
         },
         {
