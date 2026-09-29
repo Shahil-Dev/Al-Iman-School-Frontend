@@ -73,7 +73,7 @@ export default function DashboardLayout({
   useEffect(() => {
     if (
       pathname.includes("/Dashboard/admissions") ||
-      pathname.includes("/Dashboard/students")
+      pathname.includes("/Dashboard/parentDashboard")
     ) {
       setOpenSubMenu("students");
     } else if (
@@ -339,22 +339,22 @@ export default function DashboardLayout({
       return [
         {
           label: isBn ? "আমার সন্তান" : "My Children",
-          href: "/Dashboard/parent",
+          href: "/Dashboard/parentDashboard",
           icon: FaUserTie,
         },
         {
           label: isBn ? "উপস্থিতি ট্র্যাকার" : "Attendance Summary",
-          href: "/Dashboard/parent/attendance",
+          href: "/Dashboard/parentDashboard/attendance",
           icon: FaCalendarCheck,
         },
         {
           label: isBn ? "ফলাফল ও মার্কশিট" : "Child Results",
-          href: "/Dashboard/parent/results",
+          href: "/Dashboard/parentDashboard/results",
           icon: FaPoll,
         },
         {
           label: isBn ? "অনলাইন ফি ও ইনভয়েস" : "Fees & Receipts",
-          href: "/Dashboard/parent/fees",
+          href: "/Dashboard/parentDashboard/fees",
           icon: FaFileInvoiceDollar,
         },
         {

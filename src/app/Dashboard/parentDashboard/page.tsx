@@ -11,6 +11,7 @@ import {
   FaPhoneAlt,
   FaIdCard,
   FaBookOpen,
+  FaUserPlus,
 } from "react-icons/fa";
 import { Card, CardContent } from "@/src/components/ui/card";
 import axiosInstance from "@/src/lib/axiosInstance";
@@ -32,13 +33,15 @@ export default function ParentOverviewPage() {
       setLoading(true);
       try {
         const [childrenRes, noticesRes] = await Promise.all([
-          axiosInstance.get("/parents/my-children").catch(() => ({ data: { data: [] } })),
+          axiosInstance
+            .get("/parents/my-children")
+            .catch(() => ({ data: { data: [] } })),
           axiosInstance.get("/notices").catch(() => ({ data: { data: [] } })),
         ]);
 
         const childrenList = childrenRes.data?.data || childrenRes.data || [];
         setChildren(Array.isArray(childrenList) ? childrenList : []);
-        
+
         if (childrenList.length > 0) {
           setSelectedChild(childrenList[0]);
         }
@@ -145,10 +148,12 @@ export default function ParentOverviewPage() {
                   </p>
                   <div className="flex flex-wrap gap-2 mt-2">
                     <span className="bg-muted px-2.5 py-0.5 rounded-md text-[11px] font-semibold text-foreground border border-border/60">
-                      {isBn ? "শ্রেণি:" : "Class:"} {selectedChild.class?.name || "N/A"}
+                      {isBn ? "শ্রেণি:" : "Class:"}{" "}
+                      {selectedChild.class?.name || "N/A"}
                     </span>
                     <span className="bg-muted px-2.5 py-0.5 rounded-md text-[11px] font-semibold text-foreground border border-border/60">
-                      {isBn ? "সেকশন:" : "Section:"} {selectedChild.section?.name || "N/A"}
+                      {isBn ? "সেকশন:" : "Section:"}{" "}
+                      {selectedChild.section?.name || "N/A"}
                     </span>
                     <span className="bg-muted px-2.5 py-0.5 rounded-md text-[11px] font-semibold text-foreground border border-border/60">
                       {isBn ? "রোল:" : "Roll:"} {selectedChild.rollNo}
@@ -163,19 +168,25 @@ export default function ParentOverviewPage() {
                   <span className="text-[10px] text-muted-foreground block font-medium">
                     {isBn ? "পিতার নাম" : "Father Name"}
                   </span>
-                  <strong className="text-foreground">{selectedChild.fatherName || "N/A"}</strong>
+                  <strong className="text-foreground">
+                    {selectedChild.fatherName || "N/A"}
+                  </strong>
                 </div>
                 <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
                   <span className="text-[10px] text-muted-foreground block font-medium">
                     {isBn ? "মাতার নাম" : "Mother Name"}
                   </span>
-                  <strong className="text-foreground">{selectedChild.motherName || "N/A"}</strong>
+                  <strong className="text-foreground">
+                    {selectedChild.motherName || "N/A"}
+                  </strong>
                 </div>
                 <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
                   <span className="text-[10px] text-muted-foreground block font-medium">
                     {isBn ? "জরুরি যোগাযোগ" : "Contact Phone"}
                   </span>
-                  <strong className="text-foreground font-mono">{selectedChild.phone || "N/A"}</strong>
+                  <strong className="text-foreground font-mono">
+                    {selectedChild.phone || "N/A"}
+                  </strong>
                 </div>
               </div>
             </CardContent>
@@ -200,12 +211,20 @@ export default function ParentOverviewPage() {
 
               <div className="grid grid-cols-2 gap-2 text-center text-xs">
                 <div className="p-2.5 rounded-xl bg-muted/40 border border-border/50">
-                  <span className="text-[10px] text-muted-foreground block">{isBn ? "উপস্থিত" : "Present"}</span>
-                  <strong className="text-primary font-mono">{attendanceSummary?.presentDays || "0"}</strong>
+                  <span className="text-[10px] text-muted-foreground block">
+                    {isBn ? "উপস্থিত" : "Present"}
+                  </span>
+                  <strong className="text-primary font-mono">
+                    {attendanceSummary?.presentDays || "0"}
+                  </strong>
                 </div>
                 <div className="p-2.5 rounded-xl bg-muted/40 border border-border/50">
-                  <span className="text-[10px] text-muted-foreground block">{isBn ? "অনুপস্থিত" : "Absent"}</span>
-                  <strong className="text-destructive font-mono">{attendanceSummary?.absentDays || "0"}</strong>
+                  <span className="text-[10px] text-muted-foreground block">
+                    {isBn ? "অনুপস্থিত" : "Absent"}
+                  </span>
+                  <strong className="text-destructive font-mono">
+                    {attendanceSummary?.absentDays || "0"}
+                  </strong>
                 </div>
               </div>
             </CardContent>
@@ -213,44 +232,68 @@ export default function ParentOverviewPage() {
         </div>
       ) : (
         <Card className="p-8 text-center text-xs text-muted-foreground rounded-2xl border border-border">
-          {isBn ? "কোনো সংযুক্ত সন্তানের প্রোফাইল পাওয়া যায়নি।" : "No linked student profile found."}
+          {isBn
+            ? "কোনো সংযুক্ত সন্তানের প্রোফাইল পাওয়া যায়নি।"
+            : "No linked student profile found."}
         </Card>
       )}
 
       {/* Quick Access Links Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Link href="/Dashboard/parent/attendance">
+        <Link href="/Dashboard/parentDashboard/attendance">
           <Card className="border-border/60 hover:border-primary/50 shadow-sm transition-all rounded-2xl bg-card p-5 flex items-center gap-4 group">
             <div className="p-3 rounded-xl bg-primary/10 text-primary text-xl group-hover:scale-105 transition-transform">
               <FaCalendarCheck />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-foreground">{isBn ? "উপস্থিতি ট্র্যাকার" : "Attendance Tracker"}</h4>
-              <p className="text-[11px] text-muted-foreground">{isBn ? "দৈনিক রেকর্ড দেখুন" : "View daily records"}</p>
+              <h4 className="text-xs font-bold text-foreground">
+                {isBn ? "উপস্থিতি ট্র্যাকার" : "Attendance Tracker"}
+              </h4>
+              <p className="text-[11px] text-muted-foreground">
+                {isBn ? "দৈনিক রেকর্ড দেখুন" : "View daily records"}
+              </p>
             </div>
           </Card>
         </Link>
 
-        <Link href="/Dashboard/parent/results">
+        <Link href="/Dashboard/parentDashboard/results">
           <Card className="border-border/60 hover:border-primary/50 shadow-sm transition-all rounded-2xl bg-card p-5 flex items-center gap-4 group">
             <div className="p-3 rounded-xl bg-primary/10 text-primary text-xl group-hover:scale-105 transition-transform">
               <FaPoll />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-foreground">{isBn ? "পরীক্ষার ফলাফল" : "Exam Results"}</h4>
-              <p className="text-[11px] text-muted-foreground">{isBn ? "মার্কশিট দেখুন" : "View marksheets"}</p>
+              <h4 className="text-xs font-bold text-foreground">
+                {isBn ? "পরীক্ষার ফলাফল" : "Exam Results"}
+              </h4>
+              <p className="text-[11px] text-muted-foreground">
+                {isBn ? "মার্কশিট দেখুন" : "View marksheets"}
+              </p>
             </div>
           </Card>
         </Link>
 
-        <Link href="/Dashboard/parent/fees">
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/Dashboard/parentDashboard/add-child"
+            className="px-3.5 py-2 bg-primary text-primary-foreground font-bold text-xs rounded-xl shadow-sm hover:opacity-90 transition-all flex items-center gap-2"
+          >
+            <FaUserPlus />
+            <span>{isBn ? "সন্তান যুক্ত করুন" : "Add Child"}</span>
+          </Link>
+        </div>
+
+        <Link href="/Dashboard/parentDashboard/fees">
           <Card className="border-border/60 hover:border-primary/50 shadow-sm transition-all rounded-2xl bg-card p-5 flex items-center gap-4 group">
             <div className="p-3 rounded-xl bg-primary/10 text-primary text-xl group-hover:scale-105 transition-transform">
               <FaFileInvoiceDollar />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-foreground">{isBn ? "টিউশন ফি ও ইনভয়েস" : "Fees & Receipts"}</h4>
-              <p className="text-[11px] text-muted-foreground">{isBn ? "বকেয়া ফি ও রসিদ" : "Check due invoices"}</p>
+              <h4 className="text-xs font-bold text-foreground">
+                {isBn ? "টিউশন ফি ও ইনভয়েস" : "Fees & Receipts"}
+              </h4>
+              <p className="text-[11px] text-muted-foreground">
+                {isBn ? "বকেয়া ফি ও রসিদ" : "Check due invoices"}
+              </p>
             </div>
           </Card>
         </Link>
@@ -261,18 +304,29 @@ export default function ParentOverviewPage() {
         <CardContent className="p-6 space-y-4">
           <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border/50 pb-3">
             <FaBullhorn className="text-amber-500" />
-            <span>{isBn ? "সাম্প্রতিক নোটিশসমূহ" : "Official Announcements"}</span>
+            <span>
+              {isBn ? "সাম্প্রতিক নোটিশসমূহ" : "Official Announcements"}
+            </span>
           </h3>
 
           {notices.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {notices.map((n) => (
-                <div key={n.id} className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-1">
+                <div
+                  key={n.id}
+                  className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-1"
+                >
                   <span className="text-[10px] text-muted-foreground font-mono">
-                    {new Date(n.createdAt).toLocaleDateString(isBn ? "bn-BD" : "en-US")}
+                    {new Date(n.createdAt).toLocaleDateString(
+                      isBn ? "bn-BD" : "en-US",
+                    )}
                   </span>
-                  <h4 className="text-xs font-bold text-foreground line-clamp-1">{n.title}</h4>
-                  <p className="text-[11px] text-muted-foreground line-clamp-2">{n.description || n.content}</p>
+                  <h4 className="text-xs font-bold text-foreground line-clamp-1">
+                    {n.title}
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground line-clamp-2">
+                    {n.description || n.content}
+                  </p>
                 </div>
               ))}
             </div>
