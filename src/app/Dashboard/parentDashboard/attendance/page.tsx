@@ -3,12 +3,9 @@
 import React, { useEffect, useState } from "react";
 import {
   FaCalendarCheck,
-  FaCalendarTimes,
   FaSpinner,
-  FaFilter,
   FaCheckCircle,
   FaTimesCircle,
-  FaUserGraduate,
 } from "react-icons/fa";
 import { Card, CardContent } from "@/src/components/ui/card";
 import axiosInstance from "@/src/lib/axiosInstance";
@@ -54,7 +51,8 @@ export default function ParentAttendancePage() {
   }, [selectedChild]);
 
   // Filter Attendance Logs
-  const attendanceLogs: any[] = attendanceData?.logs || attendanceData?.attendances || [];
+  const attendanceLogs: any[] =
+    attendanceData?.logs || attendanceData?.attendances || [];
   const filteredLogs = attendanceLogs.filter((log) => {
     if (filterStatus === "PRESENT") return log.status === "PRESENT";
     if (filterStatus === "ABSENT") return log.status === "ABSENT";
@@ -72,7 +70,9 @@ export default function ParentAttendancePage() {
           </span>
           <h1 className="text-xl md:text-2xl font-bold text-foreground mt-2 flex items-center gap-2">
             <FaCalendarCheck className="text-primary text-lg" />
-            <span>{isBn ? "সন্তানের উপস্থিতি রেকর্ড" : "Child Attendance Records"}</span>
+            <span>
+              {isBn ? "সন্তানের উপস্থিতি রেকর্ড" : "Child Attendance Records"}
+            </span>
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
             {isBn
@@ -108,7 +108,11 @@ export default function ParentAttendancePage() {
       {loading ? (
         <div className="p-12 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
           <FaSpinner className="animate-spin text-primary text-lg" />
-          <span>{isBn ? "উপস্থিতির ডাটা লোড হচ্ছে..." : "Loading attendance records..."}</span>
+          <span>
+            {isBn
+              ? "উপস্থিতির ডাটা লোড হচ্ছে..."
+              : "Loading attendance records..."}
+          </span>
         </div>
       ) : selectedChild ? (
         <>
@@ -120,7 +124,7 @@ export default function ParentAttendancePage() {
                   {isBn ? "উপস্থিতির হার" : "Attendance Rate"}
                 </span>
                 <span className="text-2xl sm:text-3xl font-extrabold text-primary font-mono block">
-                  {attendanceData?.percentage || "100"}%
+                  {attendanceData?.percentage ?? 100}%
                 </span>
               </CardContent>
             </Card>
@@ -131,7 +135,7 @@ export default function ParentAttendancePage() {
                   {isBn ? "মোট উপস্থিত" : "Total Present"}
                 </span>
                 <span className="text-2xl sm:text-3xl font-extrabold text-emerald-600 font-mono block">
-                  {attendanceData?.presentDays || "0"}
+                  {attendanceData?.presentDays ?? attendanceData?.totalPresence ?? 0}
                 </span>
               </CardContent>
             </Card>
@@ -142,7 +146,7 @@ export default function ParentAttendancePage() {
                   {isBn ? "মোট অনুপস্থিত" : "Total Absent"}
                 </span>
                 <span className="text-2xl sm:text-3xl font-extrabold text-destructive font-mono block">
-                  {attendanceData?.absentDays || "0"}
+                  {attendanceData?.absentDays ?? attendanceData?.totalAbsent ?? 0}
                 </span>
               </CardContent>
             </Card>
@@ -153,7 +157,7 @@ export default function ParentAttendancePage() {
                   {isBn ? "দেরিতে উপস্থিতি" : "Late Arrival"}
                 </span>
                 <span className="text-2xl sm:text-3xl font-extrabold text-amber-500 font-mono block">
-                  {attendanceData?.lateDays || "0"}
+                  {attendanceData?.lateDays ?? attendanceData?.totalLate ?? 0}
                 </span>
               </CardContent>
             </Card>
@@ -165,7 +169,11 @@ export default function ParentAttendancePage() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/50 pb-4">
                 <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
                   <FaCalendarCheck className="text-primary" />
-                  <span>{isBn ? "দৈনিক উপস্থিতি ইতিহাস" : "Daily Attendance History"}</span>
+                  <span>
+                    {isBn
+                      ? "দৈনিক উপস্থিতি ইতিহাস"
+                      : "Daily Attendance History"}
+                  </span>
                 </h3>
 
                 {/* Filter Buttons */}
@@ -206,7 +214,9 @@ export default function ParentAttendancePage() {
               {/* Table Render */}
               {filteredLogs.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-8">
-                  {isBn ? "কোনো উপস্থিতির রেকর্ড পাওয়া যায়নি।" : "No attendance logs available."}
+                  {isBn
+                    ? "কোনো উপস্থিতির রেকর্ড পাওয়া যায়নি।"
+                    : "No attendance logs available."}
                 </p>
               ) : (
                 <div className="overflow-x-auto">
@@ -214,8 +224,12 @@ export default function ParentAttendancePage() {
                     <thead>
                       <tr className="border-b border-border/60 text-muted-foreground uppercase text-[10px] tracking-wider">
                         <th className="py-3 px-3">{isBn ? "তারিখ" : "Date"}</th>
-                        <th className="py-3 px-3">{isBn ? "স্ট্যাটাস" : "Status"}</th>
-                        <th className="py-3 px-3">{isBn ? "মন্তব্য / নোট" : "Note / Remark"}</th>
+                        <th className="py-3 px-3">
+                          {isBn ? "স্ট্যাটাস" : "Status"}
+                        </th>
+                        <th className="py-3 px-3">
+                          {isBn ? "মন্তব্য / নোট" : "Note / Remark"}
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40 font-sans">
@@ -223,14 +237,20 @@ export default function ParentAttendancePage() {
                         const isPresent = log.status === "PRESENT";
                         const isLate = log.status === "LATE";
                         return (
-                          <tr key={log.id || idx} className="hover:bg-muted/30 transition-colors">
+                          <tr
+                            key={log.id || idx}
+                            className="hover:bg-muted/30 transition-colors"
+                          >
                             <td className="py-3.5 px-3 font-mono font-medium text-foreground">
-                              {new Date(log.date).toLocaleDateString(isBn ? "bn-BD" : "en-US", {
-                                weekday: "short",
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              })}
+                              {new Date(log.date).toLocaleDateString(
+                                isBn ? "bn-BD" : "en-US",
+                                {
+                                  weekday: "short",
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                }
+                              )}
                             </td>
                             <td className="py-3.5 px-3">
                               <span
@@ -265,7 +285,9 @@ export default function ParentAttendancePage() {
                               </span>
                             </td>
                             <td className="py-3.5 px-3 text-muted-foreground">
-                              {log.remark || log.note || (isBn ? "স্বাভাবিক" : "Regular")}
+                              {log.remark ||
+                                log.note ||
+                                (isBn ? "স্বাভাবিক" : "Regular")}
                             </td>
                           </tr>
                         );
@@ -279,7 +301,9 @@ export default function ParentAttendancePage() {
         </>
       ) : (
         <Card className="p-8 text-center text-xs text-muted-foreground rounded-2xl border border-border">
-          {isBn ? "কোনো সংযুক্ত সন্তানের প্রোফাইল পাওয়া যায়নি।" : "No linked student profile found."}
+          {isBn
+            ? "কোনো সংযুক্ত সন্তানের প্রোফাইল পাওয়া যায়নি।"
+            : "No linked student profile found."}
         </Card>
       )}
     </div>

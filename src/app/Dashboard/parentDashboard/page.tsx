@@ -94,28 +94,38 @@ export default function ParentOverviewPage() {
           </p>
         </div>
 
-        {/* Child Selector */}
-        {children.length > 1 && (
-          <div className="bg-muted/50 p-2.5 rounded-xl border border-border">
-            <label className="block text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
-              {isBn ? "সন্তান নির্বাচন করুন" : "Select Child"}
-            </label>
-            <select
-              value={selectedChild?.id || ""}
-              onChange={(e) => {
-                const found = children.find((c) => c.id === e.target.value);
-                if (found) setSelectedChild(found);
-              }}
-              className="bg-background text-foreground text-xs font-semibold px-3 py-1.5 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              {children.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.firstName} {c.lastName} ({c.class?.name || "N/A"})
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        {/* Action Controls: Child Selector + Add Child Button */}
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          {children.length > 1 && (
+            <div className="bg-muted/50 p-2.5 rounded-xl border border-border flex-1 md:flex-none">
+              <label className="block text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
+                {isBn ? "সন্তান নির্বাচন করুন" : "Select Child"}
+              </label>
+              <select
+                value={selectedChild?.id || ""}
+                onChange={(e) => {
+                  const found = children.find((c) => c.id === e.target.value);
+                  if (found) setSelectedChild(found);
+                }}
+                className="bg-background text-foreground text-xs font-semibold px-3 py-1.5 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/20 w-full"
+              >
+                {children.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.firstName} {c.lastName} ({c.class?.name || "N/A"})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <Link
+            href="/Dashboard/parentDashboard/add-child"
+            className="px-4 py-2.5 bg-primary text-primary-foreground font-bold text-xs rounded-xl shadow-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 h-fit"
+          >
+            <FaUserPlus />
+            <span>{isBn ? "সন্তান যুক্ত করুন" : "Add Child"}</span>
+          </Link>
+        </div>
       </div>
 
       {/* Child Profile & Quick Stats Grid */}
@@ -125,7 +135,7 @@ export default function ParentOverviewPage() {
           <Card className="md:col-span-2 border-border/60 shadow-sm rounded-2xl bg-card overflow-hidden">
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center gap-4 border-b border-border/50 pb-4">
-                <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-2xl ring-1 ring-primary/20">
+                <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-2xl ring-1 ring-primary/20 shrink-0">
                   {selectedChild.photoUrl ? (
                     <img
                       src={selectedChild.photoUrl}
@@ -141,7 +151,7 @@ export default function ParentOverviewPage() {
                     {selectedChild.firstName} {selectedChild.lastName}
                   </h2>
                   <p className="text-xs font-medium text-muted-foreground">
-                    {isBn ? "স্টুডেন্ট আই ডি:" : "Student ID:"}{" "}
+                    {isBn ? "স্টুডেন্ট আইডি:" : "Student ID:"}{" "}
                     <span className="font-mono text-foreground font-semibold">
                       {selectedChild.studentIdNo || selectedChild.studentCode}
                     </span>
@@ -202,7 +212,7 @@ export default function ParentOverviewPage() {
 
               <div className="text-center p-4 bg-primary/5 rounded-2xl border border-primary/10">
                 <span className="text-3xl font-extrabold text-primary font-mono">
-                  {attendanceSummary?.percentage || "95"}%
+                  {attendanceSummary?.percentage || "100"}%
                 </span>
                 <p className="text-[11px] text-muted-foreground mt-1">
                   {isBn ? "মোট উপস্থিতির পার্সেন্টেজ" : "Overall Attendance"}
@@ -233,16 +243,16 @@ export default function ParentOverviewPage() {
       ) : (
         <Card className="p-8 text-center text-xs text-muted-foreground rounded-2xl border border-border">
           {isBn
-            ? "কোনো সংযুক্ত সন্তানের প্রোফাইল পাওয়া যায়নি।"
-            : "No linked student profile found."}
+            ? "কোনো সংযুক্ত সন্তানের প্রোফাইল পাওয়া যায়নি। উপরের 'সন্তান যুক্ত করুন' বাটনে ক্লিক করে আইডি ও পিন দিয়ে যুক্ত করুন।"
+            : "No linked student profile found. Click 'Add Child' above using Student ID and PIN."}
         </Card>
       )}
 
       {/* Quick Access Links Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Link href="/Dashboard/parentDashboard/attendance">
-          <Card className="border-border/60 hover:border-primary/50 shadow-sm transition-all rounded-2xl bg-card p-5 flex items-center gap-4 group">
-            <div className="p-3 rounded-xl bg-primary/10 text-primary text-xl group-hover:scale-105 transition-transform">
+          <Card className="border-border/60 hover:border-primary/50 shadow-sm transition-all rounded-2xl bg-card p-5 flex items-center gap-4 group h-full">
+            <div className="p-3 rounded-xl bg-primary/10 text-primary text-xl group-hover:scale-105 transition-transform shrink-0">
               <FaCalendarCheck />
             </div>
             <div>
@@ -257,8 +267,8 @@ export default function ParentOverviewPage() {
         </Link>
 
         <Link href="/Dashboard/parentDashboard/results">
-          <Card className="border-border/60 hover:border-primary/50 shadow-sm transition-all rounded-2xl bg-card p-5 flex items-center gap-4 group">
-            <div className="p-3 rounded-xl bg-primary/10 text-primary text-xl group-hover:scale-105 transition-transform">
+          <Card className="border-border/60 hover:border-primary/50 shadow-sm transition-all rounded-2xl bg-card p-5 flex items-center gap-4 group h-full">
+            <div className="p-3 rounded-xl bg-primary/10 text-primary text-xl group-hover:scale-105 transition-transform shrink-0">
               <FaPoll />
             </div>
             <div>
@@ -272,27 +282,17 @@ export default function ParentOverviewPage() {
           </Card>
         </Link>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Link
-            href="/Dashboard/parentDashboard/add-child"
-            className="px-3.5 py-2 bg-primary text-primary-foreground font-bold text-xs rounded-xl shadow-sm hover:opacity-90 transition-all flex items-center gap-2"
-          >
-            <FaUserPlus />
-            <span>{isBn ? "সন্তান যুক্ত করুন" : "Add Child"}</span>
-          </Link>
-        </div>
-
         <Link href="/Dashboard/parentDashboard/fees">
-          <Card className="border-border/60 hover:border-primary/50 shadow-sm transition-all rounded-2xl bg-card p-5 flex items-center gap-4 group">
-            <div className="p-3 rounded-xl bg-primary/10 text-primary text-xl group-hover:scale-105 transition-transform">
+          <Card className="border-border/60 hover:border-primary/50 shadow-sm transition-all rounded-2xl bg-card p-5 flex items-center gap-4 group h-full">
+            <div className="p-3 rounded-xl bg-primary/10 text-primary text-xl group-hover:scale-105 transition-transform shrink-0">
               <FaFileInvoiceDollar />
             </div>
             <div>
               <h4 className="text-xs font-bold text-foreground">
-                {isBn ? "টিউশন ফি ও ইনভয়েস" : "Fees & Receipts"}
+                {isBn ? "টিউশন ফি ও ইনভয়েস" : "Fees & Receipts"}
               </h4>
               <p className="text-[11px] text-muted-foreground">
-                {isBn ? "বকেয়া ফি ও রসিদ" : "Check due invoices"}
+                {isBn ? "বকেয়া ফি ও রসিদ" : "Check due invoices"}
               </p>
             </div>
           </Card>
@@ -318,7 +318,7 @@ export default function ParentOverviewPage() {
                 >
                   <span className="text-[10px] text-muted-foreground font-mono">
                     {new Date(n.createdAt).toLocaleDateString(
-                      isBn ? "bn-BD" : "en-US",
+                      isBn ? "bn-BD" : "en-US"
                     )}
                   </span>
                   <h4 className="text-xs font-bold text-foreground line-clamp-1">

@@ -53,7 +53,7 @@ export default function AddChildPage() {
       setPin("");
 
       setTimeout(() => {
-        router.push("/Dashboard/parent");
+        router.push("/Dashboard/parentDashboard");
       }, 1000);
     } catch (err: any) {
       console.error("Failed to link student", err);
