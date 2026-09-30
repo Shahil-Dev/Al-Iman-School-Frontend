@@ -5,37 +5,31 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/src/context/UserContext";
 import { FaSpinner } from "react-icons/fa";
 
-export default function DashboardEntryPage() {
+export default function DashboardRootPage() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, loading } = useUser();
 
   useEffect(() => {
-    const role = user?.role || "SUPER_ADMIN";
-
-    switch (role) {
-      case "SUPER_ADMIN":
-      case "ADMIN":
-        router.replace("/Dashboard/admin");
-        break;
-      case "ACCOUNTS":
-        router.replace("/Dashboard/accounts");
-        break;
-      case "TEACHER":
-        router.replace("/Dashboard/TeacherDashboard");
-        break;
-      case "STUDENT":
-      case "PARENT":
+    if (!loading) {
+      const role = user?.role;
+      if (role === "STUDENT") {
+        router.replace("/Dashboard/studentDashboard");
+      } else if (role === "PARENT") {
         router.replace("/Dashboard/parentDashboard");
-        break;
-      default:
+      } else if (role === "TEACHER") {
+        router.replace("/Dashboard/TeacherDashboard");
+      } else if (role === "ACCOUNTS") {
+        router.replace("/Dashboard/accounts");
+      } else {
         router.replace("/Dashboard/admin");
+      }
     }
-  }, [user, router]);
+  }, [user, loading, router]);
 
   return (
-    <div className="h-[60vh] flex flex-col items-center justify-center gap-3 text-muted-foreground">
-      <FaSpinner className="animate-spin text-2xl text-primary" />
-      <p className="text-xs font-semibold">Redirecting to your portal...</p>
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-muted-foreground text-xs font-medium">
+      <FaSpinner className="animate-spin text-primary text-2xl" />
+      <p>Redirecting to your Dashboard...</p>
     </div>
   );
 }

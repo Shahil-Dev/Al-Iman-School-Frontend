@@ -160,8 +160,27 @@ function LoginFormContent() {
 
       setUser(user);
 
-      const callbackUrl = searchParams.get("callbackUrl") || "/Dashboard";
-      router.push(callbackUrl);
+      // Determine Correct Home Route Based on Logged-in User Role
+      let targetRoute = "/Dashboard";
+      if (user.role === "STUDENT") {
+        targetRoute = "/Dashboard/studentDashboard";
+      } else if (user.role === "PARENT") {
+        targetRoute = "/Dashboard/parentDashboard";
+      } else if (user.role === "TEACHER") {
+        targetRoute = "/Dashboard/TeacherDashboard";
+      } else if (user.role === "ACCOUNTS") {
+        targetRoute = "/Dashboard/accounts";
+      } else if (user.role === "SUPER_ADMIN" ) {
+        targetRoute = "/Dashboard/admin";
+      }
+
+      const callbackUrl = searchParams.get("callbackUrl");
+      // If callbackUrl exists and matches role, go there, otherwise go to targetRoute
+      if (callbackUrl && callbackUrl !== "/Dashboard") {
+        router.push(callbackUrl);
+      } else {
+        router.push(targetRoute);
+      }
       router.refresh();
     } catch (err: any) {
       setError(

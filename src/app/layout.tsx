@@ -6,6 +6,7 @@ import { UserProvider } from "@/src/context/UserContext";
 import { ThemeProvider } from "@/src/components/ui/ThemeProvider";
 import { Toaster } from "sonner"; // <--- Sonner Toaster ইম্পোর্ট
 import { NavbarMain } from "../components/ui/Navbar";
+import Footer from "../components/ui/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,6 +44,7 @@ export default function RootLayout({
             <LanguageProvider>
               <NavbarMain></NavbarMain>
               {children }
+              <Footer></Footer>
               <Toaster position="top-right" richColors closeButton />
             </LanguageProvider>
           </UserProvider>

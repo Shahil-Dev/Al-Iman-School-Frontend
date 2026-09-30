@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useUser } from "@/src/context/UserContext";
 import { useLanguage } from "@/src/context/LanguageContext";
@@ -59,15 +59,32 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, logout } = useUser();
+  const { user, logout, loading } = useUser();
   const { language, setLanguage } = useLanguage();
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [openSubMenu, setOpenSubMenu] = useState<string | null>(null);
   const prefersReducedMotion = useReducedMotion();
 
   const isBn = language === "bn";
+
+  // 🔴 STRICT CLIENT ROUTE GUARD (Prevents Unauthorized Viewing)
+  useEffect(() => {
+    if (!loading && user) {
+      const role = user.role;
+      const lowerPath = pathname.toLowerCase();
+
+      if (role === "STUDENT" && !lowerPath.startsWith("/dashboard/studentdashboard") && !lowerPath.startsWith("/dashboard/profile")) {
+        router.replace("/Dashboard/studentDashboard");
+      } else if (role === "PARENT" && !lowerPath.startsWith("/dashboard/parentdashboard") && !lowerPath.startsWith("/dashboard/reviews") && !lowerPath.startsWith("/dashboard/profile")) {
+        router.replace("/Dashboard/parentDashboard");
+      } else if (role === "TEACHER" && !lowerPath.startsWith("/dashboard/teacherdashboard") && !lowerPath.startsWith("/dashboard/marks/entry") && !lowerPath.startsWith("/dashboard/attendance") && !lowerPath.startsWith("/dashboard/my-routine") && !lowerPath.startsWith("/dashboard/notices") && !lowerPath.startsWith("/dashboard/profile")) {
+        router.replace("/Dashboard/TeacherDashboard");
+      }
+    }
+  }, [user, loading, pathname, router]);
 
   // Auto-expand active sub-menu on page load or navigation
   useEffect(() => {
@@ -116,7 +133,7 @@ export default function DashboardLayout({
     const role = user?.role || "SUPER_ADMIN";
 
     // 🔴 1. SUPER_ADMIN & ADMIN
-    if (role === "SUPER_ADMIN") {
+    if (role === "SUPER_ADMIN" || role === "ADMIN") {
       return [
         {
           label: isBn ? "ওভারভিউ ও অ্যানালিটিক্স" : "Overview & Analytics",
@@ -183,7 +200,7 @@ export default function DashboardLayout({
         },
         {
           key: "add subject and exams",
-          label: isBn ? "বিষয়, পরীক্ষা ও ফলাফল" : "Exams & Results",
+          label: isBn ? "বিষয়, পরীক্ষা ও ফলাফল" : "Exams & Results",
           icon: FaPoll,
           subItems: [
             {
@@ -220,7 +237,7 @@ export default function DashboardLayout({
           icon: FaFileInvoiceDollar,
           subItems: [
             {
-              label: isBn ? "ইনভয়েস তৈরি" : "Create Invoice",
+              label: isBn ? "ইনভয়েস তৈরি" : "Create Invoice",
               href: "/Dashboard/payments/create-invoice",
               icon: FaReceipt,
             },
@@ -317,7 +334,7 @@ export default function DashboardLayout({
           icon: FaFileInvoiceDollar,
         },
         {
-          label: isBn ? "ইনভয়েস তৈরি" : "Generate Invoices",
+          label: isBn ? "ইনভয়েস তৈরি" : "Generate Invoices",
           href: "/Dashboard/payments/create-invoice",
           icon: FaReceipt,
         },
@@ -353,7 +370,7 @@ export default function DashboardLayout({
           icon: FaPoll,
         },
         {
-          label: isBn ? "অনলাইন ফি ও ইনভয়েস" : "Fees & Receipts",
+          label: isBn ? "অনলাইন ফি ও ইনভয়েস" : "Fees & Receipts",
           href: "/Dashboard/parentDashboard/fees",
           icon: FaFileInvoiceDollar,
         },
@@ -369,39 +386,39 @@ export default function DashboardLayout({
     return [
       {
         label: isBn ? "আমার প্রোফাইল" : "My Profile",
-        href: "/Dashboard/student",
+        href: "/Dashboard/studentDashboard",
         icon: FaHome,
       },
       {
         label: isBn ? "ক্লাস রুটিন" : "Class Routine",
-        href: "/Dashboard/student/routine",
+        href: "/Dashboard/studentDashboard/routine",
         icon: FaClock,
       },
       {
         label: isBn ? "আমার উপস্থিতি" : "My Attendance",
-        href: "/Dashboard/student/attendance",
+        href: "/Dashboard/studentDashboard/attendance",
         icon: FaCalendarCheck,
       },
       {
         label: isBn ? "আমার ফলাফল" : "My Marksheet",
-        href: "/Dashboard/student/results",
+        href: "/Dashboard/studentDashboard/results",
         icon: FaPoll,
       },
       {
         label: isBn ? "আমার আইডি কার্ড" : "Digital ID Card",
-        href: "/Dashboard/student/id-card",
+        href: "/Dashboard/studentDashboard/id-card",
         icon: FaIdCard,
       },
       {
-        label: isBn ? "টিউশন ফি ও বকেয়া" : "Invoices & Fees",
-        href: "/Dashboard/student/fees",
+        label: isBn ? "টিউশন ফি ও বকেয়া" : "Invoices & Fees",
+        href: "/Dashboard/studentDashboard/fees",
         icon: FaFileInvoiceDollar,
       },
     ];
   };
 
   const navItems = getNavItems();
-  const roleLabel = user?.role || "SUPER_ADMIN";
+  const roleLabel = user?.role || "STUDENT";
   const userInitial =
     user?.name?.charAt(0)?.toUpperCase() || roleLabel.charAt(0);
 
@@ -616,7 +633,15 @@ export default function DashboardLayout({
 
         {/* User Profile Footer + Logout */}
         <div className="p-3 border-t border-border space-y-2">
-          <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-muted/40">
+          <Link
+            href="/Dashboard/profile"
+            onClick={() => setSidebarOpen(false)}
+            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-colors duration-150 ${
+              pathname === "/Dashboard/profile"
+                ? "bg-primary/15 ring-1 ring-primary/30"
+                : "bg-muted/40 hover:bg-muted/80"
+            }`}
+          >
             <div className="w-8 h-8 rounded-full bg-primary/12 text-primary flex items-center justify-center font-semibold text-[11px] ring-1 ring-primary/20 shrink-0">
               {userInitial}
             </div>
@@ -628,7 +653,7 @@ export default function DashboardLayout({
                 {roleLabel.replace("_", " ")}
               </p>
             </div>
-          </div>
+          </Link>
 
           <button
             onClick={logout}
@@ -660,8 +685,6 @@ export default function DashboardLayout({
                 {isBn ? "ড্যাশবোর্ড ম্যানেজমেন্ট" : "Dashboard Management"}
               </h1>
             </div>
-
-            {/* Language & Theme Controls */}
           </div>
         </header>
 
