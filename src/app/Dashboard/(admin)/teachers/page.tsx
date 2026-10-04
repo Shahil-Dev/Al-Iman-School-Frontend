@@ -18,6 +18,10 @@ import {
   FaVenusMars,
   FaTint,
   FaUser,
+  FaEdit,
+  FaTrashAlt,
+  FaSave,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import axiosInstance from "@/src/lib/axiosInstance";
@@ -48,14 +52,19 @@ export default function AllTeachersPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
+  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch all teachers from backend
   const fetchTeachers = async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await axiosInstance.get("/teachers");
-      setTeachers(res.data.data || []);
+      setTeachers(res.data?.data || []);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load teachers list.");
     } finally {
@@ -67,15 +76,81 @@ export default function AllTeachersPage() {
     fetchTeachers();
   }, []);
 
+  // Execute Delete Action
+  const confirmDeleteTeacher = async () => {
+    if (!deletingTeacher) return;
+
+    try {
+      setDeletingId(deletingTeacher.id);
+      await axiosInstance.delete(`/teachers/${deletingTeacher.id}`);
+      setTeachers((prev) => prev.filter((item) => item.id !== deletingTeacher.id));
+      if (selectedTeacher?.id === deletingTeacher.id) setSelectedTeacher(null);
+      setDeletingTeacher(null);
+    } catch (err: any) {
+      alert(
+        err.response?.data?.message ||
+          "শিক্ষকের প্রোফাইল ডিলিট করা সম্ভব হয়নি।"
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // Handle Update Teacher Submit
+  const handleUpdateTeacher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTeacher) return;
+
+    try {
+      setIsUpdating(true);
+      const payload = {
+        name: editingTeacher.name,
+        designation: editingTeacher.designation,
+        department: editingTeacher.department,
+        qualification: editingTeacher.qualification,
+        phone: editingTeacher.phone,
+        gender: editingTeacher.gender,
+        bloodGroup: editingTeacher.bloodGroup,
+        nidOrPassport: editingTeacher.nidOrPassport,
+      };
+
+      const res = await axiosInstance.patch(
+        `/teachers/${editingTeacher.id}`,
+        payload
+      );
+
+      const updatedData = res.data?.data || payload;
+
+      setTeachers((prev) =>
+        prev.map((item) =>
+          item.id === editingTeacher.id ? { ...item, ...updatedData } : item
+        )
+      );
+
+      setEditingTeacher(null);
+      if (selectedTeacher?.id === editingTeacher.id) {
+        setSelectedTeacher({ ...selectedTeacher, ...updatedData });
+      }
+    } catch (err: any) {
+      alert(
+        err.response?.data?.message ||
+          "শিক্ষকের তথ্য আপডেট করা সম্ভব হয়নি।"
+      );
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   // Filter teachers by search query
   const filteredTeachers = teachers.filter((teacher) => {
     const term = searchTerm.toLowerCase();
     return (
-      teacher.name.toLowerCase().includes(term) ||
-      teacher.user.email.toLowerCase().includes(term) ||
-      teacher.phone.includes(term) ||
-      (teacher.department && teacher.department.toLowerCase().includes(term)) ||
-      teacher.designation.toLowerCase().includes(term)
+      teacher.name?.toLowerCase().includes(term) ||
+      teacher.user?.email?.toLowerCase().includes(term) ||
+      teacher.phone?.includes(term) ||
+      (teacher.department &&
+        teacher.department.toLowerCase().includes(term)) ||
+      teacher.designation?.toLowerCase().includes(term)
     );
   });
 
@@ -106,7 +181,7 @@ export default function AllTeachersPage() {
         <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
         <input
           type="text"
-          placeholder="নাম, ইমেইল, মোবাইল বা ডিপার্টমেন্ট দিয়ে খুঁজুন..."
+          placeholder="নাম, ইমেইল, মোবাইল বা ডিপার্টমেন্ট দিয়ে খুঁজুন..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-9 pr-4 py-2 rounded-xl border border-border bg-card text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
@@ -126,9 +201,9 @@ export default function AllTeachersPage() {
       ) : filteredTeachers.length === 0 ? (
         <Card className="border-border bg-card/50 shadow-sm rounded-2xl p-12 text-center">
           <FaUser className="mx-auto text-4xl text-muted-foreground/40 mb-3" />
-          <h3 className="text-base font-bold text-foreground">কোনো শিক্ষক পাওয়া যায়নি</h3>
+          <h3 className="text-base font-bold text-foreground">কোনো শিক্ষক পাওয়া যায়নি</h3>
           <p className="text-xs text-muted-foreground mt-1">
-            {searchTerm ? "আপনার অনুসন্ধান অনুযায়ী কোনো তথ্য মেলেনি।" : "এখনো কোনো শিক্ষক নিবন্ধিত হয়নি।"}
+            {searchTerm ? "আপনার অনুসন্ধান অনুযায়ী কোনো তথ্য মেলেনি।" : "এখনো কোনো শিক্ষক নিবন্ধিত হয়নি।"}
           </p>
         </Card>
       ) : (
@@ -154,7 +229,7 @@ export default function AllTeachersPage() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          teacher.name.charAt(0)
+                          teacher.name?.charAt(0) || "T"
                         )}
                       </div>
                       <div className="overflow-hidden">
@@ -164,7 +239,7 @@ export default function AllTeachersPage() {
                     </div>
 
                     {/* Approval Badge */}
-                    {teacher.user.isApproved ? (
+                    {teacher.user?.isApproved ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-bold shrink-0">
                         <FaCheckCircle className="text-[9px]" /> Active
                       </span>
@@ -185,7 +260,7 @@ export default function AllTeachersPage() {
                     )}
                     <div className="flex items-center gap-2 truncate">
                       <FaEnvelope className="text-[#c9a961] shrink-0" />
-                      <span className="truncate">{teacher.user.email}</span>
+                      <span className="truncate">{teacher.user?.email || "N/A"}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <FaPhone className="text-[#c9a961] shrink-0" />
@@ -193,14 +268,28 @@ export default function AllTeachersPage() {
                     </div>
                   </div>
 
-                  {/* View Details Button */}
-                  <div className="pt-2">
+                  {/* Action Buttons */}
+                  <div className="pt-2 flex items-center gap-2">
                     <Button
                       onClick={() => setSelectedTeacher(teacher)}
-                      className="w-full bg-card hover:bg-muted text-foreground border border-border h-9 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1.5"
+                      className="flex-1 bg-card hover:bg-muted text-foreground border border-border h-9 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1.5"
                     >
                       <FaEye className="text-xs text-[#c9a961]" />
-                      <span>বিস্তারিত দেখুন (Show Details)</span>
+                      <span>ভিউ</span>
+                    </Button>
+                    <Button
+                      onClick={() => setEditingTeacher(teacher)}
+                      className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 h-9 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1 px-3"
+                      title="শিক্ষক তথ্য এডিট করুন"
+                    >
+                      <FaEdit className="text-xs" />
+                    </Button>
+                    <Button
+                      onClick={() => setDeletingTeacher(teacher)}
+                      className="bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 h-9 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1 px-3"
+                      title="শিক্ষক অ্যাকাউন্ট মুছে ফেলুন"
+                    >
+                      <FaTrashAlt className="text-xs" />
                     </Button>
                   </div>
                 </CardContent>
@@ -236,7 +325,6 @@ export default function AllTeachersPage() {
 
               {/* Modal Body */}
               <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-                {/* Profile Header */}
                 <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border">
                   <div className="w-16 h-16 rounded-xl bg-card border border-border overflow-hidden flex items-center justify-center text-[#c9a961] font-bold text-2xl shrink-0">
                     {selectedTeacher.photoUrl ? (
@@ -246,14 +334,14 @@ export default function AllTeachersPage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      selectedTeacher.name.charAt(0)
+                      selectedTeacher.name?.charAt(0) || "T"
                     )}
                   </div>
                   <div>
                     <h3 className="text-base font-extrabold text-foreground">{selectedTeacher.name}</h3>
                     <p className="text-xs text-[#c9a961] font-bold mt-0.5">{selectedTeacher.designation}</p>
                     <div className="mt-1.5">
-                      {selectedTeacher.user.isApproved ? (
+                      {selectedTeacher.user?.isApproved ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
                           <FaCheckCircle /> Approved Account
                         </span>
@@ -266,7 +354,6 @@ export default function AllTeachersPage() {
                   </div>
                 </div>
 
-                {/* Professional Info */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-[#c9a961]">
                     পেশাগত যোগ্যতা ও বিভাগ
@@ -287,7 +374,6 @@ export default function AllTeachersPage() {
                   </div>
                 </div>
 
-                {/* Personal & Contact Info */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-[#c9a961]">
                     ব্যক্তিগত ও যোগাযোগের তথ্য
@@ -296,7 +382,7 @@ export default function AllTeachersPage() {
                     <div>
                       <span className="text-muted-foreground block text-[10px] uppercase font-semibold">ইমেইল</span>
                       <span className="font-medium text-foreground flex items-center gap-1.5 mt-0.5 truncate">
-                        <FaEnvelope className="text-[#c9a961] shrink-0" /> {selectedTeacher.user.email}
+                        <FaEnvelope className="text-[#c9a961] shrink-0" /> {selectedTeacher.user?.email || "N/A"}
                       </span>
                     </div>
                     <div>
@@ -335,6 +421,218 @@ export default function AllTeachersPage() {
                 >
                   বন্ধ করুন (Close)
                 </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Teacher Modal */}
+      <AnimatePresence>
+        {editingTeacher && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-card border border-border shadow-2xl rounded-2xl max-w-lg w-full overflow-hidden relative"
+            >
+              <div className="p-5 bg-muted/40 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-2 text-foreground font-bold text-base">
+                  <FaEdit className="text-[#c9a961]" />
+                  <span>শিক্ষকের তথ্য সম্পাদনা (Edit Teacher)</span>
+                </div>
+                <button
+                  onClick={() => setEditingTeacher(null)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateTeacher} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-foreground">শিক্ষকের নাম</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingTeacher.name}
+                    onChange={(e) => setEditingTeacher({ ...editingTeacher, name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-foreground">পদবী (Designation)</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingTeacher.designation}
+                      onChange={(e) => setEditingTeacher({ ...editingTeacher, designation: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-foreground">ডিপার্টমেন্ট</label>
+                    <input
+                      type="text"
+                      value={editingTeacher.department || ""}
+                      onChange={(e) => setEditingTeacher({ ...editingTeacher, department: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-foreground">ফোন নম্বর</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingTeacher.phone}
+                      onChange={(e) => setEditingTeacher({ ...editingTeacher, phone: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-foreground">যোগ্যতা (Qualification)</label>
+                    <input
+                      type="text"
+                      value={editingTeacher.qualification || ""}
+                      onChange={(e) => setEditingTeacher({ ...editingTeacher, qualification: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-foreground">জেন্ডার</label>
+                    <select
+                      value={editingTeacher.gender}
+                      onChange={(e) => setEditingTeacher({ ...editingTeacher, gender: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    >
+                      <option value="MALE">MALE</option>
+                      <option value="FEMALE">FEMALE</option>
+                      <option value="OTHER">OTHER</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-foreground">রক্তের গ্রুপ</label>
+                    <input
+                      type="text"
+                      value={editingTeacher.bloodGroup || ""}
+                      onChange={(e) => setEditingTeacher({ ...editingTeacher, bloodGroup: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-foreground">NID / পাসপোর্ট নম্বর</label>
+                  <input
+                    type="text"
+                    value={editingTeacher.nidOrPassport || ""}
+                    onChange={(e) => setEditingTeacher({ ...editingTeacher, nidOrPassport: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                </div>
+
+                <div className="pt-4 border-t border-border flex items-center justify-end gap-2">
+                  <Button
+                    type="button"
+                    onClick={() => setEditingTeacher(null)}
+                    className="bg-card hover:bg-muted text-foreground border border-border text-xs px-4 h-9 rounded-xl font-semibold"
+                  >
+                    বাতিল
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isUpdating}
+                    className="bg-primary text-primary-foreground hover:opacity-90 text-xs px-5 h-9 rounded-xl font-semibold flex items-center gap-1.5"
+                  >
+                    {isUpdating ? (
+                      <>
+                        <FaSpinner className="animate-spin text-xs" />
+                        <span>আপডেট হচ্ছে...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaSave className="text-xs" />
+                        <span>সংরক্ষণ করুন</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 🔴 Custom Delete Confirmation Alert Modal */}
+      <AnimatePresence>
+        {deletingTeacher && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 15 }}
+              className="bg-card border border-destructive/30 shadow-2xl rounded-2xl max-w-md w-full overflow-hidden relative"
+            >
+              <div className="p-6 text-center space-y-4">
+                <div className="w-14 h-14 rounded-full bg-destructive/10 text-destructive border border-destructive/20 mx-auto flex items-center justify-center text-2xl">
+                  <FaExclamationTriangle />
+                </div>
+
+                <div className="space-y-1.5">
+                  <h3 className="text-base font-bold text-foreground">
+                    শিক্ষক প্রোফাইল মুছে ফেলতে চান?
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    আপনি কি নিশ্চিত যে শিক্ষক <span className="font-bold text-foreground">"{deletingTeacher.name}"</span> এর প্রোফাইল এবং সম্পর্কিত ব্যবহারকারী অ্যাকাউন্টটি স্থায়ীভাবে মুছে ফেলতে চান?
+                  </p>
+                </div>
+
+                <div className="p-3 bg-muted/40 rounded-xl border border-border text-left text-xs space-y-1">
+                  <p className="text-muted-foreground"><span className="font-semibold text-foreground">ইমেইল:</span> {deletingTeacher.user?.email}</p>
+                  <p className="text-muted-foreground"><span className="font-semibold text-foreground">পদবী:</span> {deletingTeacher.designation}</p>
+                </div>
+
+                <p className="text-[11px] text-destructive font-medium">
+                  ⚠️ এই প্রক্রিয়াটি আর কখনো ফিরিয়ে আনা সম্ভব হবে না।
+                </p>
+
+                <div className="pt-2 flex items-center gap-3">
+                  <Button
+                    type="button"
+                    disabled={!!deletingId}
+                    onClick={() => setDeletingTeacher(null)}
+                    className="flex-1 bg-card hover:bg-muted text-foreground border border-border h-10 rounded-xl text-xs font-semibold"
+                  >
+                    বাতিল করুন
+                  </Button>
+                  <Button
+                    type="button"
+                    disabled={!!deletingId}
+                    onClick={confirmDeleteTeacher}
+                    className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground h-10 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 shadow-md"
+                  >
+                    {deletingId ? (
+                      <>
+                        <FaSpinner className="animate-spin text-xs" />
+                        <span>মুছে ফেলা হচ্ছে...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaTrashAlt className="text-xs" />
+                        <span>হ্যাঁ, মুছে ফেলুন</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </motion.div>
           </div>

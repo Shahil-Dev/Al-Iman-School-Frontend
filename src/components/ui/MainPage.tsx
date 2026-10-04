@@ -161,7 +161,7 @@ interface Slide {
 }
 
 const SPRING_CONFIG = { damping: 25, stiffness: 150, mass: 0.5 };
-const AUTOPLAY_DELAY = 6000;
+const AUTOPLAY_DELAY = 3000;
 
 // ============ Mouse Gradient ============
 const MouseTrackingGradient = memo(() => {

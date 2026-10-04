@@ -37,7 +37,7 @@ export default function Footer() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-white tracking-tight">
-                  {isBn ? "আল-ঈমান ইসলামিক স্কুল" : "AL-IMAN ISLAMIC SCHOOL"}
+                  {isBn ? "আল-ঈমান স্কুল এন্ড কলেজ" : "AL-IMAN ISLAMIC SCHOOL AND COLLEGE"}
                 </h2>
                 <p className="text-[11px] text-emerald-400 font-medium">
                   {isBn ? "শিক্ষা • নৈতিকতা • আদর্শ" : "Education • Morality • Ethics"}
@@ -54,7 +54,7 @@ export default function Footer() {
             {/* Social Connect Icons */}
             <div className="flex items-center gap-2 pt-1">
               <a
-                href="https://facebook.com"
+                href="https://www.facebook.com/share/1J38g4UxLQ/"
                 target="_blank"
                 rel="noreferrer"
                 className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-emerald-700 text-slate-300 hover:text-white flex items-center justify-center transition-all border border-slate-700 text-xs"
