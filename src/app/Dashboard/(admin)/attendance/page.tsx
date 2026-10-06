@@ -9,7 +9,6 @@ import {
   FaSpinner,
   FaGraduationCap,
   FaSave,
-  FaLock,
 } from "react-icons/fa";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
@@ -31,11 +30,6 @@ export default function AttendanceManagementPage() {
 
   const [students, setStudents] = useState<any[]>([]);
   const [attendanceMap, setAttendanceMap] = useState<
-    Record<string, "PRESENT" | "ABSENT" | "LATE">
-  >({});
-  
-  // 🔒 Lock system: Track statuses already saved in DB
-  const [savedAttendanceMap, setSavedAttendanceMap] = useState<
     Record<string, "PRESENT" | "ABSENT" | "LATE">
   >({});
 
@@ -91,7 +85,9 @@ export default function AttendanceManagementPage() {
 
       const existingMap: Record<string, "PRESENT" | "ABSENT" | "LATE"> = {};
       existingData.forEach((att: any) => {
-        existingMap[att.studentId] = att.status;
+        if (att.status) {
+          existingMap[att.studentId] = att.status;
+        }
       });
 
       const initialMap: Record<string, "PRESENT" | "ABSENT" | "LATE"> = {};
@@ -101,7 +97,6 @@ export default function AttendanceManagementPage() {
 
       setStudents(rawStudents);
       setAttendanceMap(initialMap);
-      setSavedAttendanceMap(existingMap); // Store current saved database state
     } catch (err: any) {
       toast.error(
         err?.response?.data?.message || "Failed to fetch student attendance data!"
@@ -115,12 +110,6 @@ export default function AttendanceManagementPage() {
     studentId: string,
     status: "PRESENT" | "ABSENT" | "LATE"
   ) => {
-    // 🔒 Security Check: If already saved as PRESENT, lock modifications
-    if (savedAttendanceMap[studentId] === "PRESENT") {
-      toast.warning("This student is already marked as PRESENT and cannot be changed!");
-      return;
-    }
-
     setAttendanceMap((prev) => ({
       ...prev,
       [studentId]: status,
@@ -128,15 +117,10 @@ export default function AttendanceManagementPage() {
   };
 
   const handleMarkAll = (status: "PRESENT" | "ABSENT" | "LATE") => {
-    const updatedMap: Record<string, "PRESENT" | "ABSENT" | "LATE"> = { ...attendanceMap };
-    
+    const updatedMap: Record<string, "PRESENT" | "ABSENT" | "LATE"> = {};
     students.forEach((stu) => {
-      // Only change if not locked as PRESENT
-      if (savedAttendanceMap[stu.id] !== "PRESENT") {
-        updatedMap[stu.id] = status;
-      }
+      updatedMap[stu.id] = status;
     });
-
     setAttendanceMap(updatedMap);
   };
 
@@ -147,7 +131,7 @@ export default function AttendanceManagementPage() {
     }
 
     setSubmitting(true);
-    const toastId = toast.loading("Submitting attendance & triggering WhatsApp alerts...");
+    const toastId = toast.loading("Submitting attendance & updating database...");
 
     try {
       const payload = {
@@ -160,16 +144,9 @@ export default function AttendanceManagementPage() {
         })),
       };
 
-      const res = await attendanceService.takeAttendance(payload);
+      await attendanceService.takeAttendance(payload);
 
-      // Lock current state in memory after successful save
-      const newlySavedMap = { ...savedAttendanceMap };
-      Object.keys(attendanceMap).forEach((stuId) => {
-        newlySavedMap[stuId] = attendanceMap[stuId];
-      });
-      setSavedAttendanceMap(newlySavedMap);
-
-      toast.success("Attendance saved & WhatsApp notifications sent!", {
+      toast.success("Attendance saved successfully!", {
         id: toastId,
       });
     } catch (err: any) {
@@ -193,7 +170,7 @@ export default function AttendanceManagementPage() {
             <span>Digital Attendance Management</span>
           </h1>
           <p className="text-xs text-emerald-100/80 mt-1">
-            Select Class, Section, and Date to mark attendance. Absent notifications will automatically send via WhatsApp.
+            Select Class, Section, and Date to mark attendance. You can change and save status anytime.
           </p>
         </div>
       </div>
@@ -294,7 +271,6 @@ export default function AttendanceManagementPage() {
               <tbody className="divide-y divide-border">
                 {students.map((stu) => {
                   const currentStatus = attendanceMap[stu.id] || "PRESENT";
-                  const isLockedPresent = savedAttendanceMap[stu.id] === "PRESENT";
 
                   return (
                     <tr key={stu.id} className="hover:bg-muted/40 transition-colors">
@@ -302,21 +278,16 @@ export default function AttendanceManagementPage() {
                       <td className="p-3.5 font-mono text-emerald-700 font-bold">
                         {stu.studentIdNo}
                       </td>
-                      <td className="p-3.5 font-semibold flex items-center gap-2">
-                        <span>{stu.firstName} {stu.lastName}</span>
-                        {isLockedPresent && (
-                          <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <FaLock size={8} /> Verified Present
-                          </span>
-                        )}
+                      <td className="p-3.5 font-semibold">
+                        {stu.firstName} {stu.lastName}
                       </td>
                       <td className="p-3.5 flex justify-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleStatusChange(stu.id, "PRESENT")}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold border transition-all ${
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold border transition-all cursor-pointer ${
                             currentStatus === "PRESENT"
-                              ? "bg-emerald-600 text-white border-emerald-600"
+                              ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
                               : "bg-background text-muted-foreground border-input hover:bg-emerald-50"
                           }`}
                         >
@@ -325,26 +296,24 @@ export default function AttendanceManagementPage() {
 
                         <button
                           type="button"
-                          disabled={isLockedPresent}
                           onClick={() => handleStatusChange(stu.id, "ABSENT")}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold border transition-all ${
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold border transition-all cursor-pointer ${
                             currentStatus === "ABSENT"
-                              ? "bg-rose-600 text-white border-rose-600"
+                              ? "bg-rose-600 text-white border-rose-600 shadow-sm"
                               : "bg-background text-muted-foreground border-input hover:bg-rose-50"
-                          } ${isLockedPresent ? "opacity-30 cursor-not-allowed hover:bg-transparent" : ""}`}
+                          }`}
                         >
                           <FaTimes /> Absent
                         </button>
 
                         <button
                           type="button"
-                          disabled={isLockedPresent}
                           onClick={() => handleStatusChange(stu.id, "LATE")}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold border transition-all ${
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold border transition-all cursor-pointer ${
                             currentStatus === "LATE"
-                              ? "bg-amber-500 text-white border-amber-500"
+                              ? "bg-amber-500 text-white border-amber-500 shadow-sm"
                               : "bg-background text-muted-foreground border-input hover:bg-amber-50"
-                          } ${isLockedPresent ? "opacity-30 cursor-not-allowed hover:bg-transparent" : ""}`}
+                          }`}
                         >
                           <FaClock /> Late
                         </button>
@@ -360,10 +329,10 @@ export default function AttendanceManagementPage() {
             <Button
               onClick={handleSubmitAttendance}
               disabled={submitting}
-              className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-6 py-2 rounded-xl text-xs flex items-center gap-2"
+              className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-6 py-2 rounded-xl text-xs flex items-center gap-2 cursor-pointer"
             >
               {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}{" "}
-              Save & Send WhatsApp Alerts
+              Save Attendance Records
             </Button>
           </div>
         </Card>

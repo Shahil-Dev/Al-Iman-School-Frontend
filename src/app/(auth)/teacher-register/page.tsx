@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/router";
 import {
   FaGraduationCap,
   FaChalkboardTeacher,
@@ -24,13 +23,18 @@ import {
   FaMoon,
   FaGlobe,
 } from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import axiosInstance from "@/src/lib/axiosInstance";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Input } from "@base-ui/react";
 import { Button } from "@/src/components/ui/button";
 
 type LangType = "EN" | "BN";
+
+type ClassOption = {
+  id: string;
+  name: string;
+};
 
 export default function TeacherRegisterPage() {
   const [formData, setFormData] = useState({
@@ -45,14 +49,30 @@ export default function TeacherRegisterPage() {
     gender: "MALE",
     bloodGroup: "A+",
     nidOrPassport: "",
-    photoUrl: "",
+    classTeacherOfId: "",
   });
 
+  const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [lang, setLang] = useState<LangType>("EN");
+
+  // Fetch Classes for Class Teacher Selection
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const res = await axiosInstance.get("/academic-management/classes");
+        setClasses(res.data?.data || []);
+      } catch (err) {
+        console.error("Failed to load classes");
+      }
+    };
+    fetchClasses();
+  }, []);
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
@@ -71,6 +91,15 @@ export default function TeacherRegisterPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Image Selection Handler
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -83,6 +112,20 @@ export default function TeacherRegisterPage() {
     }
 
     try {
+      let photoUrl = "";
+
+      // Optional Image Upload logic (base64 or FormData upload)
+      if (photoFile) {
+        const reader = new FileReader();
+        reader.readAsDataURL(photoFile);
+        await new Promise((resolve) => {
+          reader.onloadend = () => {
+            photoUrl = reader.result as string;
+            resolve(true);
+          };
+        });
+      }
+
       const payload = {
         name: formData.name,
         email: formData.email,
@@ -94,7 +137,8 @@ export default function TeacherRegisterPage() {
         gender: formData.gender,
         bloodGroup: formData.bloodGroup,
         nidOrPassport: formData.nidOrPassport,
-        photoUrl: formData.photoUrl,
+        classTeacherOfId: formData.classTeacherOfId || undefined,
+        photoUrl: photoUrl || undefined,
       };
 
       await axiosInstance.post("/teachers/register", payload);
@@ -112,23 +156,6 @@ export default function TeacherRegisterPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4 font-sans relative overflow-hidden transition-colors duration-300">
-      {/* Background Subtle Grid Pattern */}
-      <div
-        className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
-        style={{
-          backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`,
-          backgroundSize: "40px 40px",
-        }}
-      />
-
-      {/* Arabic Typography Watermark Background */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] dark:opacity-[0.04] pointer-events-none select-none overflow-hidden">
-        <span className="text-[16vw] font-serif tracking-widest text-[#c9a961] whitespace-nowrap dir-rtl">
-          العلم نور والجهل ظلام
-        </span>
-      </div>
-
-      {/* Header Controls: Theme & Language Toggle */}
       <div className="absolute top-5 right-5 z-20 flex items-center gap-3">
         <button
           onClick={cycleLanguage}
@@ -156,7 +183,6 @@ export default function TeacherRegisterPage() {
         transition={{ duration: 0.5 }}
         className="max-w-2xl w-full space-y-6 relative z-10 my-10"
       >
-        {/* Header Branding */}
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block">
             <div className="p-3.5 bg-gradient-to-br from-[#c9a961] to-[#9a7b38] text-white rounded-2xl shadow-xl">
@@ -166,55 +192,25 @@ export default function TeacherRegisterPage() {
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
             Al-Iman School Teacher Application
           </h1>
-          <p className="text-xs text-muted-foreground tracking-wide uppercase font-semibold">
-            طلب انضمام المعلمين
-          </p>
-        </div>
-
-        {/* Registration Type Switcher Tabs */}
-        <div className="flex items-center justify-center gap-2 p-1.5 bg-muted rounded-2xl max-w-sm mx-auto border border-border">
-          <button
-            type="button"
-            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold bg-card text-[#c9a961] shadow-sm border border-[#c9a961]/20"
-          >
-            <FaChalkboardTeacher className="text-sm" />
-            <span>Teacher Form</span>
-          </button>
-          <Link
-            href="/parent-register"
-            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <FaUserFriends className="text-sm" />
-            <span>Parent Form</span>
-          </Link>
         </div>
 
         <Card className="border-border shadow-2xl rounded-2xl overflow-hidden bg-card/95 backdrop-blur-md">
           <CardContent className="p-6 md:p-8">
             {isSubmitted ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-8 space-y-4"
-              >
+              <div className="text-center py-8 space-y-4">
                 <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto text-3xl">
                   <FaCheckCircle />
                 </div>
                 <h2 className="text-xl font-bold text-foreground">
                   Registration Submitted Successfully!
                 </h2>
-                <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-                  Your application for teacher registration has been sent to the Admin Panel. Once reviewed and approved by the Super Admin, you will receive confirmation and be able to log in.
-                </p>
-                <div className="pt-4">
-                  <Link
-                    href="/login"
-                    className="inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-[#c9a961] text-white text-xs font-bold hover:opacity-90 transition-all shadow-md"
-                  >
-                    Back to Login Page
-                  </Link>
-                </div>
-              </motion.div>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-[#c9a961] text-white text-xs font-bold shadow-md"
+                >
+                  Back to Login Page
+                </Link>
+              </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 {error && (
@@ -230,228 +226,134 @@ export default function TeacherRegisterPage() {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Full Name *
-                      </label>
-                      <div className="relative">
-                        <FaUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <Input
-                          name="name"
-                          required
-                          placeholder="e.g. Md. Abdur Rahman"
-                          value={formData.name}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Email Address *
-                      </label>
-                      <div className="relative">
-                        <FaEnvelope className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <Input
-                          name="email"
-                          type="email"
-                          required
-                          placeholder="teacher@al-iman.com"
-                          value={formData.email}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Password *
-                      </label>
-                      <div className="relative">
-                        <FaLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <Input
-                          name="password"
-                          type="password"
-                          required
-                          placeholder="••••••••"
-                          value={formData.password}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Confirm Password *
-                      </label>
-                      <div className="relative">
-                        <FaLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <Input
-                          name="confirmPassword"
-                          type="password"
-                          required
-                          placeholder="••••••••"
-                          value={formData.confirmPassword}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section 2: Professional Info */}
-                <div className="space-y-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#c9a961] border-b border-border pb-1">
-                    2. Professional Information
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Designation *
-                      </label>
-                      <div className="relative">
-                        <FaBuilding className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <Input
-                          name="designation"
-                          required
-                          placeholder="Senior / Assistant Teacher"
-                          value={formData.designation}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Department / Specialty
-                      </label>
-                      <div className="relative">
-                        <FaBook className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <Input
-                          name="department"
-                          placeholder="e.g. Arabic, Mathematics"
-                          value={formData.department}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Qualification
-                      </label>
+                      <label className="block text-xs font-semibold mb-1">Full Name *</label>
                       <Input
-                        name="qualification"
-                        placeholder="e.g. M.A in Arabic, B.Sc"
-                        value={formData.qualification}
+                        name="name"
+                        required
+                        placeholder="e.g. Md. Abdur Rahman"
+                        value={formData.name}
                         onChange={handleChange}
-                        className="px-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
+                        className="px-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">Email Address *</label>
+                      <Input
+                        name="email"
+                        type="email"
+                        required
+                        placeholder="teacher@al-iman.com"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="px-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">Password *</label>
+                      <Input
+                        name="password"
+                        type="password"
+                        required
+                        value={formData.password}
+                        onChange={handleChange}
+                        className="px-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">Confirm Password *</label>
+                      <Input
+                        name="confirmPassword"
+                        type="password"
+                        required
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className="px-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Section 3: Personal & Verification Details */}
+                {/* Section 2: Professional & Class Teacher Assignment */}
                 <div className="space-y-4">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-[#c9a961] border-b border-border pb-1">
-                    3. Personal Details
+                    2. Professional & Class Information
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Mobile Number *
-                      </label>
-                      <div className="relative">
-                        <FaPhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <Input
-                          name="phone"
-                          required
-                          placeholder="01700000000"
-                          value={formData.phone}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
-                        />
-                      </div>
+                      <label className="block text-xs font-semibold mb-1">Designation *</label>
+                      <Input
+                        name="designation"
+                        required
+                        value={formData.designation}
+                        onChange={handleChange}
+                        className="px-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full"
+                      />
                     </div>
-
                     <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Gender *
-                      </label>
-                      <div className="relative">
-                        <FaVenusMars className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <select
-                          name="gender"
-                          value={formData.gender}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none cursor-pointer"
-                        >
-                          <option value="MALE">MALE</option>
-                          <option value="FEMALE">FEMALE</option>
-                        </select>
-                      </div>
+                      <label className="block text-xs font-semibold mb-1">Department</label>
+                      <Input
+                        name="department"
+                        value={formData.department}
+                        onChange={handleChange}
+                        className="px-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full"
+                      />
                     </div>
-
                     <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Blood Group
-                      </label>
-                      <div className="relative">
-                        <FaTint className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <select
-                          name="bloodGroup"
-                          value={formData.bloodGroup}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none cursor-pointer"
-                        >
-                          <option value="A+">A+</option>
-                          <option value="A-">A-</option>
-                          <option value="B+">B+</option>
-                          <option value="B-">B-</option>
-                          <option value="O+">O+</option>
-                          <option value="O-">O-</option>
-                          <option value="AB+">AB+</option>
-                          <option value="AB-">AB-</option>
-                        </select>
-                      </div>
+                      <label className="block text-xs font-semibold mb-1">Class Teacher Of (শ্রেণি শিক্ষক)</label>
+                      <select
+                        name="classTeacherOfId"
+                        value={formData.classTeacherOfId}
+                        onChange={handleChange}
+                        className="px-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full cursor-pointer"
+                      >
+                        <option value="">None (সাধারণ শিক্ষক)</option>
+                        {classes.map((cls) => (
+                          <option key={cls.id} value={cls.id}>
+                            {cls.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
+                </div>
 
+                {/* Section 3: Personal & Photo File Selection */}
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#c9a961] border-b border-border pb-1">
+                    3. Personal Details & Photo
+                  </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        NID or Passport Number
-                      </label>
-                      <div className="relative">
-                        <FaIdCard className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <Input
-                          name="nidOrPassport"
-                          placeholder="Enter NID or Passport No"
-                          value={formData.nidOrPassport}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
-                        />
-                      </div>
+                      <label className="block text-xs font-semibold mb-1">Mobile Number *</label>
+                      <Input
+                        name="phone"
+                        required
+                        placeholder="01700000000"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className="px-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full"
+                      />
                     </div>
 
+                    {/* File Browser for Image */}
                     <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Profile Photo URL
-                      </label>
-                      <div className="relative">
-                        <FaCamera className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-                        <Input
-                          name="photoUrl"
-                          placeholder="https://..."
-                          value={formData.photoUrl}
-                          onChange={handleChange}
-                          className="pl-10 pr-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full focus:ring-2 focus:ring-[#c9a961] focus:outline-none"
-                        />
+                      <label className="block text-xs font-semibold mb-1">Profile Photo (ছবি নির্বাচন করুন)</label>
+                      <div className="flex items-center gap-3">
+                        <label className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-muted/40 text-xs text-foreground cursor-pointer hover:border-[#c9a961] transition-all">
+                          <FaCamera className="text-[#c9a961]" />
+                          <span>ফোল্ডার থেকে ছবি আনুন</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="hidden"
+                          />
+                        </label>
+                        {photoPreview && (
+                          <div className="w-10 h-10 rounded-xl overflow-hidden border border-border">
+                            <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -460,31 +362,14 @@ export default function TeacherRegisterPage() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-[#c9a961] to-[#a88a44] text-white hover:opacity-95 h-11 rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-r from-[#c9a961] to-[#a88a44] text-white h-11 rounded-xl text-xs font-bold shadow-md"
                 >
-                  {loading ? (
-                    <>
-                      <FaSpinner className="animate-spin text-sm" />
-                      Submitting Application...
-                    </>
-                  ) : (
-                    "Submit Teacher Application"
-                  )}
+                  {loading ? <FaSpinner className="animate-spin text-sm" /> : "Submit Teacher Application"}
                 </Button>
               </form>
             )}
           </CardContent>
         </Card>
-
-        <div className="text-center">
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors"
-          >
-            <FaArrowLeft className="text-xs" />
-            Already registered? Back to Login
-          </Link>
-        </div>
       </motion.div>
     </div>
   );
