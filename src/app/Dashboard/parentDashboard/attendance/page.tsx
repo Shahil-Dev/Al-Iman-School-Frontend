@@ -1,68 +1,122 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   FaCalendarCheck,
   FaSpinner,
   FaCheckCircle,
   FaTimesCircle,
+  FaClock,
 } from "react-icons/fa";
 import { Card, CardContent } from "@/src/components/ui/card";
 import axiosInstance from "@/src/lib/axiosInstance";
 import { useLanguage } from "@/src/context/LanguageContext";
 
+interface Student {
+  id: string;
+  firstName: string;
+  lastName: string;
+  class?: { name: string };
+}
+
+interface AttendanceLog {
+  id: string;
+  date: string;
+  status: "PRESENT" | "ABSENT" | "LATE";
+  remark?: string;
+  note?: string;
+}
+
+interface AttendanceSummary {
+  totalDays?: number;
+  presentDays?: number;
+  absentDays?: number;
+  lateDays?: number;
+  percentage?: number;
+  logs?: AttendanceLog[];
+  summary?: {
+    totalRecords: number;
+    presentCount: number;
+    absentCount: number;
+    lateCount: number;
+    percentage: number;
+  };
+  records?: AttendanceLog[];
+}
+
 export default function ParentAttendancePage() {
   const { language } = useLanguage();
   const isBn = language === "bn";
 
-  const [children, setChildren] = useState<any[]>([]);
-  const [selectedChild, setSelectedChild] = useState<any | null>(null);
-  const [attendanceData, setAttendanceData] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [children, setChildren] = useState<Student[]>([]);
+  const [selectedChild, setSelectedChild] = useState<Student | null>(null);
+  const [attendanceData, setAttendanceData] = useState<AttendanceSummary | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
 
-  // Load Parent's Children List
   useEffect(() => {
+    let isMounted = true;
     setLoading(true);
+
     axiosInstance
       .get("/parents/my-children")
       .then((res) => {
-        const list = res.data?.data || res.data || [];
+        if (!isMounted) return;
+        const list: Student[] = res.data?.data || res.data || [];
         setChildren(Array.isArray(list) ? list : []);
         if (list.length > 0) {
           setSelectedChild(list[0]);
         }
       })
       .catch((err) => console.error("Failed to load children list", err))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Load Student Attendance Summary & Logs
   useEffect(() => {
     if (!selectedChild?.id) return;
+    let isMounted = true;
     setLoading(true);
+
     axiosInstance
       .get(`/attendances/summary/${selectedChild.id}`)
       .then((res) => {
+        if (!isMounted) return;
         setAttendanceData(res.data?.data || res.data || null);
       })
       .catch((err) => console.error("Failed to load attendance", err))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [selectedChild]);
 
-  // Filter Attendance Logs
-  const attendanceLogs: any[] =
-    attendanceData?.logs || attendanceData?.attendances || [];
-  const filteredLogs = attendanceLogs.filter((log) => {
-    if (filterStatus === "PRESENT") return log.status === "PRESENT";
-    if (filterStatus === "ABSENT") return log.status === "ABSENT";
-    if (filterStatus === "LATE") return log.status === "LATE";
-    return true;
-  });
+  // Handle normalized logs array
+  const logsList = useMemo(() => {
+    return attendanceData?.logs || attendanceData?.records || [];
+  }, [attendanceData]);
+
+  const filteredLogs = useMemo(() => {
+    if (filterStatus === "ALL") return logsList;
+    return logsList.filter((log) => log.status === filterStatus);
+  }, [logsList, filterStatus]);
+
+  // Extract Summary Counts safely
+  const percentageVal = attendanceData?.percentage ?? attendanceData?.summary?.percentage ?? 100;
+  const presentDaysVal = attendanceData?.presentDays ?? attendanceData?.summary?.presentCount ?? 0;
+  const absentDaysVal = attendanceData?.absentDays ?? attendanceData?.summary?.absentCount ?? 0;
+  const lateDaysVal = attendanceData?.lateDays ?? attendanceData?.summary?.lateCount ?? 0;
 
   return (
     <div className="space-y-6 font-sans">
-      {/* Page Header */}
       <div className="bg-card border border-border p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <span className="bg-primary/10 text-primary text-[11px] px-3 py-1 rounded-full font-semibold uppercase tracking-wider">
@@ -81,7 +135,6 @@ export default function ParentAttendancePage() {
           </p>
         </div>
 
-        {/* Child Selection Dropdown */}
         {children.length > 1 && (
           <div className="bg-muted/50 p-2.5 rounded-xl border border-border">
             <label className="block text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
@@ -116,7 +169,6 @@ export default function ParentAttendancePage() {
         </div>
       ) : selectedChild ? (
         <>
-          {/* Summary Cards Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Card className="border-border/60 shadow-sm rounded-2xl bg-card">
               <CardContent className="p-5 text-center space-y-1">
@@ -124,7 +176,7 @@ export default function ParentAttendancePage() {
                   {isBn ? "উপস্থিতির হার" : "Attendance Rate"}
                 </span>
                 <span className="text-2xl sm:text-3xl font-extrabold text-primary font-mono block">
-                  {attendanceData?.percentage ?? 100}%
+                  {percentageVal}%
                 </span>
               </CardContent>
             </Card>
@@ -135,7 +187,7 @@ export default function ParentAttendancePage() {
                   {isBn ? "মোট উপস্থিত" : "Total Present"}
                 </span>
                 <span className="text-2xl sm:text-3xl font-extrabold text-emerald-600 font-mono block">
-                  {attendanceData?.presentDays ?? attendanceData?.totalPresence ?? 0}
+                  {presentDaysVal}
                 </span>
               </CardContent>
             </Card>
@@ -146,7 +198,7 @@ export default function ParentAttendancePage() {
                   {isBn ? "মোট অনুপস্থিত" : "Total Absent"}
                 </span>
                 <span className="text-2xl sm:text-3xl font-extrabold text-destructive font-mono block">
-                  {attendanceData?.absentDays ?? attendanceData?.totalAbsent ?? 0}
+                  {absentDaysVal}
                 </span>
               </CardContent>
             </Card>
@@ -157,13 +209,12 @@ export default function ParentAttendancePage() {
                   {isBn ? "দেরিতে উপস্থিতি" : "Late Arrival"}
                 </span>
                 <span className="text-2xl sm:text-3xl font-extrabold text-amber-500 font-mono block">
-                  {attendanceData?.lateDays ?? attendanceData?.totalLate ?? 0}
+                  {lateDaysVal}
                 </span>
               </CardContent>
             </Card>
           </div>
 
-          {/* Attendance Log Table Card */}
           <Card className="border-border/60 shadow-sm rounded-2xl bg-card">
             <CardContent className="p-6 space-y-4">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/50 pb-4">
@@ -176,42 +227,35 @@ export default function ParentAttendancePage() {
                   </span>
                 </h3>
 
-                {/* Filter Buttons */}
                 <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-xl border border-border text-[11px] font-semibold">
-                  <button
-                    onClick={() => setFilterStatus("ALL")}
-                    className={`px-3 py-1 rounded-lg transition-all ${
-                      filterStatus === "ALL"
-                        ? "bg-primary text-primary-foreground font-bold shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {isBn ? "সব" : "All"}
-                  </button>
-                  <button
-                    onClick={() => setFilterStatus("PRESENT")}
-                    className={`px-3 py-1 rounded-lg transition-all ${
-                      filterStatus === "PRESENT"
-                        ? "bg-emerald-600 text-white font-bold shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {isBn ? "উপস্থিত" : "Present"}
-                  </button>
-                  <button
-                    onClick={() => setFilterStatus("ABSENT")}
-                    className={`px-3 py-1 rounded-lg transition-all ${
-                      filterStatus === "ABSENT"
-                        ? "bg-destructive text-destructive-foreground font-bold shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {isBn ? "অনুপস্থিত" : "Absent"}
-                  </button>
+                  {["ALL", "PRESENT", "ABSENT", "LATE"].map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => setFilterStatus(status)}
+                      className={`px-3 py-1 rounded-lg transition-all ${
+                        filterStatus === status
+                          ? status === "PRESENT"
+                            ? "bg-emerald-600 text-white font-bold shadow-sm"
+                            : status === "ABSENT"
+                            ? "bg-destructive text-destructive-foreground font-bold shadow-sm"
+                            : status === "LATE"
+                            ? "bg-amber-500 text-white font-bold shadow-sm"
+                            : "bg-primary text-primary-foreground font-bold shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {status === "ALL"
+                        ? isBn ? "সব" : "All"
+                        : status === "PRESENT"
+                        ? isBn ? "উপস্থিত" : "Present"
+                        : status === "ABSENT"
+                        ? isBn ? "অনুপস্থিত" : "Absent"
+                        : isBn ? "লেট" : "Late"}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Table Render */}
               {filteredLogs.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-8">
                   {isBn
@@ -224,32 +268,20 @@ export default function ParentAttendancePage() {
                     <thead>
                       <tr className="border-b border-border/60 text-muted-foreground uppercase text-[10px] tracking-wider">
                         <th className="py-3 px-3">{isBn ? "তারিখ" : "Date"}</th>
-                        <th className="py-3 px-3">
-                          {isBn ? "স্ট্যাটাস" : "Status"}
-                        </th>
-                        <th className="py-3 px-3">
-                          {isBn ? "মন্তব্য / নোট" : "Note / Remark"}
-                        </th>
+                        <th className="py-3 px-3">{isBn ? "স্ট্যাটাস" : "Status"}</th>
+                        <th className="py-3 px-3">{isBn ? "মন্তব্য / নোট" : "Note / Remark"}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40 font-sans">
-                      {filteredLogs.map((log: any, idx: number) => {
+                      {filteredLogs.map((log) => {
                         const isPresent = log.status === "PRESENT";
                         const isLate = log.status === "LATE";
                         return (
-                          <tr
-                            key={log.id || idx}
-                            className="hover:bg-muted/30 transition-colors"
-                          >
+                          <tr key={log.id} className="hover:bg-muted/30 transition-colors">
                             <td className="py-3.5 px-3 font-mono font-medium text-foreground">
                               {new Date(log.date).toLocaleDateString(
                                 isBn ? "bn-BD" : "en-US",
-                                {
-                                  weekday: "short",
-                                  year: "numeric",
-                                  month: "short",
-                                  day: "numeric",
-                                }
+                                { weekday: "short", year: "numeric", month: "short", day: "numeric" }
                               )}
                             </td>
                             <td className="py-3.5 px-3">
@@ -265,29 +297,21 @@ export default function ParentAttendancePage() {
                                 {isPresent ? (
                                   <FaCheckCircle />
                                 ) : isLate ? (
-                                  <FaCalendarCheck />
+                                  <FaClock />
                                 ) : (
                                   <FaTimesCircle />
                                 )}
                                 <span>
                                   {isPresent
-                                    ? isBn
-                                      ? "উপস্থিত"
-                                      : "Present"
+                                    ? isBn ? "উপস্থিত" : "Present"
                                     : isLate
-                                    ? isBn
-                                      ? "দেরিতে উপস্থিতি"
-                                      : "Late"
-                                    : isBn
-                                    ? "অনুপস্থিত"
-                                    : "Absent"}
+                                    ? isBn ? "দেরিতে উপস্থিতি" : "Late"
+                                    : isBn ? "অনুপস্থিত" : "Absent"}
                                 </span>
                               </span>
                             </td>
                             <td className="py-3.5 px-3 text-muted-foreground">
-                              {log.remark ||
-                                log.note ||
-                                (isBn ? "স্বাভাবিক" : "Regular")}
+                              {log.remark || log.note || (isBn ? "স্বাভাবিক" : "Regular")}
                             </td>
                           </tr>
                         );

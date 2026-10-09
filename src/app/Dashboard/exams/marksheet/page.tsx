@@ -8,7 +8,6 @@ import {
   FaSearch,
   FaCheckCircle,
   FaTimesCircle,
-  FaSync,
   FaUniversity,
 } from "react-icons/fa";
 import { Card, CardContent } from "@/src/components/ui/card";
@@ -107,6 +106,7 @@ export default function StudentMarksheetPage() {
   useEffect(() => {
     if (!selectedClassId) {
       setStudents([]);
+      setSelectedStudentId("");
       return;
     }
     axiosInstance
@@ -123,7 +123,7 @@ export default function StudentMarksheetPage() {
       setError(
         isBn
           ? "অনুগ্রহ করে পরীক্ষা এবং শিক্ষার্থী নির্বাচন করুন।"
-          : "Please select both Exam and Student.",
+          : "Please select both Exam and Student."
       );
       return;
     }
@@ -133,27 +133,47 @@ export default function StudentMarksheetPage() {
       setError(null);
       setMarksheet(null);
 
-      const response = await axiosInstance.get(
-        `/exams/marksheet/${selectedExamId}/${selectedStudentId}`,
-      );
+      let response;
+      try {
+        response = await axiosInstance.get(
+          `/exams/marksheet/${selectedExamId}/${selectedStudentId}`
+        );
+      } catch (err) {
+        response = await axiosInstance.get(
+          `/marks/marksheet/${selectedExamId}/${selectedStudentId}`
+        );
+      }
 
       const data = response.data?.data || response.data;
 
-      if (!data || data.message || (data.marks && data.marks.length === 0)) {
+      const marks = data?.marks || data?.subjectMarks || [];
+
+      if (!data || data.message || marks.length === 0) {
         setError(
           isBn
-            ? "এই শিক্ষার্থীর জন্য কোনো মার্কশিট বা নম্বর পাওয়া যায়নি।"
-            : "No mark sheet records found for this student in the selected exam.",
+            ? "এই শিক্ষার্থীর জন্য কোনো মার্কশিট বা নম্বর পাওয়া যায়নি।"
+            : "No mark sheet records found for this student in the selected exam."
         );
       } else {
-        setMarksheet(data);
+        // Fallback resolution for student and exam details if not top-level
+        const resolvedStudent =
+          data.student || marks[0]?.student || {};
+        const resolvedExam =
+          data.exam || marks[0]?.exam || {};
+
+        setMarksheet({
+          ...data,
+          student: resolvedStudent,
+          exam: resolvedExam,
+          marks,
+        });
       }
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
           (isBn
-            ? "ফলাফল লোড করতে সমস্যা হয়েছে।"
-            : "Failed to retrieve student mark sheet."),
+            ? "ফলাফল লোড করতে সমস্যা হয়েছে।"
+            : "Failed to retrieve student mark sheet.")
       );
     } finally {
       setLoading(false);
@@ -283,8 +303,8 @@ export default function StudentMarksheetPage() {
                     ? "খোঁজা হচ্ছে..."
                     : "Searching..."
                   : isBn
-                    ? "মার্কশিট দেখুন"
-                    : "View Marksheet"}
+                  ? "মার্কশিট দেখুন"
+                  : "View Marksheet"}
               </span>
             </button>
           </form>
@@ -403,7 +423,7 @@ export default function StudentMarksheetPage() {
                         </span>
                       </td>
                       <td className="py-3 px-3 text-center font-semibold">
-                        {item.gradePoint.toFixed(2)}
+                        {item.gradePoint?.toFixed(2) ?? "0.00"}
                       </td>
                     </tr>
                   ))}

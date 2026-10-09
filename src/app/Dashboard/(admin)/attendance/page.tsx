@@ -131,33 +131,32 @@ export default function AttendanceManagementPage() {
     }
 
     setSubmitting(true);
-    const toastId = toast.loading("Submitting attendance & updating database...");
 
-    try {
-      const payload = {
-        date: attendanceDate,
-        classId: selectedClass,
-        sectionId: selectedSection,
-        attendances: Object.keys(attendanceMap).map((stuId) => ({
-          studentId: stuId,
-          status: attendanceMap[stuId],
-        })),
-      };
+    const payload = {
+      date: attendanceDate,
+      classId: selectedClass,
+      sectionId: selectedSection,
+      attendances: Object.keys(attendanceMap).map((stuId) => ({
+        studentId: stuId,
+        status: attendanceMap[stuId],
+      })),
+    };
 
-      await attendanceService.takeAttendance(payload);
-
-      toast.success("Attendance saved successfully!", {
-        id: toastId,
-      });
-    } catch (err: any) {
-      console.error("❌ Attendance Submission Error:", err?.response?.data || err);
-      toast.error(
-        err?.response?.data?.message || "Failed to submit attendance!",
-        { id: toastId }
-      );
-    } finally {
-      setSubmitting(false);
-    }
+    // Promise based Sonner Toast Notification
+    toast.promise(attendanceService.takeAttendance(payload), {
+      loading: "Saving attendance records & sending notifications...",
+      success: () => {
+        setSubmitting(false);
+        return "Attendance saved successfully!";
+      },
+      error: (err: any) => {
+        setSubmitting(false);
+        console.error("❌ Attendance Submission Error:", err?.response?.data || err);
+        return (
+          err?.response?.data?.message || "Failed to submit attendance! Please try again."
+        );
+      },
+    });
   };
 
   return (
@@ -244,6 +243,7 @@ export default function AttendanceManagementPage() {
                 variant="outline"
                 onClick={() => handleMarkAll("PRESENT")}
                 className="text-[11px] h-7"
+                disabled={submitting}
               >
                 Mark All Present
               </Button>
@@ -252,6 +252,7 @@ export default function AttendanceManagementPage() {
                 variant="outline"
                 onClick={() => handleMarkAll("ABSENT")}
                 className="text-[11px] h-7"
+                disabled={submitting}
               >
                 Mark All Absent
               </Button>
@@ -284,8 +285,9 @@ export default function AttendanceManagementPage() {
                       <td className="p-3.5 flex justify-center gap-2">
                         <button
                           type="button"
+                          disabled={submitting}
                           onClick={() => handleStatusChange(stu.id, "PRESENT")}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold border transition-all cursor-pointer ${
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold border transition-all cursor-pointer disabled:opacity-50 ${
                             currentStatus === "PRESENT"
                               ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
                               : "bg-background text-muted-foreground border-input hover:bg-emerald-50"
@@ -296,8 +298,9 @@ export default function AttendanceManagementPage() {
 
                         <button
                           type="button"
+                          disabled={submitting}
                           onClick={() => handleStatusChange(stu.id, "ABSENT")}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold border transition-all cursor-pointer ${
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold border transition-all cursor-pointer disabled:opacity-50 ${
                             currentStatus === "ABSENT"
                               ? "bg-rose-600 text-white border-rose-600 shadow-sm"
                               : "bg-background text-muted-foreground border-input hover:bg-rose-50"
@@ -308,8 +311,9 @@ export default function AttendanceManagementPage() {
 
                         <button
                           type="button"
+                          disabled={submitting}
                           onClick={() => handleStatusChange(stu.id, "LATE")}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold border transition-all cursor-pointer ${
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold border transition-all cursor-pointer disabled:opacity-50 ${
                             currentStatus === "LATE"
                               ? "bg-amber-500 text-white border-amber-500 shadow-sm"
                               : "bg-background text-muted-foreground border-input hover:bg-amber-50"
@@ -329,10 +333,17 @@ export default function AttendanceManagementPage() {
             <Button
               onClick={handleSubmitAttendance}
               disabled={submitting}
-              className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-6 py-2 rounded-xl text-xs flex items-center gap-2 cursor-pointer"
+              className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-6 py-2 rounded-xl text-xs flex items-center gap-2 cursor-pointer disabled:opacity-60"
             >
-              {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}{" "}
-              Save Attendance Records
+              {submitting ? (
+                <>
+                  <FaSpinner className="animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  <FaSave /> Save Attendance Records
+                </>
+              )}
             </Button>
           </div>
         </Card>

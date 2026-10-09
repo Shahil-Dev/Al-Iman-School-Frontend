@@ -27,30 +27,49 @@ export default function AttendanceRecordsPage() {
   useEffect(() => {
     axiosInstance
       .get("/academic/classes")
-      .then((res) => setClasses(res.data?.data || []))
+      .then((res) => {
+        const classList = res.data?.data || [];
+        setClasses(classList);
+        if (classList.length > 0) {
+          setSelectedClassId(classList[0].id);
+        }
+      })
       .catch((err) => console.error("Failed to load classes", err));
   }, []);
 
-  // 2. Fetch Sections when Class Changes
+  // 2. Fetch Sections ONLY for the selected Class
   useEffect(() => {
     if (!selectedClassId) {
       setSections([]);
       setSelectedSectionId("");
       return;
     }
+
+    setLoading(true);
+    // Fetch section strictly filtered by selectedClassId
     axiosInstance
       .get(`/academic/sections?classId=${selectedClassId}`)
       .then((res) => {
-        const secList = res.data?.data || [];
-        setSections(secList);
-        if (secList.length > 0) {
-          setSelectedSectionId(secList[0].id);
+        const classSections: any[] = res.data?.data || [];
+        setSections(classSections);
+
+        if (classSections.length > 0) {
+          setSelectedSectionId(classSections[0].id);
+        } else {
+          setSelectedSectionId("");
         }
       })
-      .catch(() => setSections([]));
+      .catch((err) => {
+        console.error("Failed to load sections for class", err);
+        setSections([]);
+        setSelectedSectionId("");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [selectedClassId]);
 
-  // 3. Fetch Attendance Records from correct backend endpoint /attendances
+  // 3. Fetch Attendance Records for selected Class & Section
   const handleFetchAttendance = async () => {
     if (!selectedClassId || !selectedSectionId) {
       setErrorMsg(
@@ -65,18 +84,26 @@ export default function AttendanceRecordsPage() {
       setLoading(true);
       setErrorMsg("");
 
-      // Calling correct route /attendances with query params
       const res = await axiosInstance.get(
         `/attendances?classId=${selectedClassId}&sectionId=${selectedSectionId}&date=${selectedDate}`
       );
 
-      setAttendances(res.data?.data || []);
+      const records = res.data?.data || [];
+      setAttendances(records);
+
+      if (records.length === 0) {
+        setErrorMsg(
+          isBn
+            ? "এই সেকশন এবং তারিখের জন্য কোনো উপস্থিতি ডাটা পাওয়া যায়নি।"
+            : "No attendance records found for this section and date."
+        );
+      }
     } catch (err: any) {
       console.error("Failed to fetch attendance records", err);
       setErrorMsg(
         err.response?.data?.message ||
           (isBn
-            ? "উপস্থিতি রেকর্ডস লোড করতে ব্যর্থ হয়েছে।"
+            ? "উপস্থিতি রেকর্ডস লোড করতে ব্যর্থ হয়েছে।"
             : "Failed to fetch attendance records.")
       );
       setAttendances([]);
@@ -129,16 +156,20 @@ export default function AttendanceRecordsPage() {
               <select
                 value={selectedSectionId}
                 onChange={(e) => setSelectedSectionId(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+                disabled={sections.length === 0}
+                className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground disabled:opacity-50"
               >
-                <option value="">
-                  {isBn ? "-- সেকশন সিলেক্ট করুন --" : "-- Select Section --"}
-                </option>
-                {sections.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
+                {sections.length === 0 ? (
+                  <option value="">
+                    {isBn ? "-- কোনো সেকশন নেই --" : "-- No Section Available --"}
                   </option>
-                ))}
+                ) : (
+                  sections.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -157,7 +188,7 @@ export default function AttendanceRecordsPage() {
             <div className="flex items-end">
               <button
                 onClick={handleFetchAttendance}
-                disabled={loading}
+                disabled={loading || !selectedSectionId}
                 className="w-full py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
               >
                 <FaSearch />
@@ -193,35 +224,53 @@ export default function AttendanceRecordsPage() {
               </thead>
               <tbody className="divide-y divide-border/40">
                 {attendances.length > 0 ? (
-                  attendances.map((item) => (
-                    <tr key={item.id} className="hover:bg-muted/30">
-                      <td className="py-3 px-3 font-semibold text-foreground">
-                        {item.student?.rollNo || "N/A"}
-                      </td>
-                      <td className="py-3 px-3 font-mono text-muted-foreground">
-                        {item.student?.studentIdNo || "N/A"}
-                      </td>
-                      <td className="py-3 px-3 font-semibold text-foreground">
-                        {item.student?.firstName} {item.student?.lastName}
-                      </td>
-                      <td className="py-3 px-3">
-                        {new Date(item.date).toLocaleDateString()}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                            item.status === "PRESENT"
-                              ? "bg-emerald-500/10 text-emerald-600"
-                              : item.status === "ABSENT"
-                              ? "bg-destructive/10 text-destructive"
-                              : "bg-amber-500/10 text-amber-600"
-                          }`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
+                  attendances.map((item, index) => {
+                    const rollNo = item.rollNo ?? item.student?.rollNo ?? "N/A";
+                    const studentIdNo =
+                      item.studentIdNo ??
+                      item.student?.studentIdNo ??
+                      item.studentCode ??
+                      "N/A";
+                    const studentName =
+                      item.studentName ||
+                      `${item.student?.firstName || ""} ${item.student?.lastName || ""}`.trim() ||
+                      "N/A";
+                    const displayDate = item.date
+                      ? new Date(item.date).toLocaleDateString()
+                      : selectedDate;
+                    const status = item.status || "PRESENT";
+
+                    return (
+                      <tr
+                        key={item.id || item.studentId || index}
+                        className="hover:bg-muted/30"
+                      >
+                        <td className="py-3 px-3 font-semibold text-foreground">
+                          {rollNo}
+                        </td>
+                        <td className="py-3 px-3 font-mono text-muted-foreground">
+                          {studentIdNo}
+                        </td>
+                        <td className="py-3 px-3 font-semibold text-foreground">
+                          {studentName}
+                        </td>
+                        <td className="py-3 px-3">{displayDate}</td>
+                        <td className="py-3 px-3 text-center">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                              status === "PRESENT"
+                                ? "bg-emerald-500/10 text-emerald-600"
+                                : status === "ABSENT"
+                                ? "bg-destructive/10 text-destructive"
+                                : "bg-amber-500/10 text-amber-600"
+                            }`}
+                          >
+                            {status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td
@@ -229,7 +278,7 @@ export default function AttendanceRecordsPage() {
                       className="py-6 text-center text-muted-foreground"
                     >
                       {isBn
-                        ? "কোনো উপস্থিতি রেকর্ড পাওয়া যায়নি।"
+                        ? "কোনো উপস্থিতি রেকর্ড পাওয়া যায়নি।"
                         : "No attendance logs found for this filter."}
                     </td>
                   </tr>

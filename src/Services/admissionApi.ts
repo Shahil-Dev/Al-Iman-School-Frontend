@@ -55,12 +55,21 @@ export interface IAdmissionPayload {
   senderPhone: string;
   amount: number;
   transactionId: string;
+  
+  // WhatsApp Notification Flag
+  sendWhatsAppNotification?: boolean;
 }
 
 export interface IAdmissionFilterParams {
   status?: string;
   classId?: string;
   searchTerm?: string;
+}
+
+export interface IApproveAdmissionPayload {
+  sectionId?: string;
+  rollNo?: number;
+  sendWhatsAppAlert?: boolean; 
 }
 
 export const submitAdmission = async (payload: IAdmissionPayload) => {
@@ -73,7 +82,6 @@ export const trackAdmissionStatus = async (identifier: string) => {
   return response.data;
 };
 
-// getAllApplications (Updated Function Name & Clean Params Filter)
 export const getAllApplications = async (params?: IAdmissionFilterParams) => {
   const cleanParams: Record<string, string> = {};
 
@@ -95,24 +103,36 @@ export const getAllApplications = async (params?: IAdmissionFilterParams) => {
 
 export const approveAdmission = async (
   id: string,
-  payload?: { sectionId?: string; rollNo?: number }
+  payload?: IApproveAdmissionPayload
 ) => {
-  const response = await axiosInstance.patch(`/admissions/approve/${id}`, payload || {});
+  const response = await axiosInstance.patch(`/admissions/approve/${id}`, {
+    sendWhatsAppAlert: true, // Default to true so student receives credentials on approval
+    ...payload,
+  });
   return response.data;
 };
 
-export const rejectAdmission = async (id: string, reason: string) => {
-  const response = await axiosInstance.patch(`/admissions/reject/${id}`, { reason });
+export const rejectAdmission = async (id: string, reason: string, sendWhatsAppAlert: boolean = true) => {
+  const response = await axiosInstance.patch(`/admissions/reject/${id}`, { 
+    reason, 
+    sendWhatsAppAlert 
+  });
+  return response.data;
+};
+
+export const resendAdmissionWhatsApp = async (id: string) => {
+  const response = await axiosInstance.post(`/admissions/resend-whatsapp/${id}`);
   return response.data;
 };
 
 export const admissionApi = {
   submitAdmission,
   trackAdmissionStatus,
-  getAllApplications, // Updated export reference
-  getAllAdmissions: getAllApplications, // Alias included for safety
+  getAllApplications,
+  getAllAdmissions: getAllApplications,
   approveAdmission,
   rejectAdmission,
+  resendAdmissionWhatsApp,
 };
 
 export default admissionApi;

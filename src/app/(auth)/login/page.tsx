@@ -19,6 +19,7 @@ import {
   FaMoon,
   FaGlobe,
   FaUserPlus,
+  FaIdCard,
 } from "react-icons/fa";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import axiosInstance from "@/src/lib/axiosInstance";
@@ -26,6 +27,7 @@ import { Card, CardContent } from "@/src/components/ui/card";
 import { Input } from "@base-ui/react";
 import { Button } from "@/src/components/ui/button";
 import { useUser } from "@/src/context/UserContext";
+import { toast } from "sonner";
 
 type RoleType = "ADMIN" | "TEACHER" | "STUDENT" | "PARENT";
 type LangType = "EN" | "BN" | "AR";
@@ -109,7 +111,6 @@ const RoleButton = memo(
 
 RoleButton.displayName = "RoleButton";
 
-// 🟢 Component containing useSearchParams & Login Logic
 function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -118,6 +119,7 @@ function LoginFormContent() {
   const [selectedRole, setSelectedRole] = useState<RoleType>("ADMIN");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [studentCode, setStudentCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -139,18 +141,64 @@ function LoginFormContent() {
 
   const handleRoleSelect = useCallback((role: RoleType) => {
     setSelectedRole(role);
+    setError("");
   }, []);
+
+  const getFriendlyErrorMessage = (err: any) => {
+    const status = err.response?.status;
+    const serverMsg = err.response?.data?.message || "";
+
+    if (selectedRole === "STUDENT") {
+      if (status === 404 || status === 401 || serverMsg.toLowerCase().includes("not found")) {
+        return "স্টুডেন্ট কোডটি সঠিক নয়। অনুগ্রহ করে আপনার আইডি কার্ডের কোডটি দিন।";
+      }
+    } else {
+      if (status === 401 || status === 400 || serverMsg.toLowerCase().includes("invalid")) {
+        return "ইমেইল/ফোন নম্বর অথবা পাসওয়ার্ডটি সঠিক নয়।";
+      }
+      if (status === 404) {
+        return "এই অ্যাকাউন্টটি খুঁজে পাওয়া যায়নি।";
+      }
+    }
+
+    if (!err.response) {
+      return "ইন্টারনেট কানেকশন চেক করে আবার চেষ্টা করুন।";
+    }
+
+    return "লগইন করতে সমস্যা হচ্ছে। কিছুক্ষণ পর আবার চেষ্টা করুন।";
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
 
+    if (selectedRole === "STUDENT") {
+      if (!studentCode.trim()) {
+        const msg = "অনুগ্রহ করে আপনার স্টুডেন্ট কোড দিন";
+        toast.error(msg);
+        setError(msg);
+        return;
+      }
+    } else {
+      if (!email.trim() || !password) {
+        const msg = "ইমেইল/ফোন নম্বর এবং পাসওয়ার্ড দুটিই পূরণ করুন";
+        toast.error(msg);
+        setError(msg);
+        return;
+      }
+    }
+
+    setLoading(true);
+
     try {
-      const res = await axiosInstance.post("/auth/login", {
-        email,
-        password,
-      });
+      const endpoint = selectedRole === "STUDENT" ? "/auth/student-login" : "/auth/login";
+      
+      const payload =
+        selectedRole === "STUDENT"
+          ? { studentCode }
+          : { email, password, role: selectedRole };
+
+      const res = await axiosInstance.post(endpoint, payload);
 
       const { accessToken, user } = res.data.data;
 
@@ -158,9 +206,16 @@ function LoginFormContent() {
       Cookies.set("accessToken", accessToken, { expires: cookieExpiry, path: "/" });
       Cookies.set("userRole", user.role, { expires: cookieExpiry, path: "/" });
 
+      // 🔹 স্টুডেন্ট প্রোফাইল আইডি কুকিতে সেভ করে রাখা (যদি থাকে)
+      if (user?.studentProfile?.id) {
+        Cookies.set("studentId", user.studentProfile.id, { expires: cookieExpiry, path: "/" });
+      }
+
+      // 🔹 User Context সিঙ্ক যা localStorage এ পুরো ইউজার অবজেক্ট সেভ করবে
       setUser(user);
 
-      // Determine Correct Home Route Based on Logged-in User Role
+      toast.success("সফলভাবে লগইন হয়েছে! রিডাইরেক্ট করা হচ্ছে...");
+
       let targetRoute = "/Dashboard";
       if (user.role === "STUDENT") {
         targetRoute = "/Dashboard/studentDashboard";
@@ -170,12 +225,11 @@ function LoginFormContent() {
         targetRoute = "/Dashboard/TeacherDashboard";
       } else if (user.role === "ACCOUNTS") {
         targetRoute = "/Dashboard/accounts";
-      } else if (user.role === "SUPER_ADMIN" ) {
+      } else if (user.role === "SUPER_ADMIN" || user.role === "ADMIN") {
         targetRoute = "/Dashboard/admin";
       }
 
       const callbackUrl = searchParams.get("callbackUrl");
-      // If callbackUrl exists and matches role, go there, otherwise go to targetRoute
       if (callbackUrl && callbackUrl !== "/Dashboard") {
         router.push(callbackUrl);
       } else {
@@ -183,11 +237,9 @@ function LoginFormContent() {
       }
       router.refresh();
     } catch (err: any) {
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Invalid credentials. Please try again.",
-      );
+      const friendlyMsg = getFriendlyErrorMessage(err);
+      toast.error(friendlyMsg);
+      setError(friendlyMsg);
     } finally {
       setLoading(false);
     }
@@ -195,7 +247,6 @@ function LoginFormContent() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4 font-sans relative overflow-hidden transition-colors duration-300">
-      {/* Background Subtle Grid Pattern */}
       <div
         className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
         style={{
@@ -204,14 +255,12 @@ function LoginFormContent() {
         }}
       />
 
-      {/* Islamic Typography Watermark Background */}
       <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] dark:opacity-[0.04] pointer-events-none select-none overflow-hidden">
         <span className="text-[18vw] font-serif tracking-widest text-[#c9a961] whitespace-nowrap dir-rtl">
           الإيمان والإحسان
         </span>
       </div>
 
-      {/* Header Controls: Theme & Language Toggle */}
       <div className="absolute top-5 right-5 z-20 flex items-center gap-3">
         <button
           onClick={cycleLanguage}
@@ -315,49 +364,72 @@ function LoginFormContent() {
             </AnimatePresence>
 
             <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-xs font-semibold text-foreground mb-1.5"
-                >
-                  Email / Employee ID / Student ID
-                </label>
-                <div className="relative group">
-                  <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm transition-colors group-focus-within:text-[#c9a961]" />
-                  <Input
-                    id="email"
-                    type="text"
-                    placeholder="Enter Email, ID or Mobile"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoComplete="username"
-                    className="pl-11 pr-4 py-3 rounded-xl border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent transition-all duration-200 w-full"
-                  />
+              {selectedRole === "STUDENT" ? (
+                <div>
+                  <label
+                    htmlFor="studentCode"
+                    className="block text-xs font-semibold text-foreground mb-1.5"
+                  >
+                    Student Code or Student ID
+                  </label>
+                  <div className="relative group">
+                    <FaIdCard className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm transition-colors group-focus-within:text-[#c9a961]" />
+                    <Input
+                      id="studentCode"
+                      type="text"
+                      placeholder="e.g. STU-26-7360"
+                      value={studentCode}
+                      onChange={(e) => setStudentCode(e.target.value)}
+                      autoComplete="off"
+                      className="pl-11 pr-4 py-3 rounded-xl border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent transition-all duration-200 w-full"
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div>
+                    <label
+                      htmlFor="email"
+                      className="block text-xs font-semibold text-foreground mb-1.5"
+                    >
+                      Email or Mobile
+                    </label>
+                    <div className="relative group">
+                      <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm transition-colors group-focus-within:text-[#c9a961]" />
+                      <Input
+                        id="email"
+                        type="text"
+                        placeholder="Enter Email or Mobile"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        autoComplete="username"
+                        className="pl-11 pr-4 py-3 rounded-xl border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent transition-all duration-200 w-full"
+                      />
+                    </div>
+                  </div>
 
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-xs font-semibold text-foreground mb-1.5"
-                >
-                  Password
-                </label>
-                <div className="relative group">
-                  <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm transition-colors group-focus-within:text-[#c9a961]" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                    className="pl-11 pr-4 py-3 rounded-xl border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent transition-all duration-200 w-full"
-                  />
-                </div>
-              </div>
+                  <div>
+                    <label
+                      htmlFor="password"
+                      className="block text-xs font-semibold text-foreground mb-1.5"
+                    >
+                      Password
+                    </label>
+                    <div className="relative group">
+                      <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm transition-colors group-focus-within:text-[#c9a961]" />
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="current-password"
+                        className="pl-11 pr-4 py-3 rounded-xl border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent transition-all duration-200 w-full"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="flex items-center justify-between text-xs pt-1">
                 <label className="flex items-center gap-2 text-muted-foreground cursor-pointer group">
@@ -371,12 +443,14 @@ function LoginFormContent() {
                     Remember me
                   </span>
                 </label>
-                <Link
-                  href="#"
-                  className="text-[#c9a961] font-semibold hover:opacity-80 transition-opacity hover:underline underline-offset-2"
-                >
-                  Forgot Password?
-                </Link>
+                {selectedRole !== "STUDENT" && (
+                  <Link
+                    href="#"
+                    className="text-[#c9a961] font-semibold hover:opacity-80 transition-opacity hover:underline underline-offset-2"
+                  >
+                    Forgot Password?
+                  </Link>
+                )}
               </div>
 
               <Button
@@ -395,7 +469,6 @@ function LoginFormContent() {
               </Button>
             </form>
 
-            {/* Dynamic Registration Link based on Role Selection */}
             <AnimatePresence mode="wait">
               {(selectedRole === "TEACHER" || selectedRole === "PARENT") && (
                 <motion.div

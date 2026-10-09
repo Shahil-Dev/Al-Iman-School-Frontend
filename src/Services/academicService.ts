@@ -71,6 +71,16 @@ export const getClassRoutine = async (classId: string, sectionId: string) => {
   return response.data;
 };
 
+export const updateRoutineSlot = async (id: string, payload: Partial<ICreateRoutineSlotPayload>) => {
+  const response = await axiosInstance.patch(`/routines/slot/${id}`, payload);
+  return response.data;
+};
+
+export const deleteRoutineSlot = async (id: string) => {
+  const response = await axiosInstance.delete(`/routines/slot/${id}`);
+  return response.data;
+};
+
 export const academicService = {
   createAcademicYear,
   getAllAcademicYears,
@@ -80,6 +90,8 @@ export const academicService = {
   getAllSections,
   createRoutineSlot,
   getClassRoutine,
+  updateRoutineSlot,
+  deleteRoutineSlot,
 };
 
 export default academicService;

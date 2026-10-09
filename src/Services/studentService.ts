@@ -2,6 +2,7 @@ import axiosInstance from "@/src/lib/axiosInstance";
 
 export interface IStudentFilterParams {
   searchTerm?: string;
+  studentCode?: string;
   classId?: string;
   sectionId?: string;
 }
@@ -22,6 +23,7 @@ export interface IStudentUpdatePayload {
   motherName?: string;
   classId?: string;
   sectionId?: string;
+  // pin property permanently removed
 }
 
 export const getAllStudents = async (params?: IStudentFilterParams) => {
@@ -50,3 +52,5 @@ export const StudentService = {
   updateStudent,
   deleteStudent,
 };
+
+export default StudentService;
