@@ -20,6 +20,8 @@ import {
   FaGlobe,
   FaUserPlus,
   FaIdCard,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import axiosInstance from "@/src/lib/axiosInstance";
@@ -119,6 +121,7 @@ function LoginFormContent() {
   const [selectedRole, setSelectedRole] = useState<RoleType>("ADMIN");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // Password Visibility Toggle State
   const [studentCode, setStudentCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -206,12 +209,10 @@ function LoginFormContent() {
       Cookies.set("accessToken", accessToken, { expires: cookieExpiry, path: "/" });
       Cookies.set("userRole", user.role, { expires: cookieExpiry, path: "/" });
 
-      // 🔹 স্টুডেন্ট প্রোফাইল আইডি কুকিতে সেভ করে রাখা (যদি থাকে)
       if (user?.studentProfile?.id) {
         Cookies.set("studentId", user.studentProfile.id, { expires: cookieExpiry, path: "/" });
       }
 
-      // 🔹 User Context সিঙ্ক যা localStorage এ পুরো ইউজার অবজেক্ট সেভ করবে
       setUser(user);
 
       toast.success("সফলভাবে লগইন হয়েছে! রিডাইরেক্ট করা হচ্ছে...");
@@ -419,13 +420,21 @@ function LoginFormContent() {
                       <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm transition-colors group-focus-within:text-[#c9a961]" />
                       <Input
                         id="password"
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         autoComplete="current-password"
-                        className="pl-11 pr-4 py-3 rounded-xl border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent transition-all duration-200 w-full"
+                        className="pl-11 pr-11 py-3 rounded-xl border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c9a961] focus:border-transparent transition-all duration-200 w-full"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+                        aria-label="Toggle password visibility"
+                      >
+                        {showPassword ? <FaEyeSlash className="text-sm" /> : <FaEye className="text-sm" />}
+                      </button>
                     </div>
                   </div>
                 </>
