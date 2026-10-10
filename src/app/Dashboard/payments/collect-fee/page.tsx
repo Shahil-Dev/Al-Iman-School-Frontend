@@ -1,321 +1,478 @@
 "use client";
 
-import React, { useState } from "react";
-import { FaMoneyBillWave, FaSearch, FaCheck, FaExclamationTriangle, FaCheckCircle, FaUpload, FaTimes } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
+import {
+  FaFileInvoiceDollar,
+  FaReceipt,
+  FaSpinner,
+  FaCheckCircle,
+  FaExclamationCircle,
+  FaClock,
+  FaCreditCard,
+  FaUpload,
+  FaTimes,
+  FaCheck,
+} from "react-icons/fa";
 import { Card, CardContent } from "@/src/components/ui/card";
+import axiosInstance from "@/src/lib/axiosInstance";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { paymentService } from "@/src/Services/paymentService";
 
-export default function CollectFeePage() {
+export default function ParentFeesPage() {
   const { language } = useLanguage();
   const isBn = language === "bn";
 
-  const [studentIdNoInput, setStudentIdNoInput] = useState("");
+  const [children, setChildren] = useState<any[]>([]);
+  const [selectedChild, setSelectedChild] = useState<any | null>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
-  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [invoiceLoading, setInvoiceLoading] = useState<boolean>(false);
 
-  // Form Fields
-  const [method, setMethod] = useState<"BKASH" | "NAGAD" | "BANK" | "CASH">("BKASH");
-  const [amount, setAmount] = useState<number>(0);
+  // Payment Modal States
+  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"BKASH" | "NAGAD" | "BANK">("BKASH");
   const [transactionId, setTransactionId] = useState("");
   const [receiptUrl, setReceiptUrl] = useState("");
-  const [previewUrl, setPreviewUrl] = useState("");
-
-  const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [fileName, setFileName] = useState<string>("");
 
-  const handleSearchStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!studentIdNoInput.trim()) return;
+  useEffect(() => {
+    setLoading(true);
+    axiosInstance
+      .get("/parents/my-children")
+      .then((res) => {
+        const list = res.data?.data || res.data || [];
+        setChildren(Array.isArray(list) ? list : []);
+        if (list.length > 0) {
+          setSelectedChild(list[0]);
+        }
+      })
+      .catch((err) => console.error("Failed to load children list", err))
+      .finally(() => setLoading(false));
+  }, []);
 
+  const fetchInvoicesForChild = async (childId: string) => {
+    setInvoiceLoading(true);
     try {
-      setSearching(true);
-      setMsg(null);
+      const res = await paymentService.getStudentInvoices(childId);
+      const invoiceList = res?.data || res || [];
+      setInvoices(Array.isArray(invoiceList) ? invoiceList : []);
+    } catch (err) {
+      console.error("Failed to load invoices", err);
       setInvoices([]);
-      setSelectedInvoice(null);
-
-      // Using paymentService to fetch student invoices
-      const res = await paymentService.getStudentInvoices(studentIdNoInput.trim());
-      const data = res?.data || res || [];
-      setInvoices(Array.isArray(data) ? data : []);
-
-      if (data.length === 0) {
-        setMsg({
-          type: "error",
-          text: isBn ? "এই শিক্ষার্থীর কোনো ইনভয়েস পাওয়া যায়নি।" : "No invoices found for this student.",
-        });
-      }
-    } catch (err: any) {
-      setMsg({
-        type: "error",
-        text: isBn ? "ইনভয়েস লোড করতে সমস্যা হয়েছে।" : "Failed to fetch student invoices.",
-      });
     } finally {
-      setSearching(false);
+      setInvoiceLoading(false);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    if (selectedChild?.id) {
+      fetchInvoicesForChild(selectedChild.id);
+    }
+  }, [selectedChild]);
+
+  // Handle Direct Folder File Selection & Image Compression
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setPreviewUrl(URL.createObjectURL(file));
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setReceiptUrl(reader.result as string);
+    if (!file) return;
+
+    setFileName(file.name);
+    setErrorMessage("");
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 500;
+        const MAX_HEIGHT = 500;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.6);
+        setReceiptUrl(compressedDataUrl);
+        setPreviewUrl(compressedDataUrl);
       };
-      reader.readAsDataURL(file);
-    }
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleCollectPayment = async (e: React.FormEvent) => {
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedInvoice) return;
 
-    if (method !== "CASH" && !transactionId.trim()) {
-      setMsg({
-        type: "error",
-        text: isBn ? "অনলাইন পেমেন্টের জন্য ট্রানজেকশন আইডি (TrxID) প্রদান করুন।" : "Transaction ID is required.",
-      });
+    if (!transactionId.trim()) {
+      setErrorMessage(isBn ? "ট্রানজেকশন আইডি (TrxID) প্রদান করুন।" : "Transaction ID is required.");
       return;
     }
 
+    setSubmitting(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
     try {
-      setSubmitting(true);
-      setMsg(null);
+      const dueAmount = selectedInvoice.amount - selectedInvoice.paidAmount;
 
       await paymentService.collectPayment({
         invoiceId: selectedInvoice.id,
-        amount: Number(amount),
-        method,
-        transactionId: method !== "CASH" ? transactionId.trim() : undefined,
+        amount: dueAmount,
+        method: paymentMethod,
+        transactionId: transactionId.trim(),
         receiptUrl: receiptUrl.trim() || undefined,
       });
 
-      setMsg({
-        type: "success",
-        text: isBn
-          ? "পেমেন্ট সফলভাবে গৃহীত হয়েছে এবং হোয়াটসঅ্যাপে নিশ্চিতকরণ রসিদ পাঠানো হয়েছে!"
-          : "Payment processed successfully and WhatsApp receipt sent!",
-      });
+      setSuccessMessage(
+        isBn
+          ? "পেমেন্ট সফলভাবে জমা হয়েছে! অ্যাডমিন যাচাই করে অনুমোদন করবেন।"
+          : "Payment submitted successfully! Pending admin approval."
+      );
 
-      setSelectedInvoice(null);
-      setTransactionId("");
-      setReceiptUrl("");
-      setPreviewUrl("");
+      setTimeout(() => {
+        setSelectedInvoice(null);
+        setTransactionId("");
+        setReceiptUrl("");
+        setPreviewUrl("");
+        setFileName("");
+        setSuccessMessage("");
+        if (selectedChild?.id) {
+          fetchInvoicesForChild(selectedChild.id);
+        }
+      }, 2000);
     } catch (err: any) {
-      setMsg({
-        type: "error",
-        text: err?.response?.data?.message || (isBn ? "পেমেন্ট প্রক্রিয়াজাতকরণ ব্যর্থ হয়েছে।" : "Failed to process payment."),
-      });
+      setErrorMessage(
+        err?.response?.data?.message ||
+          (isBn ? "পেমেন্ট জমা দিতে সমস্যা হয়েছে।" : "Failed to submit payment.")
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
+  const totalAmount = invoices.reduce((acc, inv) => acc + (Number(inv.amount) || 0), 0);
+  const totalPaid = invoices.reduce((acc, inv) => acc + (Number(inv.paidAmount) || 0), 0);
+  const totalDue = Math.max(0, totalAmount - totalPaid);
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
-          <FaMoneyBillWave className="text-primary" />
-          <span>{isBn ? "ফি কালেকশন ও পেমেন্ট এন্ট্রি" : "Collect Fee & Record Payment"}</span>
-        </h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          {isBn
-            ? "স্টুডেন্ট আইডি দিয়ে ইনভয়েস সার্চ করে ক্যাশ বা অনলাইন পেমেন্ট এন্ট্রি দিন।"
-            : "Search student invoice and record manual or online payments."}
-        </p>
+    <div className="space-y-6 font-sans">
+      <div className="bg-card border border-border p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span className="bg-primary/10 text-primary text-[11px] px-3 py-1 rounded-full font-semibold uppercase tracking-wider">
+            {isBn ? "ফি ও ইনভয়েস" : "Fees & Receipts"}
+          </span>
+          <h1 className="text-xl md:text-2xl font-bold text-foreground mt-2 flex items-center gap-2">
+            <FaFileInvoiceDollar className="text-primary text-lg" />
+            <span>{isBn ? "অনলাইন ফি ও রসিদ" : "Student Fee Invoices"}</span>
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            {isBn
+              ? "সন্তানের টিউশন ফি, অন্যান্য চার্জ ও পরিশোধিত ফিস সমূহের বিবরণ দেখুন।"
+              : "Track tuition fees, due invoices, and payment histories."}
+          </p>
+        </div>
+
+        {children.length > 1 && (
+          <div className="bg-muted/50 p-2.5 rounded-xl border border-border">
+            <label className="block text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
+              {isBn ? "সন্তান নির্বাচন করুন" : "Select Child"}
+            </label>
+            <select
+              value={selectedChild?.id || ""}
+              onChange={(e) => {
+                const found = children.find((c) => c.id === e.target.value);
+                if (found) setSelectedChild(found);
+              }}
+              className="bg-background text-foreground text-xs font-semibold px-3 py-1.5 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              {children.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.firstName} {c.lastName} ({c.class?.name || "N/A"})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
-      {msg && (
-        <div
-          className={`p-4 rounded-xl text-xs font-semibold border flex items-center gap-2 ${
-            msg.type === "success"
-              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-              : "bg-destructive/10 text-destructive border-destructive/20"
-          }`}
-        >
-          {msg.type === "success" ? <FaCheckCircle /> : <FaExclamationTriangle />}
-          <span>{msg.text}</span>
+      {loading ? (
+        <div className="p-12 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+          <FaSpinner className="animate-spin text-primary text-lg" />
+          <span>{isBn ? "ডাটা লোড হচ্ছে..." : "Loading fee status..."}</span>
         </div>
-      )}
-
-      {/* Search Student Card */}
-      <Card className="border-border/60 shadow-sm rounded-2xl bg-card max-w-2xl">
-        <CardContent className="p-6">
-          <form onSubmit={handleSearchStudent} className="flex gap-3">
-            <input
-              type="text"
-              required
-              placeholder={isBn ? "শিক্ষার্থীর আইডি (Student ID/UUID) লিখুন..." : "Enter Student ID/UUID..."}
-              value={studentIdNoInput}
-              onChange={(e) => setStudentIdNoInput(e.target.value)}
-              className="flex-1 px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
-            />
-            <button
-              type="submit"
-              disabled={searching}
-              className="px-5 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:opacity-90 transition-all shadow-sm flex items-center gap-2"
-            >
-              <FaSearch />
-              <span>{searching ? (isBn ? "খোঁজা হচ্ছে..." : "Searching...") : isBn ? "ইনভয়েস খুঁজুন" : "Search"}</span>
-            </button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Invoices List */}
-      {invoices.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {invoices.map((inv) => (
-            <Card
-              key={inv.id}
-              className={`border-border/60 shadow-sm rounded-2xl bg-card p-5 ${
-                inv.status === "PAID" ? "border-l-4 border-l-emerald-500" : "border-l-4 border-l-amber-500"
-              }`}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <span className="font-bold text-sm text-foreground">{inv.invoiceNo}</span>
-                  <p className="text-[10px] text-muted-foreground">
-                    Due: {new Date(inv.dueDate).toLocaleDateString()}
-                  </p>
-                </div>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    inv.status === "PAID"
-                      ? "bg-emerald-500/10 text-emerald-600"
-                      : "bg-amber-500/10 text-amber-600"
-                  }`}
-                >
-                  {inv.status}
+      ) : selectedChild ? (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card className="border-border/60 shadow-sm rounded-2xl bg-card">
+              <CardContent className="p-5 text-center space-y-1">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">
+                  {isBn ? "মোট নির্ধারিত ফি" : "Total Fee Amount"}
                 </span>
-              </div>
-
-              <div className="text-xs space-y-1 mb-4">
-                <p>
-                  Total Amount: <strong>৳{inv.amount}</strong>
-                </p>
-                <p>
-                  Paid Amount: <strong>৳{inv.paidAmount}</strong>
-                </p>
-              </div>
-
-              {inv.status !== "PAID" && (
-                <button
-                  onClick={() => {
-                    setSelectedInvoice(inv);
-                    setAmount(inv.amount - inv.paidAmount);
-                  }}
-                  className="w-full py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:opacity-90 transition-all shadow-sm flex items-center justify-center gap-1.5"
-                >
-                  <FaCheck />
-                  <span>{isBn ? "এই বিল পরিশোধ করুন" : "Pay This Invoice"}</span>
-                </button>
-              )}
+                <span className="text-2xl sm:text-3xl font-extrabold text-foreground font-mono block">৳{totalAmount}</span>
+              </CardContent>
             </Card>
-          ))}
+
+            <Card className="border-border/60 shadow-sm rounded-2xl bg-card">
+              <CardContent className="p-5 text-center space-y-1">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">
+                  {isBn ? "পরিশোধিত ফি" : "Total Paid"}
+                </span>
+                <span className="text-2xl sm:text-3xl font-extrabold text-emerald-600 font-mono block">৳{totalPaid}</span>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/60 shadow-sm rounded-2xl bg-card">
+              <CardContent className="p-5 text-center space-y-1">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">
+                  {isBn ? "বকেয়া ফি" : "Total Due"}
+                </span>
+                <span className="text-2xl sm:text-3xl font-extrabold text-destructive font-mono block">৳{totalDue}</span>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="border-border/60 shadow-sm rounded-2xl bg-card">
+            <CardContent className="p-6 space-y-4">
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border/50 pb-3">
+                <FaReceipt className="text-primary" />
+                <span>{isBn ? "ফি বিবরণী ও রসিদ তালিকা" : "Invoice History & Receipts"}</span>
+              </h3>
+
+              {invoiceLoading ? (
+                <div className="p-8 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+                  <FaSpinner className="animate-spin text-primary" />
+                  <span>{isBn ? "ইনভয়েস লোড হচ্ছে..." : "Fetching invoice records..."}</span>
+                </div>
+              ) : invoices.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-12">
+                  {isBn ? "কোনো ইনভয়েস বা ফি বিবরণী পাওয়া যায়নি।" : "No invoices or fee statements found."}
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-border/60 text-muted-foreground uppercase text-[10px] tracking-wider bg-muted/30">
+                        <th className="py-3 px-3">{isBn ? "ইনভয়েস নং" : "Invoice No"}</th>
+                        <th className="py-3 px-3">{isBn ? "তারিখ" : "Date"}</th>
+                        <th className="py-3 px-3 text-right">{isBn ? "মোট ফি" : "Total Fee"}</th>
+                        <th className="py-3 px-3 text-right">{isBn ? "পরিশোধিত" : "Paid"}</th>
+                        <th className="py-3 px-3 text-center">{isBn ? "স্ট্যাটাস" : "Status"}</th>
+                        <th className="py-3 px-3 text-center">{isBn ? "অ্যাকশন" : "Action"}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40 font-sans">
+                      {invoices.map((inv: any, idx: number) => {
+                        const isPaid = inv.status === "PAID";
+                        const hasPendingTx = inv.transactions?.some(
+                          (t: any) => t.status === "PENDING_APPROVAL"
+                        );
+
+                        return (
+                          <tr key={inv.id || idx} className="hover:bg-muted/20 transition-colors">
+                            <td className="py-3.5 px-3 font-mono font-bold text-foreground">{inv.invoiceNo}</td>
+                            <td className="py-3.5 px-3 font-mono text-muted-foreground">
+                              {new Date(inv.createdAt).toLocaleDateString(isBn ? "bn-BD" : "en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </td>
+                            <td className="py-3.5 px-3 text-right font-mono font-bold text-foreground">৳{inv.amount}</td>
+                            <td className="py-3.5 px-3 text-right font-mono font-bold text-emerald-600">৳{inv.paidAmount}</td>
+                            <td className="py-3.5 px-3 text-center">
+                              {isPaid ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                  <FaCheckCircle /> {isBn ? "পরিশোধিত" : "PAID"}
+                                </span>
+                              ) : hasPendingTx ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                                  <FaClock /> {isBn ? "অনুমোদনের অপেক্ষায়" : "Pending Approval"}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-destructive/10 text-destructive border border-destructive/20">
+                                  <FaExclamationCircle />
+                                  <span>{isBn ? "বকেয়া" : "UNPAID"}</span>
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-3 text-center">
+                              {!isPaid && !hasPendingTx && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedInvoice(inv);
+                                    setErrorMessage("");
+                                    setSuccessMessage("");
+                                    setPreviewUrl("");
+                                    setReceiptUrl("");
+                                    setFileName("");
+                                    setTransactionId("");
+                                  }}
+                                  className="bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-1 rounded-lg font-semibold text-[11px] transition inline-flex items-center justify-center gap-1 mx-auto shadow-sm"
+                                >
+                                  <FaCreditCard />
+                                  <span>{isBn ? "পেমেন্ট করুন" : "Pay Now"}</span>
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
+      ) : (
+        <Card className="p-8 text-center text-xs text-muted-foreground rounded-2xl border border-border">
+          {isBn ? "কোনো সংযুক্ত সন্তানের প্রোফাইল পাওয়া যায়নি।" : "No linked student profile found."}
+        </Card>
       )}
 
-      {/* Payment Processing Form Modal/Box */}
+      {/* Optimized Compact Modal */}
       {selectedInvoice && (
-        <Card className="border-2 border-primary/40 shadow-lg rounded-2xl bg-card max-w-2xl">
-          <CardContent className="p-6 space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-bold text-foreground">
-                {isBn ? "পেমেন্ট কনফার্মেশন ফরম" : "Process Payment for"} ({selectedInvoice.invoiceNo})
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border w-full max-w-sm rounded-2xl shadow-xl overflow-hidden my-auto max-h-[85vh] flex flex-col">
+            <div className="p-3 border-b border-border flex justify-between items-center bg-muted/40 shrink-0">
+              <h3 className="font-bold text-xs text-foreground flex items-center gap-2">
+                <FaCreditCard className="text-primary" />
+                <span>{isBn ? "ফি পরিশোধ ফরম" : "Submit Payment"}</span>
               </h3>
-              <button onClick={() => setSelectedInvoice(null)} className="text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => setSelectedInvoice(null)}
+                className="text-muted-foreground hover:text-foreground p-1 transition"
+              >
                 <FaTimes />
               </button>
             </div>
 
-            <form onSubmit={handleCollectPayment} className="space-y-4 text-xs">
+            <form onSubmit={handlePaymentSubmit} className="p-4 space-y-3 text-xs overflow-y-auto">
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-2.5 space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{isBn ? "ইনভয়েস নং:" : "Invoice No:"}</span>
+                  <span className="font-mono font-bold">{selectedInvoice.invoiceNo}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{isBn ? "প্রদেয় পরিমাণ:" : "Amount Due:"}</span>
+                  <span className="font-mono font-bold text-destructive">
+                    ৳{selectedInvoice.amount - selectedInvoice.paidAmount}
+                  </span>
+                </div>
+              </div>
+
               <div>
-                <label className="font-semibold text-foreground block mb-1.5">
-                  {isBn ? "পেমেন্ট মেথড (Payment Method)" : "Payment Method"}
+                <label className="font-bold block mb-1 text-foreground">
+                  {isBn ? "পেমেন্ট মেথড:" : "Payment Method:"}
                 </label>
                 <select
-                  value={method}
-                  onChange={(e: any) => setMethod(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground font-semibold"
+                  value={paymentMethod}
+                  onChange={(e: any) => setPaymentMethod(e.target.value)}
+                  className="w-full bg-background border border-input rounded-xl p-2 font-semibold text-foreground focus:ring-2 focus:ring-primary outline-none"
                 >
-                  <option value="BKASH">bKash (বিকাশ)</option>
-                  <option value="NAGAD">Nagad (নগদ)</option>
-                  <option value="BANK">Bank Transfer (ব্যাংক)</option>
-                  <option value="CASH">Cash (ক্যাশ ফি - তাৎক্ষণিক অনুমোদিত)</option>
+                  <option value="BKASH">bKash (Merchant / Personal)</option>
+                  <option value="NAGAD">Nagad (Merchant / Personal)</option>
+                  <option value="BANK">Bank Transfer / Slip</option>
                 </select>
               </div>
 
               <div>
-                <label className="font-semibold text-foreground block mb-1.5">
-                  {isBn ? "পরিশোধিত টাকার পরিমাণ (৳)" : "Amount (৳)"}
+                <label className="font-bold block mb-1 text-foreground">
+                  {isBn ? "ট্রানজেকশন আইডি (TrxID): *" : "Transaction ID (TrxID): *"}
                 </label>
                 <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(Number(e.target.value))}
-                  className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground font-mono font-bold"
+                  type="text"
+                  required
+                  placeholder="e.g. BKH8923JK2"
+                  value={transactionId}
+                  onChange={(e) => setTransactionId(e.target.value)}
+                  className="w-full bg-background border border-input rounded-xl p-2 font-mono text-foreground focus:ring-2 focus:ring-primary outline-none"
                 />
               </div>
 
-              {method !== "CASH" && (
-                <div>
-                  <label className="font-semibold text-foreground block mb-1.5">
-                    {isBn ? "ট্রানজেকশন আইডি (TrxID) *" : "Transaction ID (TrxID) *"}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. BXA987654321"
-                    value={transactionId}
-                    onChange={(e) => setTransactionId(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground font-mono"
-                  />
-                </div>
-              )}
-
-              {/* Direct Folder Image Upload */}
+              {/* Direct Folder File Picker Area */}
               <div>
-                <label className="font-semibold text-foreground block mb-1.5">
-                  {isBn ? "রসিদের ছবি / স্ক্রিনশট আপলোড করুন:" : "Upload Receipt Screenshot:"}
+                <label className="font-bold block mb-1 text-foreground">
+                  {isBn ? "রসিদের ছবি (ফোল্ডার থেকে সিলেক্ট করুন):" : "Receipt Image (Select From Folder):"}
                 </label>
-                <div className="border-2 border-dashed border-input hover:border-primary rounded-xl p-4 text-center cursor-pointer relative bg-background transition">
+                <div className="border-2 border-dashed border-input hover:border-primary rounded-xl p-3 text-center cursor-pointer relative bg-background/50 transition">
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={handleFileChange}
+                    onChange={handleFileSelect}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                   />
                   {previewUrl ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <img src={previewUrl} alt="Preview" className="max-h-20 object-contain rounded-lg border" />
-                      <span className="text-[10px] text-emerald-600 font-bold">
-                        {isBn ? "ছবি সিলেক্ট হয়েছে (পরিবর্তন করতে ক্লিক করুন)" : "Image selected (Click to replace)"}
+                    <div className="flex items-center justify-between p-1">
+                      <div className="flex items-center gap-2">
+                        <img src={previewUrl} alt="Preview" className="h-9 w-9 object-cover rounded-md border" />
+                        <span className="text-[10px] text-emerald-600 font-bold truncate max-w-[150px]">
+                          {fileName || (isBn ? "ছবি যুক্ত হয়েছে" : "Attached")}
+                        </span>
+                      </div>
+                      <span className="text-[9px] bg-emerald-500/10 text-emerald-600 font-bold px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        <FaCheck className="inline mr-1" /> Ready
                       </span>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center gap-1 text-muted-foreground">
-                      <FaUpload className="text-base text-primary" />
-                      <span className="font-semibold text-foreground text-[11px]">
-                        {isBn ? "কম্পিউটার থেকে ছবি নির্বাচন করুন" : "Choose image from computer"}
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground py-1">
+                      <FaUpload className="text-primary" />
+                      <span className="text-[11px] font-semibold text-foreground">
+                        {isBn ? "ফোল্ডার থেকে ছবি বেছে নিন" : "Select Image from Folder"}
                       </span>
                     </div>
                   )}
                 </div>
               </div>
 
+              {errorMessage && (
+                <div className="p-2 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl text-[10px]">
+                  {errorMessage}
+                </div>
+              )}
+
+              {successMessage && (
+                <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-xl text-[10px]">
+                  {successMessage}
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-2.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-2 rounded-xl font-bold transition flex items-center justify-center gap-2 mt-2"
               >
-                {submitting ? (isBn ? "পেমেন্ট প্রসেস হচ্ছে..." : "Processing...") : isBn ? "পেমেন্ট নিশ্চিত করুন" : "Confirm Payment"}
+                {submitting ? (
+                  <>
+                    <FaSpinner className="animate-spin" />
+                    <span>{isBn ? "জমা হচ্ছে..." : "Submitting..."}</span>
+                  </>
+                ) : (
+                  <span>{isBn ? "পেমেন্ট প্রুফ জমা দিন" : "Submit Payment Proof"}</span>
+                )}
               </button>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
     </div>
   );

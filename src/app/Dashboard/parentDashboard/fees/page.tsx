@@ -487,50 +487,24 @@ export default function ParentFeesPage() {
                 />
               </div>
 
-              {/* Receipt Image URL (Optional) */}
+              {/* Receipt Image URL / Reference Input */}
               <div>
                 <label className="font-bold block mb-1 text-foreground">
                   {isBn
-                    ? "রসিদের ছবি / স্ক্রিনশট আপলোড করুন:"
-                    : "Upload Receipt Screenshot:"}
+                    ? "রসিদের ছবি বা ব্যাংক স্লিপ লিংক (ঐচ্ছিক):"
+                    : "Receipt Image URL / Reference (Optional):"}
                 </label>
-
-                <div className="border-2 border-dashed border-input hover:border-primary rounded-xl p-4 text-center cursor-pointer relative bg-background transition">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  />
-                  {previewUrl ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <img
-                        src={previewUrl}
-                        alt="Receipt Preview"
-                        className="max-h-24 object-contain rounded-lg border border-border"
-                      />
-                      <span className="text-[10px] text-emerald-600 font-bold">
-                        {isBn
-                          ? "ছবি সিলেক্ট হয়েছে (পরিবর্তন করতে ক্লিক করুন)"
-                          : "Image Selected (Click to change)"}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center gap-1 py-2 text-muted-foreground">
-                      <FaUpload className="text-lg text-primary" />
-                      <span className="text-[11px] font-semibold text-foreground">
-                        {isBn
-                          ? "ফাইল থেকে ছবি নির্বাচন করুন"
-                          : "Choose file from computer"}
-                      </span>
-                      <span className="text-[9px]">
-                        {isBn
-                          ? "PNG, JPG, JPEG (সর্বোচ্চ 5MB)"
-                          : "PNG, JPG, JPEG (Max 5MB)"}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                <input
+                  type="text"
+                  placeholder={
+                    isBn
+                      ? "যেমন: ড্রাইভ লিংক বা স্ক্রিনশট লিংক"
+                      : "e.g. Google Drive link or image URL"
+                  }
+                  value={receiptUrl}
+                  onChange={(e) => setReceiptUrl(e.target.value)}
+                  className="w-full bg-background border border-input rounded-xl p-2.5 font-mono text-foreground focus:ring-2 focus:ring-primary outline-none"
+                />
               </div>
 
               {errorMessage && (
