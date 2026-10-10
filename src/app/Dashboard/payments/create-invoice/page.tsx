@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FaFileInvoiceDollar, FaPlus, FaCalendarAlt, FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
+import { FaFileInvoiceDollar, FaPlus, FaCalendarAlt, FaCheckCircle, FaExclamationTriangle, FaLayerGroup } from "react-icons/fa";
 import { Card, CardContent } from "@/src/components/ui/card";
-import axiosInstance from "@/src/lib/axiosInstance";
 import { useLanguage } from "@/src/context/LanguageContext";
+import { paymentService } from "@/src/Services/paymentService";
+import axiosInstance from "@/src/lib/axiosInstance";
 
 interface IClass {
   id: string;
@@ -29,15 +30,18 @@ export default function CreateInvoicePage() {
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [amount, setAmount] = useState<number>(1500);
   const [dueDate, setDueDate] = useState<string>("");
+  const [bulkDueDate, setBulkDueDate] = useState<string>("");
 
   const [loading, setLoading] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
-    // Set default due date to 10 days from today
     const defaultDue = new Date();
     defaultDue.setDate(defaultDue.getDate() + 10);
-    setDueDate(defaultDue.toISOString().split("T")[0]);
+    const dateStr = defaultDue.toISOString().split("T")[0];
+    setDueDate(dateStr);
+    setBulkDueDate(dateStr);
 
     axiosInstance
       .get("/academic/classes")
@@ -56,6 +60,7 @@ export default function CreateInvoicePage() {
       .catch(() => setStudents([]));
   }, [selectedClassId]);
 
+  // Single Invoice Handler
   const handleCreateInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedStudentId || !amount || !dueDate) {
@@ -70,7 +75,7 @@ export default function CreateInvoicePage() {
       setLoading(true);
       setMsg(null);
 
-      await axiosInstance.post("/payments/create-invoice", {
+      await paymentService.createInvoice({
         studentId: selectedStudentId,
         amount: Number(amount),
         dueDate,
@@ -79,7 +84,7 @@ export default function CreateInvoicePage() {
       setMsg({
         type: "success",
         text: isBn
-          ? "ইনভয়েস সফলভাবে তৈরি হয়েছে এবং হোয়াটসঅ্যাপে নোটিফিকেশন পাঠানো হয়েছে!"
+          ? "ইনভয়েস সফলভাবে তৈরি হয়েছে এবং হোয়াটসঅ্যাপে নোটিফিকেশন পাঠানো হয়েছে!"
           : "Invoice generated successfully and WhatsApp notification sent!",
       });
 
@@ -87,10 +92,38 @@ export default function CreateInvoicePage() {
     } catch (err: any) {
       setMsg({
         type: "error",
-        text: err.response?.data?.message || (isBn ? "ইনভয়েস তৈরি করতে সমস্যা হয়েছে।" : "Failed to generate invoice."),
+        text: err?.response?.data?.message || (isBn ? "ইনভয়েস তৈরি করতে সমস্যা হয়েছে।" : "Failed to generate invoice."),
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Bulk Monthly Invoice Generator Handler
+  const handleGenerateBulkInvoices = async () => {
+    if (!bulkDueDate) return;
+
+    try {
+      setBulkLoading(true);
+      setMsg(null);
+
+      const res = await paymentService.generateMonthlyInvoices({
+        dueDate: bulkDueDate,
+      });
+
+      setMsg({
+        type: "success",
+        text: isBn
+          ? `সফলভাবে ${res?.data?.createdCount || 0} জন শিক্ষার্থীর জন্য মাসিক ইনভয়েস জেনারেট হয়েছে!`
+          : `Successfully generated monthly invoices for students!`,
+      });
+    } catch (err: any) {
+      setMsg({
+        type: "error",
+        text: err?.response?.data?.message || (isBn ? "বাল্ক ইনভয়েস জেনারেট করতে সমস্যা হয়েছে।" : "Failed to generate bulk invoices."),
+      });
+    } finally {
+      setBulkLoading(false);
     }
   };
 
@@ -99,12 +132,12 @@ export default function CreateInvoicePage() {
       <div>
         <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
           <FaFileInvoiceDollar className="text-primary" />
-          <span>{isBn ? "ইনভয়েস তৈরি ও ফি সেটআপ" : "Create Student Invoice"}</span>
+          <span>{isBn ? "ইনভয়েস তৈরি ও ফি জেনারেশন" : "Create Student Invoices"}</span>
         </h1>
         <p className="text-xs text-muted-foreground mt-1">
           {isBn
-            ? "মাসের ১ম তারিখে শিক্ষার্থীর ইনভয়েস জেনারেট করুন। এটি হোয়াটসঅ্যাপে অটো-মেসেজ পাঠাবে।"
-            : "Generate monthly tuition and fee invoices for students."}
+            ? "একক ইনভয়েস অথবা এক ক্লিকে সব শিক্ষার্থীর জন্য মাসিক বাল্ক ইনভয়েস জেনারেট করুন।"
+            : "Generate single invoices or batch monthly invoices for all active students."}
         </p>
       </div>
 
@@ -121,17 +154,62 @@ export default function CreateInvoicePage() {
         </div>
       )}
 
+      {/* Bulk Monthly Invoice Generator Card */}
+      <Card className="border-border/60 shadow-sm rounded-2xl bg-card max-w-2xl border-l-4 border-l-primary">
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <FaLayerGroup className="text-primary text-lg" />
+            <h3 className="text-sm font-bold text-foreground">
+              {isBn ? "অটোমেটিক মাসিক বাল্ক ইনভয়েস জেনারেটর" : "Automated Monthly Bulk Invoice Generator"}
+            </h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {isBn
+              ? "শ্রেণিভিত্তিক ফি স্ট্রাকচার অনুযায়ী সব সক্রিয় শিক্ষার্থীর ইনভয়েস একবারে তৈরি হবে এবং হোয়াটসঅ্যাপে নোটিফিকেশন যাবে।"
+              : "Automatically generate invoices for all active students based on class fee structures."}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="date"
+              value={bulkDueDate}
+              onChange={(e) => setBulkDueDate(e.target.value)}
+              className="px-3 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground font-semibold"
+            />
+            <button
+              onClick={handleGenerateBulkInvoices}
+              disabled={bulkLoading}
+              className="px-5 py-2.5 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:opacity-90 transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <FaPlus />
+              <span>
+                {bulkLoading
+                  ? isBn
+                    ? "জেনারেট হচ্ছে..."
+                    : "Generating..."
+                  : isBn
+                  ? "সকলের জন্য ইনভয়েস জেনারেট করুন"
+                  : "Generate Bulk Invoices"}
+              </span>
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Single Invoice Form Card */}
       <Card className="border-border/60 shadow-sm rounded-2xl bg-card max-w-2xl">
         <CardContent className="p-6">
-          <form onSubmit={handleCreateInvoice} className="space-y-4">
+          <h3 className="text-sm font-bold text-foreground mb-4">
+            {isBn ? "একক ইনভয়েস তৈরি করুন" : "Create Individual Invoice"}
+          </h3>
+          <form onSubmit={handleCreateInvoice} className="space-y-4 text-xs">
             <div>
-              <label className="text-xs font-semibold text-foreground block mb-1.5">
-                {isBn ? "শ্রেণি (Class)" : "Select Class"}
+              <label className="font-semibold text-foreground block mb-1.5">
+                {isBn ? "শ্রেণি নির্বাচন করুন" : "Select Class"}
               </label>
               <select
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+                className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground font-semibold"
               >
                 <option value="">{isBn ? "-- শ্রেণি সিলেক্ট করুন --" : "-- Select Class --"}</option>
                 {classes.map((cls) => (
@@ -143,13 +221,13 @@ export default function CreateInvoicePage() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-foreground block mb-1.5">
-                {isBn ? "শিক্ষার্থী (Student)" : "Select Student"}
+              <label className="font-semibold text-foreground block mb-1.5">
+                {isBn ? "শিক্ষার্থী নির্বাচন করুন" : "Select Student"}
               </label>
               <select
                 value={selectedStudentId}
                 onChange={(e) => setSelectedStudentId(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+                className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground font-semibold"
               >
                 <option value="">{isBn ? "-- শিক্ষার্থী সিলেক্ট করুন --" : "-- Select Student --"}</option>
                 {students.map((std) => (
@@ -162,26 +240,26 @@ export default function CreateInvoicePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">
-                  {isBn ? "বেতনের পরিমাণ (Amount in ৳)" : "Fee Amount (৳)"}
+                <label className="font-semibold text-foreground block mb-1.5">
+                  {isBn ? "বেতনের পরিমাণ (৳)" : "Fee Amount (৳)"}
                 </label>
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}
-                  className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+                  className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground font-mono font-bold"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">
-                  {isBn ? "পরিশোধের শেষ তারিখ (Due Date)" : "Due Date"}
+                <label className="font-semibold text-foreground block mb-1.5">
+                  {isBn ? "পরিশোধের শেষ তারিখ" : "Due Date"}
                 </label>
                 <input
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+                  className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground font-semibold"
                 />
               </div>
             </div>
@@ -189,10 +267,10 @@ export default function CreateInvoicePage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:opacity-90 transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-2.5 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:opacity-90 transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <FaPlus />
-              <span>{loading ? (isBn ? "ইনভয়েস তৈরি হচ্ছে..." : "Generating...") : isBn ? "ইনভয়েস সাবমিট করুন" : "Generate Invoice"}</span>
+              <span>{loading ? (isBn ? "ইনভয়েস তৈরি হচ্ছে..." : "Generating...") : isBn ? "ইনভয়েস সাবমিট করুন" : "Generate Invoice"}</span>
             </button>
           </form>
         </CardContent>

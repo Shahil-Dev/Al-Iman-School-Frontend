@@ -28,12 +28,16 @@ export default function StudentFeesPage() {
 
   // Payment Modal State
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<"BKASH" | "NAGAD" | "BANK">("BKASH");
+  const [paymentMethod, setPaymentMethod] = useState<
+    "BKASH" | "NAGAD" | "BANK"
+  >("BKASH");
   const [transactionId, setTransactionId] = useState("");
   const [receiptUrl, setReceiptUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
   const fetchStudentInvoices = async () => {
     setLoading(true);
@@ -63,7 +67,11 @@ export default function StudentFeesPage() {
     if (!selectedInvoice) return;
 
     if (!transactionId.trim()) {
-      setErrorMessage(isBn ? "ট্রানজেকশন আইডি (TrxID) প্রদান করুন।" : "Transaction ID is required.");
+      setErrorMessage(
+        isBn
+          ? "ট্রানজেকশন আইডি (TrxID) প্রদান করুন।"
+          : "Transaction ID is required.",
+      );
       return;
     }
 
@@ -85,7 +93,7 @@ export default function StudentFeesPage() {
       setSuccessMessage(
         isBn
           ? "পেমেন্ট সফলভাবে জমা হয়েছে! অ্যাডমিন যাচাই করে অনুমোদন করবেন।"
-          : "Payment submitted successfully! Pending admin approval."
+          : "Payment submitted successfully! Pending admin approval.",
       );
 
       setTimeout(() => {
@@ -98,16 +106,38 @@ export default function StudentFeesPage() {
     } catch (err: any) {
       setErrorMessage(
         err?.response?.data?.message ||
-          (isBn ? "পেমেন্ট জমা দিতে সমস্যা হয়েছে।" : "Failed to submit payment.")
+          (isBn
+            ? "পেমেন্ট জমা দিতে সমস্যা হয়েছে।"
+            : "Failed to submit payment."),
       );
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReceiptUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Summary Calculations
-  const totalAmount = invoices.reduce((acc, inv) => acc + (Number(inv.amount) || 0), 0);
-  const totalPaidAmount = invoices.reduce((acc, inv) => acc + (Number(inv.paidAmount) || 0), 0);
+  const totalAmount = invoices.reduce(
+    (acc, inv) => acc + (Number(inv.amount) || 0),
+    0,
+  );
+  const totalPaidAmount = invoices.reduce(
+    (acc, inv) => acc + (Number(inv.paidAmount) || 0),
+    0,
+  );
   const dueAmount = Math.max(0, totalAmount - totalPaidAmount);
 
   return (
@@ -120,7 +150,9 @@ export default function StudentFeesPage() {
           </span>
           <h1 className="text-xl md:text-2xl font-bold text-foreground mt-2 flex items-center gap-2">
             <FaFileInvoiceDollar className="text-primary text-lg" />
-            <span>{isBn ? "ফি এবং ইনভয়েস বিবরণী" : "Fee Payments & Status"}</span>
+            <span>
+              {isBn ? "ফি এবং ইনভয়েস বিবরণী" : "Fee Payments & Status"}
+            </span>
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
             {isBn
@@ -133,7 +165,9 @@ export default function StudentFeesPage() {
       {loading ? (
         <div className="p-12 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
           <FaSpinner className="animate-spin text-primary text-lg" />
-          <span>{isBn ? "ফি এবং ইনভয়েস লোড হচ্ছে..." : "Loading fee invoices..."}</span>
+          <span>
+            {isBn ? "ফি এবং ইনভয়েস লোড হচ্ছে..." : "Loading fee invoices..."}
+          </span>
         </div>
       ) : (
         <>
@@ -198,37 +232,56 @@ export default function StudentFeesPage() {
 
               {invoices.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-8">
-                  {isBn ? "কোনো ইনভয়েসের তথ্য পাওয়া যায়নি।" : "No invoices available."}
+                  {isBn
+                    ? "কোনো ইনভয়েসের তথ্য পাওয়া যায়নি।"
+                    : "No invoices available."}
                 </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-border/60 text-muted-foreground uppercase text-[10px] tracking-wider">
-                        <th className="py-3 px-3">{isBn ? "ইনভয়েস নং" : "Invoice No"}</th>
+                        <th className="py-3 px-3">
+                          {isBn ? "ইনভয়েস নং" : "Invoice No"}
+                        </th>
                         <th className="py-3 px-3">{isBn ? "তারিখ" : "Date"}</th>
-                        <th className="py-3 px-3 text-right">{isBn ? "মোট ফি" : "Total Fee"}</th>
-                        <th className="py-3 px-3 text-right">{isBn ? "পরিশোধিত" : "Paid"}</th>
-                        <th className="py-3 px-3 text-center">{isBn ? "স্ট্যাটাস" : "Status"}</th>
-                        <th className="py-3 px-3 text-center">{isBn ? "অ্যাকশন" : "Action"}</th>
+                        <th className="py-3 px-3 text-right">
+                          {isBn ? "মোট ফি" : "Total Fee"}
+                        </th>
+                        <th className="py-3 px-3 text-right">
+                          {isBn ? "পরিশোধিত" : "Paid"}
+                        </th>
+                        <th className="py-3 px-3 text-center">
+                          {isBn ? "স্ট্যাটাস" : "Status"}
+                        </th>
+                        <th className="py-3 px-3 text-center">
+                          {isBn ? "অ্যাকশন" : "Action"}
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40 font-sans">
                       {invoices.map((inv: any, idx: number) => {
                         const isPaid = inv.status === "PAID";
                         const hasPendingTx = inv.transactions?.some(
-                          (t: any) => t.status === "PENDING_APPROVAL"
+                          (t: any) => t.status === "PENDING_APPROVAL",
                         );
 
                         return (
-                          <tr key={inv.id || idx} className="hover:bg-muted/30 transition-colors">
+                          <tr
+                            key={inv.id || idx}
+                            className="hover:bg-muted/30 transition-colors"
+                          >
                             <td className="py-3.5 px-3 font-mono font-bold text-foreground">
                               {inv.invoiceNo}
                             </td>
                             <td className="py-3.5 px-3 text-muted-foreground font-mono">
                               {new Date(inv.createdAt).toLocaleDateString(
                                 isBn ? "bn-BD" : "en-US",
-                                { year: "numeric", month: "short", day: "numeric" }
+                                {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                },
                               )}
                             </td>
                             <td className="py-3.5 px-3 text-right font-mono font-bold text-foreground">
@@ -244,7 +297,10 @@ export default function StudentFeesPage() {
                                 </span>
                               ) : hasPendingTx ? (
                                 <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20 flex items-center justify-center gap-1">
-                                  <FaClock /> {isBn ? "অনুমোদনের অপেক্ষায়" : "Pending Approval"}
+                                  <FaClock />{" "}
+                                  {isBn
+                                    ? "অনুমোদনের অপেক্ষায়"
+                                    : "Pending Approval"}
                                 </span>
                               ) : (
                                 <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-destructive/10 text-destructive border border-destructive/20">
@@ -253,8 +309,8 @@ export default function StudentFeesPage() {
                                       ? "মেয়াদোত্তীর্ণ"
                                       : "OVERDUE"
                                     : isBn
-                                    ? "বকেয়া"
-                                    : "UNPAID"}
+                                      ? "বকেয়া"
+                                      : "UNPAID"}
                                 </span>
                               )}
                             </td>
@@ -269,7 +325,9 @@ export default function StudentFeesPage() {
                                   className="bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-1 rounded-lg font-semibold text-[11px] transition flex items-center justify-center gap-1 mx-auto shadow-sm"
                                 >
                                   <FaCreditCard />
-                                  <span>{isBn ? "পেমেন্ট করুন" : "Pay Now"}</span>
+                                  <span>
+                                    {isBn ? "পেমেন্ট করুন" : "Pay Now"}
+                                  </span>
                                 </button>
                               )}
                             </td>
@@ -304,14 +362,23 @@ export default function StudentFeesPage() {
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handlePaymentSubmit} className="p-5 space-y-4 text-xs">
+            <form
+              onSubmit={handlePaymentSubmit}
+              className="p-5 space-y-4 text-xs"
+            >
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">{isBn ? "ইনভয়েস নং:" : "Invoice No:"}</span>
-                  <span className="font-mono font-bold">{selectedInvoice.invoiceNo}</span>
+                  <span className="text-muted-foreground">
+                    {isBn ? "ইনভয়েস নং:" : "Invoice No:"}
+                  </span>
+                  <span className="font-mono font-bold">
+                    {selectedInvoice.invoiceNo}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">{isBn ? "প্রদেয় পরিমাণ:" : "Amount Due:"}</span>
+                  <span className="text-muted-foreground">
+                    {isBn ? "প্রদেয় পরিমাণ:" : "Amount Due:"}
+                  </span>
                   <span className="font-mono font-bold text-destructive text-sm">
                     ৳{selectedInvoice.amount - selectedInvoice.paidAmount}
                   </span>
@@ -321,7 +388,9 @@ export default function StudentFeesPage() {
               {/* Payment Method Selector */}
               <div>
                 <label className="font-bold block mb-1 text-foreground">
-                  {isBn ? "পেমেন্ট মেথড নির্বাচন করুন:" : "Select Payment Method:"}
+                  {isBn
+                    ? "পেমেন্ট মেথড নির্বাচন করুন:"
+                    : "Select Payment Method:"}
                 </label>
                 <select
                   value={paymentMethod}
@@ -342,11 +411,13 @@ export default function StudentFeesPage() {
                       ? "ডাচ-বাংলা ব্যাংক লিমিটেড:"
                       : "Dutch-Bangla Bank Ltd:"
                     : isBn
-                    ? "মার্চেন্ট/পার্সোনাল নম্বর:"
-                    : "Merchant/Personal Number:"}
+                      ? "মার্চেন্ট/পার্সোনাল নম্বর:"
+                      : "Merchant/Personal Number:"}
                 </p>
                 <p className="font-mono font-bold text-primary">
-                  {paymentMethod === "BANK" ? "A/C: 123-456-7890-1" : "01700-000000"}
+                  {paymentMethod === "BANK"
+                    ? "A/C: 123-456-7890-1"
+                    : "01700-000000"}
                 </p>
                 <p>
                   {isBn
@@ -358,7 +429,9 @@ export default function StudentFeesPage() {
               {/* Transaction ID Input */}
               <div>
                 <label className="font-bold block mb-1 text-foreground">
-                  {isBn ? "ট্রানজেকশন আইডি (TrxID / Reference): *" : "Transaction ID (TrxID): *"}
+                  {isBn
+                    ? "ট্রানজেকশন আইডি (TrxID / Reference): *"
+                    : "Transaction ID (TrxID): *"}
                 </label>
                 <input
                   type="text"
@@ -372,17 +445,48 @@ export default function StudentFeesPage() {
 
               {/* Receipt Image URL (Optional) */}
               <div>
-                <label className="font-bold block mb-1 text-foreground flex items-center justify-between">
-                  <span>{isBn ? "রসিদের ছবি / স্ক্রিনশট লিংক (ঐচ্ছিক):" : "Receipt Image URL (Optional):"}</span>
-                  <FaUpload className="text-muted-foreground" />
+                <label className="font-bold block mb-1 text-foreground">
+                  {isBn
+                    ? "রসিদের ছবি / স্ক্রিনশট আপলোড করুন:"
+                    : "Upload Receipt Screenshot:"}
                 </label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={receiptUrl}
-                  onChange={(e) => setReceiptUrl(e.target.value)}
-                  className="w-full bg-background border border-input rounded-xl p-2.5 font-mono text-foreground focus:ring-2 focus:ring-primary outline-none"
-                />
+
+                <div className="border-2 border-dashed border-input hover:border-primary rounded-xl p-4 text-center cursor-pointer relative bg-background transition">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  />
+                  {previewUrl ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <img
+                        src={previewUrl}
+                        alt="Receipt Preview"
+                        className="max-h-24 object-contain rounded-lg border border-border"
+                      />
+                      <span className="text-[10px] text-emerald-600 font-bold">
+                        {isBn
+                          ? "ছবি সিলেক্ট হয়েছে (পরিবর্তন করতে ক্লিক করুন)"
+                          : "Image Selected (Click to change)"}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-1 py-2 text-muted-foreground">
+                      <FaUpload className="text-lg text-primary" />
+                      <span className="text-[11px] font-semibold text-foreground">
+                        {isBn
+                          ? "ফাইল থেকে ছবি নির্বাচন করুন"
+                          : "Choose file from computer"}
+                      </span>
+                      <span className="text-[9px]">
+                        {isBn
+                          ? "PNG, JPG, JPEG (সর্বোচ্চ 5MB)"
+                          : "PNG, JPG, JPEG (Max 5MB)"}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {errorMessage && (
@@ -409,7 +513,9 @@ export default function StudentFeesPage() {
                     <span>{isBn ? "জমা হচ্ছে..." : "Submitting..."}</span>
                   </>
                 ) : (
-                  <span>{isBn ? "পেমেন্ট প্রুফ জমা দিন" : "Submit Payment Proof"}</span>
+                  <span>
+                    {isBn ? "পেমেন্ট প্রুফ জমা দিন" : "Submit Payment Proof"}
+                  </span>
                 )}
               </button>
             </form>
