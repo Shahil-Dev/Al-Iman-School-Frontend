@@ -435,10 +435,6 @@ export default function StudentManagementPage() {
                     <span className="font-bold text-emerald-700 dark:text-emerald-400">
                       {selectedStudent.studentCode}
                     </span>{" "}
-                    | ID:{" "}
-                    <span className="font-semibold text-foreground">
-                      {selectedStudent.studentIdNo}
-                    </span>
                   </p>
                   <p className="text-[11px] text-primary font-semibold flex items-center gap-1.5 pt-0.5">
                     <span className="px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20">

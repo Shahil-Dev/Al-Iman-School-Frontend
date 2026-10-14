@@ -48,8 +48,6 @@ const slidesData = {
         { value: "100%", label: "Pass Rate", icon: FaChartLine },
         { value: "A+", label: "Academic Distinction", icon: FaStar },
       ],
-      ctaText: "Explore Academics",
-      ctaLink: "/academics",
     },
     {
       id: 3,
@@ -99,8 +97,6 @@ const slidesData = {
         { value: "১০০%", label: "পাসের হার", icon: FaChartLine },
         { value: "এ+", label: "একাডেমিক সাফল্য", icon: FaStar },
       ],
-      ctaText: "একাডেমিক তথ্য",
-      ctaLink: "/academics",
     },
     {
       id: 3,
@@ -125,8 +121,6 @@ const slidesData = {
         { value: "২০০০+", label: "শিক্ষার্থী", icon: FaUsers },
         { value: "২৫+", label: "বছরের অভিজ্ঞতা", icon: FaClock },
       ],
-    
-   
     },
   ],
 };

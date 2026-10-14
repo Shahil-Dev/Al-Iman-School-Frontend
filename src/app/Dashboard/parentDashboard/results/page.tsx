@@ -30,7 +30,9 @@ export default function ParentResultsPage() {
       setLoading(true);
       try {
         const [childrenRes, examsRes] = await Promise.all([
-          axiosInstance.get("/parents/my-children").catch(() => ({ data: { data: [] } })),
+          axiosInstance
+            .get("/parents/my-children")
+            .catch(() => ({ data: { data: [] } })),
           axiosInstance.get("/exams").catch(() => ({ data: { data: [] } })),
         ]);
 
@@ -59,12 +61,16 @@ export default function ParentResultsPage() {
     if (!selectedChild?.id || !selectedExamId) return;
 
     setMarksheetLoading(true);
-    // Fixed URL path to point to /marks/marksheet/...
     axiosInstance
       .get(`/marks/marksheet/${selectedExamId}/${selectedChild.id}`)
       .then((res) => {
         const markData = res.data?.data || res.data || [];
-        setMarksheet(Array.isArray(markData) ? markData : []);
+        const marksArray = Array.isArray(markData)
+          ? markData
+          : Array.isArray(markData.marks)
+          ? markData.marks
+          : [];
+        setMarksheet(marksArray);
       })
       .catch((err) => {
         console.error("Failed to load marksheet", err);
@@ -77,14 +83,16 @@ export default function ParentResultsPage() {
     (acc, item) => acc + (Number(item.totalMarks) || 0),
     0
   );
-  
+
   const totalGradePoints = marksheet.reduce(
     (acc, item) => acc + (Number(item.gradePoint) || 0),
     0
   );
 
   const averageGPA =
-    marksheet.length > 0 ? (totalGradePoints / marksheet.length).toFixed(2) : "0.00";
+    marksheet.length > 0
+      ? (totalGradePoints / marksheet.length).toFixed(2)
+      : "0.00";
 
   const isPassed =
     marksheet.length > 0 && !marksheet.some((item) => item.grade === "F");
@@ -155,7 +163,7 @@ export default function ParentResultsPage() {
           {marksheet.length > 0 && (
             <button
               onClick={handlePrint}
-              className="px-4 py-2 bg-primary text-primary-foreground font-bold text-xs rounded-xl shadow-sm hover:opacity-90 transition-all flex items-center gap-2"
+              className="px-4 py-2 bg-primary text-primary-foreground font-bold text-xs rounded-xl shadow-sm hover:opacity-95 transition-all flex items-center gap-2"
             >
               <FaPrint />
               <span>{isBn ? "প্রিন্ট" : "Print"}</span>
@@ -219,8 +227,12 @@ export default function ParentResultsPage() {
                   {marksheet.length === 0
                     ? "N/A"
                     : isPassed
-                    ? (isBn ? "উত্তীর্ণ" : "PASSED")
-                    : (isBn ? "অকৃতকার্য" : "FAILED")}
+                    ? isBn
+                      ? "উত্তীর্ণ"
+                      : "PASSED"
+                    : isBn
+                    ? "অকৃতকার্য"
+                    : "FAILED"}
                 </span>
               </CardContent>
             </Card>
@@ -237,17 +249,29 @@ export default function ParentResultsPage() {
                   Official Academic Transcript for Guardians
                 </p>
                 <div className="pt-2 flex flex-wrap justify-center gap-6 text-xs font-semibold text-foreground">
-                  <span><strong>Student:</strong> {selectedChild.firstName} {selectedChild.lastName}</span>
-                  <span><strong>ID:</strong> {selectedChild.studentIdNo || selectedChild.studentCode}</span>
-                  <span><strong>Class:</strong> {selectedChild.class?.name || "N/A"}</span>
-                  <span><strong>Roll:</strong> {selectedChild.rollNo || "N/A"}</span>
+                  <span>
+                    <strong>Student:</strong> {selectedChild.firstName}{" "}
+                    {selectedChild.lastName}
+                  </span>
+                  <span>
+                    <strong>ID:</strong>{" "}
+                    {selectedChild.studentIdNo || selectedChild.studentCode}
+                  </span>
+                  <span>
+                    <strong>Class:</strong> {selectedChild.class?.name || "N/A"}
+                  </span>
+                  <span>
+                    <strong>Roll:</strong> {selectedChild.rollNo || "N/A"}
+                  </span>
                 </div>
               </div>
 
               <div className="flex justify-between items-center border-b border-border/40 pb-3">
                 <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
                   <FaFileAlt className="text-primary" />
-                  <span>{isBn ? "বিষয়ভিত্তিক নম্বর ও গ্রেড" : "Subject Wise Grades"}</span>
+                  <span>
+                    {isBn ? "বিষয়ভিত্তিক নম্বর ও গ্রেড" : "Subject Wise Grades"}
+                  </span>
                 </h3>
                 <span className="text-xs font-bold text-primary">
                   {exams.find((e) => e.id === selectedExamId)?.name || ""}
@@ -271,19 +295,34 @@ export default function ParentResultsPage() {
                     <thead>
                       <tr className="border-b-2 border-border text-muted-foreground uppercase text-[10px] tracking-wider bg-muted/40">
                         <th className="py-3 px-3">{isBn ? "বিষয়" : "Subject"}</th>
-                        <th className="py-3 px-3 text-center">{isBn ? "পূর্ণমান" : "Full Marks"}</th>
-                        <th className="py-3 px-3 text-center">{isBn ? "এমটি নম্বর" : "MT Marks"}</th>
-                        <th className="py-3 px-3 text-center">{isBn ? "টার্মিনাল" : "Terminal"}</th>
-                        <th className="py-3 px-3 text-center">{isBn ? "মোট নম্বর" : "Total Marks"}</th>
-                        <th className="py-3 px-3 text-center">{isBn ? "গ্রেড" : "Grade"}</th>
-                        <th className="py-3 px-3 text-center">{isBn ? "গ্রেড পয়েন্ট" : "Grade Point"}</th>
+                        <th className="py-3 px-3 text-center">
+                          {isBn ? "পূর্ণমান" : "Full Marks"}
+                        </th>
+                        <th className="py-3 px-3 text-center">
+                          {isBn ? "এমটি নম্বর" : "MT Marks"}
+                        </th>
+                        <th className="py-3 px-3 text-center">
+                          {isBn ? "টার্মিনাল" : "Terminal"}
+                        </th>
+                        <th className="py-3 px-3 text-center">
+                          {isBn ? "মোট নম্বর" : "Total Marks"}
+                        </th>
+                        <th className="py-3 px-3 text-center">
+                          {isBn ? "গ্রেড" : "Grade"}
+                        </th>
+                        <th className="py-3 px-3 text-center">
+                          {isBn ? "গ্রেড পয়েন্ট" : "Grade Point"}
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/60 font-sans">
                       {marksheet.map((item: any, idx: number) => {
                         const isFail = item.grade === "F";
                         return (
-                          <tr key={item.id || idx} className="hover:bg-muted/30 transition-colors">
+                          <tr
+                            key={item.id || idx}
+                            className="hover:bg-muted/30 transition-colors"
+                          >
                             <td className="py-3.5 px-3 font-bold text-foreground">
                               {item.subject?.name || "Subject"}
                             </td>
@@ -324,13 +363,18 @@ export default function ParentResultsPage() {
               <div className="pt-16 grid grid-cols-2 justify-between items-end text-xs font-semibold text-foreground border-t border-border/60 mt-8">
                 <div>
                   <p className="text-muted-foreground">
-                    Issue Date: <span className="font-bold text-foreground">{new Date().toLocaleDateString()}</span>
+                    Issue Date:{" "}
+                    <span className="font-bold text-foreground">
+                      {new Date().toLocaleDateString()}
+                    </span>
                   </p>
                 </div>
                 <div className="text-center ml-auto space-y-1">
                   <div className="w-48 border-b-2 border-foreground/50 mx-auto mb-1"></div>
                   <p className="font-extrabold">Headmaster / Principal</p>
-                  <p className="text-[10px] text-muted-foreground">Al-Iman Academy & High School</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Al-Iman Academy & High School
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -338,7 +382,9 @@ export default function ParentResultsPage() {
         </div>
       ) : (
         <Card className="p-8 text-center text-xs text-muted-foreground rounded-2xl border border-border">
-          {isBn ? "কোনো সংযুক্ত সন্তানের প্রোফাইল পাওয়া যায়নি।" : "No linked student profile found."}
+          {isBn
+            ? "কোনো সংযুক্ত সন্তানের প্রোফাইল পাওয়া যায়নি।"
+            : "No linked student profile found."}
         </Card>
       )}
     </div>
