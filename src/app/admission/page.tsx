@@ -430,7 +430,7 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               </h3>
               <div className="grid grid-cols-3 gap-2">
                 <p>
-                  <b>Fee Paid:</b> 500 BDT
+                  <b>Fee Paid:</b> 3000 BDT
                 </p>
                 <p>
                   <b>Method:</b> {payload.paymentMethod}
