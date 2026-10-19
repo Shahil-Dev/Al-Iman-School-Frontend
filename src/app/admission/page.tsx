@@ -1324,7 +1324,7 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                     type="text"
                     readOnly
                     disabled
-                    value="500 BDT (Fixed)"
+                    value="3000 BDT (Fixed)"
                     className="w-full p-2.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-100/60 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 font-bold font-mono cursor-not-allowed"
                   />
                 </div>
@@ -1421,7 +1421,7 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   <li>
                     Fee amount:{" "}
                     <span className="font-mono font-bold text-foreground">
-                      500 BDT
+                      3000 BDT
                     </span>
                   </li>
                   <li>
