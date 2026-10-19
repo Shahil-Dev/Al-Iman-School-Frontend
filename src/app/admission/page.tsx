@@ -278,7 +278,7 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             | "NAGAD"
             | "SSLCOMMERZ") || "BKASH",
         senderPhone: formData.senderPhone || formData.phone || "",
-        amount: 500,
+        amount: 3000,
         transactionId: formData.transactionId || "",
       };
 
