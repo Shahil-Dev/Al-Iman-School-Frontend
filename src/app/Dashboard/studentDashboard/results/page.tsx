@@ -66,15 +66,15 @@ export default function StudentResultsPage() {
       setMarksheetLoading(true);
       try {
         const res = await axiosInstance.get(
-          `/marks/marksheet/${selectedExamId}/${studentId}`
+          `/marks/marksheet/${selectedExamId}/${studentId}`,
         );
         const data = res.data?.data || res.data || [];
         // Safely map array whether it comes direct or nested
         const marksArray = Array.isArray(data)
           ? data
           : Array.isArray(data.marks)
-          ? data.marks
-          : [];
+            ? data.marks
+            : [];
         setMarksheet(marksArray);
       } catch (err) {
         console.error("Failed to fetch marksheet", err);
@@ -89,12 +89,12 @@ export default function StudentResultsPage() {
 
   const totalObtainedMarks = marksheet.reduce(
     (acc, curr) => acc + (Number(curr.totalMarks) || 0),
-    0
+    0,
   );
 
   const totalGradePoints = marksheet.reduce(
     (acc, curr) => acc + (Number(curr.gradePoint) || 0),
-    0
+    0,
   );
 
   const calculatedGPA =
@@ -165,7 +165,9 @@ export default function StudentResultsPage() {
       {loading ? (
         <div className="p-12 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
           <FaSpinner className="animate-spin text-primary text-lg" />
-          <span>{isBn ? "পরীক্ষার তথ্য লোড হচ্ছে..." : "Loading exam data..."}</span>
+          <span>
+            {isBn ? "পরীক্ষার তথ্য লোড হচ্ছে..." : "Loading exam data..."}
+          </span>
         </div>
       ) : (
         <>
@@ -244,8 +246,8 @@ export default function StudentResultsPage() {
                           ? "উত্তীর্ণ"
                           : "PASSED"
                         : isBn
-                        ? "অকৃতকার্য"
-                        : "FAILED"}
+                          ? "অকৃতকার্য"
+                          : "FAILED"}
                     </span>
                   </div>
                 </CardContent>
@@ -258,7 +260,7 @@ export default function StudentResultsPage() {
             <CardContent className="space-y-6 p-0">
               <div className="text-center space-y-1.5 border-b-2 border-primary/20 pb-6">
                 <h2 className="text-xl sm:text-2xl font-extrabold text-primary tracking-tight">
-                  Al-Iman Academy & High School
+                  Al-Iman School & Collage
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   Official Academic Transcript & Marksheet
@@ -295,7 +297,9 @@ export default function StudentResultsPage() {
               {marksheetLoading ? (
                 <div className="p-8 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
                   <FaSpinner className="animate-spin text-primary text-base" />
-                  <span>{isBn ? "নম্বরপত্র লোড হচ্ছে..." : "Fetching marksheet..."}</span>
+                  <span>
+                    {isBn ? "নম্বরপত্র লোড হচ্ছে..." : "Fetching marksheet..."}
+                  </span>
                 </div>
               ) : marksheet.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-12">
@@ -308,7 +312,9 @@ export default function StudentResultsPage() {
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b-2 border-border text-muted-foreground uppercase text-[10px] tracking-wider bg-muted/40">
-                        <th className="py-3 px-3">{isBn ? "বিষয়" : "Subject"}</th>
+                        <th className="py-3 px-3">
+                          {isBn ? "বিষয়" : "Subject"}
+                        </th>
                         <th className="py-3 px-3 text-center">
                           {isBn ? "পূর্ণমান" : "Full Marks"}
                         </th>
@@ -386,9 +392,11 @@ export default function StudentResultsPage() {
                 </div>
                 <div className="text-center ml-auto space-y-1">
                   <div className="w-48 border-b-2 border-foreground/50 mx-auto mb-1"></div>
-                  <p className="font-extrabold">Principal / Controller of Exams</p>
+                  <p className="font-extrabold">
+                    Principal / Controller of Exams
+                  </p>
                   <p className="text-[10px] text-muted-foreground">
-                    Al-Iman Academy & High School
+                     Al-Iman School & Collage
                   </p>
                 </div>
               </div>

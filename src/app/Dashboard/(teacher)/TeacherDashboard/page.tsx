@@ -51,7 +51,7 @@ export default function TeacherDashboardPage() {
           <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
             <FaChalkboardTeacher className="text-primary" />
             <span>
-              {isBn ? "আসসালামু আলাইকুম," : "Welcome,"} {user?.name || "Teacher"}!
+              {isBn ? "السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ," : "السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ,"} {user?.name || "Teacher"}!
             </span>
           </h1>
           <p className="text-xs text-muted-foreground mt-1">

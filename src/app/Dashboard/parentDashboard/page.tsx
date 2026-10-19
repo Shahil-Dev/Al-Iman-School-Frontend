@@ -85,7 +85,7 @@ export default function ParentOverviewPage() {
             {isBn ? "অভিভাবক পোর্টাল" : "Parent Portal"}
           </span>
           <h1 className="text-xl md:text-2xl font-bold text-foreground mt-2">
-            {isBn ? "স্বাগতম, অভিভাবক!" : "Welcome, Parent!"}
+            {isBn ? "السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ, অভিভাবক!" : "السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ, অভিভাবক!"}
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
             {isBn

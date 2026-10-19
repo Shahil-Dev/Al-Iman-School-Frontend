@@ -71,8 +71,8 @@ export default function StudentOverviewPage() {
           </span>
           <h1 className="text-xl md:text-2xl font-bold text-foreground mt-2">
             {isBn
-              ? `স্বাগতম, ${student?.firstName || ""} ${student?.lastName || ""}!`
-              : `Welcome, ${student?.firstName || ""} ${student?.lastName || ""}!`}
+              ? `السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ, ${student?.firstName || ""} ${student?.lastName || ""}!`
+              : `السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ, ${student?.firstName || ""} ${student?.lastName || ""}!`}
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
             {isBn
