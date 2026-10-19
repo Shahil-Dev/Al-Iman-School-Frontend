@@ -90,13 +90,11 @@ export default function PublicAdmissionApplyPage() {
     fetchClasses();
   }, [language]);
 
-  // Image File Selection with Size Compression / Safeguard
- // 📸 Image Auto-Compression & Base64 Handler
+
 const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   const file = e.target.files?.[0];
   if (!file) return;
 
-  // ১. ফাইল টাইপ ভ্যালিডেশন
   if (!file.type.startsWith("image/")) {
     toast.error(
       language === "bn"
@@ -113,7 +111,6 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     img.src = event.target?.result as string;
 
     img.onload = () => {
-      // ২. ছবির সর্বোচ্চ সাইজ (Max Width/Height: 800px) নির্ধারণ
       const MAX_WIDTH = 800;
       const MAX_HEIGHT = 800;
       let width = img.width;
@@ -140,7 +137,6 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (ctx) {
         ctx.drawImage(img, 0, 0, width, height);
 
-        // ৪. ৭০% কোয়ালিটিতে অতি ক্ষুদ্র JPEG Base64 জেনারেট করা (সাইজ সাধারণত ১৫০-৩০০ KB তে নেমে আসবে)
         const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
 
         setImagePreview(compressedBase64);
@@ -487,8 +483,8 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             <FaUserGraduate />
             <span>
               {language === "bn"
-                ? "আল-ঈমান ইসলামিক স্কুল • অনলাইন ভর্তি পোর্টাল"
-                : "Al-Iman Islamic School • Admission Portal"}
+                ? "আল-ঈমান স্কুল • অনলাইন ভর্তি পোর্টাল"
+                : "Al-Iman School • Admission Portal"}
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
