@@ -21,6 +21,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Al-Iman School",
   description: "Al-Iman School Management System",
+  icons: {
+    icon: "../favicon.jpg", 
+  }
 };
 
 export default function RootLayout({
