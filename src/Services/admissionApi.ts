@@ -52,10 +52,11 @@ export interface IAdmissionPayload {
   // Academic Target & Payment
   classId: string;
   paymentMethod: "CASH" | "BKASH" | "NAGAD" | "SSLCOMMERZ";
-  senderPhone: string;
+  senderPhone?: string;
+  senderAccountNo?: string;
   amount: number;
-  transactionId: string;
-  
+  transactionId?: string;
+
   // WhatsApp Notification Flag
   sendWhatsAppNotification?: boolean;
 }
@@ -69,7 +70,7 @@ export interface IAdmissionFilterParams {
 export interface IApproveAdmissionPayload {
   sectionId?: string;
   rollNo?: number;
-  sendWhatsAppAlert?: boolean; 
+  sendWhatsAppAlert?: boolean;
 }
 
 export const submitAdmission = async (payload: IAdmissionPayload) => {
@@ -103,7 +104,7 @@ export const getAllApplications = async (params?: IAdmissionFilterParams) => {
 
 export const approveAdmission = async (
   id: string,
-  payload?: IApproveAdmissionPayload
+  payload?: IApproveAdmissionPayload,
 ) => {
   const response = await axiosInstance.patch(`/admissions/approve/${id}`, {
     sendWhatsAppAlert: true, // Default to true so student receives credentials on approval
@@ -112,16 +113,22 @@ export const approveAdmission = async (
   return response.data;
 };
 
-export const rejectAdmission = async (id: string, reason: string, sendWhatsAppAlert: boolean = true) => {
-  const response = await axiosInstance.patch(`/admissions/reject/${id}`, { 
-    reason, 
-    sendWhatsAppAlert 
+export const rejectAdmission = async (
+  id: string,
+  reason: string,
+  sendWhatsAppAlert: boolean = true,
+) => {
+  const response = await axiosInstance.patch(`/admissions/reject/${id}`, {
+    reason,
+    sendWhatsAppAlert,
   });
   return response.data;
 };
 
 export const resendAdmissionWhatsApp = async (id: string) => {
-  const response = await axiosInstance.post(`/admissions/resend-whatsapp/${id}`);
+  const response = await axiosInstance.post(
+    `/admissions/resend-whatsapp/${id}`,
+  );
   return response.data;
 };
 

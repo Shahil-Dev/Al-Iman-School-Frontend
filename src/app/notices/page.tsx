@@ -149,7 +149,7 @@ export default function NoticeBoardPage() {
             <p className="text-xs md:text-sm text-emerald-100/90 max-w-2xl">
               {isBn
                 ? "আল-ঈমান স্কুলের যাবতীয় একাডেমিক খবর, পরীক্ষার সময়সূচি এবং জরুরি ঘোষণা।"
-                : "Latest academic notices, exam schedules, and official news from Al-Iman School."}
+                : "Latest academic notices, exam schedules, and official news from Al-Iman School and Collage."}
             </p>
           </div>
 

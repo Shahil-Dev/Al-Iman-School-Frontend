@@ -37,7 +37,7 @@ export default function Footer() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-white tracking-tight">
-                  {isBn ? "আল-ঈমান স্কুল এন্ড কলেজ" : "AL-IMAN ISLAMIC SCHOOL AND COLLEGE"}
+                  {isBn ? "আল-ঈমান স্কুল এন্ড কলেজ" : "AL-IMAN  SCHOOL AND COLLEGE"}
                 </h2>
                 <p className="text-[11px] text-emerald-400 font-medium">
                   {isBn ? "শিক্ষা • নৈতিকতা • আদর্শ" : "Education • Morality • Ethics"}
@@ -198,7 +198,7 @@ export default function Footer() {
           <p>
             © {new Date().getFullYear()}{" "}
             <span className="text-emerald-400 font-bold">
-              Al-Iman Islamic School
+              Al-Iman School and collage
             </span>
             . {isBn ? "সর্বস্বত্ব সংরক্ষিত।" : "All rights reserved."}
           </p>

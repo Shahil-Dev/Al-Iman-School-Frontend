@@ -62,8 +62,8 @@ interface ITestimonialData {
 type Tab = "id_card" | "testimonial";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
-const INSTITUTION = "Al-Iman Academy";
-const INSTITUTION_FULL = "Al-Iman Academy & High School";
+const INSTITUTION = "Al-Iman School and Collage";
+const INSTITUTION_FULL = "Al-Iman School and Collage";
 const SESSION_LABEL = "Academic Session 2026";
 
 /* Shared field styling: one rhythm for every control */

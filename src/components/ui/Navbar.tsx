@@ -104,13 +104,13 @@ export const NavbarMain = () => {
           {/* Logo */}
           <Link
             href="/"
-            aria-label="Al-Iman School home"
+            aria-label="Al-Iman School and Collage home"
             className="group flex min-w-0 items-center gap-3 outline-none rounded-xl focus-visible:ring-2 focus-visible:ring-[#B8860B]"
           >
             <span className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] text-white shadow-md transition-all duration-300 group-hover:-translate-y-0.5 sm:h-12 sm:w-12">
               <Image
                 src="/Image/logo aliman.jpg"
-                alt="Al-Iman School Logo"
+                alt="Al-Iman School and Collage Logo"
                 fill
                 sizes="(max-width: 640px) 44px, 48px"
                 className="object-cover"
@@ -119,7 +119,7 @@ export const NavbarMain = () => {
             </span>
             <span className="min-w-0">
               <span className="block truncate text-[1.1rem] font-bold tracking-tight text-[#1a1a1a] dark:text-white sm:text-xl">
-                {t("আল-ঈমান স্কুল", "Al-Iman School")}
+                {t("আল-ঈমান স্কুল", "Al-Iman School and Collage")}
               </span>
             </span>
           </Link>

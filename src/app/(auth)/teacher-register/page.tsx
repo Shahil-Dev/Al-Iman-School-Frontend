@@ -190,7 +190,7 @@ export default function TeacherRegisterPage() {
             </div>
           </Link>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
-            Al-Iman School Teacher Application
+           Al-Iman School and Collage Teacher Application
           </h1>
         </div>
 
@@ -242,7 +242,7 @@ export default function TeacherRegisterPage() {
                         name="email"
                         type="email"
                         required
-                        placeholder="teacher@al-iman.com"
+                        placeholder="teacher@.com"
                         value={formData.email}
                         onChange={handleChange}
                         className="px-3 py-2.5 rounded-xl border border-input bg-background text-xs w-full"

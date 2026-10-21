@@ -20,8 +20,10 @@ export interface ICreateInvoicePayload {
 export interface ICollectPaymentPayload {
   invoiceId: string;
   amount: number;
-  method: "CASH" | "BKASH" | "NAGAD" | "BANK";
+  // SSLCOMMERZ is the Bank option (matches the PaymentMethod enum)
+  method: "CASH" | "BKASH" | "NAGAD" | "SSLCOMMERZ";
   transactionId?: string;
+  senderAccountNo?: string;
   receiptUrl?: string;
 }
 

@@ -116,8 +116,8 @@ export default function AdminOverviewPage() {
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
             {isBn
-              ? "আল-ইমান স্কুলের আজকের সার্বিক তথ্য ও রিয়েলটাইম অ্যানালিটিক্স।"
-              : "Welcome back! Here is what is happening in Al-Iman School today."}
+              ? "আল-ঈমান স্কুল এবং কলেজর আজকের সার্বিক তথ্য ও রিয়েলটাইম অ্যানালিটিক্স।"
+              : "Welcome back! Here is what is happening in Al-Iman School and Collagetoday."}
           </p>
         </div>
 

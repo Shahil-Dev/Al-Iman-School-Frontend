@@ -153,7 +153,7 @@ export default function ParentRegisterPage() {
             </div>
           </Link>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
-            Al-Iman School Parent Registration
+           Al-Iman School and Collage Parent Registration
           </h1>
           <p className="text-xs text-muted-foreground tracking-wide uppercase font-semibold">
             تسجيل اولياء الامور

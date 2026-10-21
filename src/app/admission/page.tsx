@@ -16,9 +16,8 @@ import {
   FaPrint,
   FaGlobe,
   FaWhatsapp,
-  FaFileUpload,
-  FaCheckCircle,
   FaShieldAlt,
+  FaBuilding,
 } from "react-icons/fa";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
@@ -62,10 +61,13 @@ export default function PublicAdmissionApplyPage() {
     country: "Bangladesh",
     nationality: "Bangladeshi",
     paymentMethod: "BKASH",
-    amount: 500,
+    amount: 3000,
     admitOtherKids: false,
     healthConditions: ["Good Condition"],
   });
+
+  const isCash = formData.paymentMethod === "CASH";
+  const isBank = formData.paymentMethod === "SSLCOMMERZ"; // Using SSLCOMMERZ for Bank / Online
 
   // Load Active Classes
   useEffect(() => {
@@ -90,67 +92,66 @@ export default function PublicAdmissionApplyPage() {
     fetchClasses();
   }, [language]);
 
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error(
+        language === "bn"
+          ? "অনুগ্রহ করে একটি সঠিক ছবি ফরম্যাট (JPG/PNG) সিলেক্ট করুন!"
+          : "Please select a valid image file (JPG/PNG)!",
+      );
+      return;
+    }
 
-  if (!file.type.startsWith("image/")) {
-    toast.error(
-      language === "bn"
-        ? "অনুগ্রহ করে একটি সঠিক ছবি ফরম্যাট (JPG/PNG) সিলেক্ট করুন!"
-        : "Please select a valid image file (JPG/PNG)!"
-    );
-    return;
-  }
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
 
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onload = (event) => {
-    const img = new Image();
-    img.src = event.target?.result as string;
+      img.onload = () => {
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
 
-    img.onload = () => {
-      const MAX_WIDTH = 800;
-      const MAX_HEIGHT = 800;
-      let width = img.width;
-      let height = img.height;
-
-      if (width > height) {
-        if (width > MAX_WIDTH) {
-          height = Math.round((height * MAX_WIDTH) / width);
-          width = MAX_WIDTH;
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
         }
-      } else {
-        if (height > MAX_HEIGHT) {
-          width = Math.round((width * MAX_HEIGHT) / height);
-          height = MAX_HEIGHT;
+
+        // Compress the image using an HTML5 canvas
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+
+          setImagePreview(compressedBase64);
+          setFormData((prev) => ({ ...prev, photoUrl: compressedBase64 }));
+
+          toast.success(
+            language === "bn"
+              ? "ছবিটি সফলভাবে অপটিমাইজ করা হয়েছে!"
+              : "Image optimized successfully!",
+          );
         }
-      }
-
-      // ৩. HTML5 Canvas এ কমপ্রেস করে আঁকা
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
-
-        setImagePreview(compressedBase64);
-        setFormData((prev) => ({ ...prev, photoUrl: compressedBase64 }));
-
-        toast.success(
-          language === "bn"
-            ? "ছবিটি সফলভাবে অপটিমাইজ করা হয়েছে!"
-            : "Image optimized successfully!"
-        );
-      }
+      };
     };
   };
-};
 
   // Health Checkbox Change
   const handleHealthChange = (key: string, checked: boolean) => {
@@ -171,13 +172,24 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     }
   };
 
+  // Payment method change: clear mobile payment fields when switching to cash or bank
+  const handlePaymentMethodChange = (
+    method: IAdmissionPayload["paymentMethod"],
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      paymentMethod: method,
+      ...(method === "CASH" || method === "SSLCOMMERZ"
+        ? { senderPhone: "", transactionId: "" }
+        : {}),
+    }));
+  };
+
   // Copy Helper
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success(
-      language === "bn"
-        ? "নাম্বার কপি করা হয়েছে!"
-        : "Number copied to clipboard!",
+      language === "bn" ? "তথ্য কপি করা হয়েছে!" : "Copied to clipboard!",
     );
   };
 
@@ -204,6 +216,19 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         language === "bn"
           ? "দয়া করে অঙ্গীকারনামায় টিক চিহ্ন দিন!"
           : "Please agree to the declaration terms!",
+      );
+      return;
+    }
+
+    if (
+      !isCash &&
+      !isBank &&
+      (!formData.senderPhone?.trim() || !formData.transactionId?.trim())
+    ) {
+      toast.error(
+        language === "bn"
+          ? "প্রেরকের নম্বর ও ট্রানজেকশন আইডি দিন!"
+          : "Sender number and Transaction ID are required!",
       );
       return;
     }
@@ -273,9 +298,13 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             | "BKASH"
             | "NAGAD"
             | "SSLCOMMERZ") || "BKASH",
-        senderPhone: formData.senderPhone || formData.phone || "",
+        senderPhone:
+          isCash || isBank
+            ? undefined
+            : formData.senderPhone?.trim() || formData.phone || "",
         amount: 3000,
-        transactionId: formData.transactionId || "",
+        transactionId:
+          isCash || isBank ? undefined : formData.transactionId?.trim() || "",
       };
 
       const res = await admissionApi.submitAdmission(payload);
@@ -309,6 +338,9 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   // ==========================================
   if (submittedData) {
     const { appNo, payload, className } = submittedData;
+    const slipIsCash = payload.paymentMethod === "CASH";
+    const slipIsBank = payload.paymentMethod === "SSLCOMMERZ";
+
     return (
       <div className="min-h-screen bg-slate-100 dark:bg-slate-950 p-4 sm:p-8 font-sans">
         <div className="max-w-3xl mx-auto mb-6 flex items-center justify-between print:hidden">
@@ -348,14 +380,12 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           <div className="border-b-2 border-emerald-800 pb-4 mb-6 flex justify-between items-start">
             <div>
               <h1 className="text-2xl font-black text-emerald-900 tracking-tight">
-                AL-IMAN ISLAMIC SCHOOL
+                AL-IMAN ACADEMY SCHOOL AND COLLAGE 
               </h1>
               <p className="text-xs text-slate-600 font-medium">
                 Official Student Admission Application Slip
               </p>
-              <p className="text-[11px] text-slate-500">
-                Bailtali, Chittagong Division, Bangladesh
-              </p>
+              
             </div>
             <div className="text-right">
               <span className="inline-block bg-emerald-100 text-emerald-900 text-xs font-bold px-3 py-1 rounded-full mb-1">
@@ -430,18 +460,32 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               </h3>
               <div className="grid grid-cols-3 gap-2">
                 <p>
-                  <b>Fee Paid:</b> 3000 BDT
+                  <b>{slipIsCash || slipIsBank ? "Fee Due:" : "Fee Paid:"}</b>{" "}
+                  3000 BDT
                 </p>
                 <p>
-                  <b>Method:</b> {payload.paymentMethod}
+                  <b>Method:</b>{" "}
+                  {slipIsBank ? "Bank / Online" : payload.paymentMethod}
                 </p>
-                <p>
-                  <b>TrxID:</b>{" "}
-                  <span className="text-emerald-700 font-bold">
-                    {payload.transactionId}
-                  </span>
-                </p>
+                {!slipIsCash && !slipIsBank && payload.transactionId && (
+                  <p>
+                    <b>TrxID:</b>{" "}
+                    <span className="text-emerald-700 font-bold">
+                      {payload.transactionId}
+                    </span>
+                  </p>
+                )}
               </div>
+              {slipIsCash && (
+                <p className="mt-2 text-[10px] font-sans text-slate-600">
+                  Please pay the fee in cash at the school office.
+                </p>
+              )}
+              {slipIsBank && (
+                <p className="mt-2 text-[10px] font-sans text-slate-600">
+                  Bank Account: IBBL 20507930200206501
+                </p>
+              )}
             </div>
           </div>
 
@@ -457,7 +501,7 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             </div>
             <div className="text-center border-t border-slate-400 pt-1 w-36">
               <p className="font-bold text-slate-700">Authorized Officer</p>
-              <p>Al-Iman School</p>
+              <p>Al-Iman School and Collage</p>
             </div>
           </div>
         </div>
@@ -484,7 +528,7 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             <span>
               {language === "bn"
                 ? "আল-ঈমান স্কুল • অনলাইন ভর্তি পোর্টাল"
-                : "Al-Iman School • Admission Portal"}
+                : "Al-Iman School and Collage • Admission Portal"}
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
@@ -497,6 +541,21 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               ? "দয়া করে সকল তথ্য সঠিকভাবে পূরণ করুন। তারকা চিহ্নিত (*) ঘরগুলো পূরণ করা বাধ্যতামূলক।"
               : "Please fill out all required fields carefully. Fields marked with (*) are mandatory."}
           </p>
+        </div>
+
+        {/* English-only notice */}
+        <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 p-4 rounded-2xl text-xs font-semibold">
+          <FaInfoCircle className="text-amber-600 text-base shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <p>
+              IMPORTANT: All information in this form MUST be filled in English.
+            </p>
+            {language === "bn" && (
+              <p>
+                গুরুত্বপূর্ণ: এই ফর্মের সকল তথ্য অবশ্যই ইংরেজিতে পূরণ করতে হবে।
+              </p>
+            )}
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -905,7 +964,7 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                     <FaInfoCircle className="shrink-0 text-emerald-600" />
                     <span>
                       {language === "bn"
-                        ? "অবশ্যই একটি সক্রিয় হোয়াটসঅ্যাপ নম্বর দিন। ভর্তি অনুমোদন এবং ড্যাশবোর্ডের অ্যাক্সেস পিন সরাসরি এই হোয়াটসঅ্যাপ নম্বরে পাঠানো হবে।"
+                        ? "অবশ্যই একটি সক্রিয় হোয়াটসঅ্যাপ নম্বর দিন। ভর্তি অনুমোদন এবং ড্যাশবোর্ডের অ্যাক্সেস পিন সরাসরি এই হোয়াটসঅ্যাপ নম্বরে পাঠানো হবে।"
                         : "Please provide an active WhatsApp number. Admission credentials and access PIN will be sent to this number."}
                     </span>
                   </p>
@@ -1302,6 +1361,7 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           </Card>
 
           {/* 7. Payment Application Details */}
+          {/* 7. Payment Application Details */}
           <Card className="border-emerald-200 dark:border-emerald-900 shadow-md rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 backdrop-blur-md">
             <CardContent className="p-6 space-y-4">
               <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-2 border-b border-emerald-200/80 dark:border-emerald-900 pb-2.5">
@@ -1336,10 +1396,9 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   <select
                     value={formData.paymentMethod}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        paymentMethod: e.target.value as any,
-                      })
+                      handlePaymentMethodChange(
+                        e.target.value as IAdmissionPayload["paymentMethod"],
+                      )
                     }
                     className="w-full p-2.5 rounded-xl border border-input bg-background text-foreground font-semibold"
                   >
@@ -1350,86 +1409,201 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block font-semibold mb-1 text-foreground">
-                    {language === "bn"
-                      ? "প্রেরকের নম্বর *"
-                      : "Sender Mobile No *"}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="017XXXXXXXX"
-                    value={formData.senderPhone || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, senderPhone: e.target.value })
-                    }
-                    className="w-full p-2.5 rounded-xl border border-input bg-background text-foreground font-mono font-bold"
-                  />
-                </div>
+                {/* মোবাইল ব্যাংকিংয়ের জন্য প্রেরকের নম্বর */}
+                {!isCash && !isBank && (
+                  <div>
+                    <label className="block font-semibold mb-1 text-foreground">
+                      {language === "bn"
+                        ? "প্রেরকের নম্বর *"
+                        : "Sender Mobile No *"}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="017XXXXXXXX"
+                      value={formData.senderPhone || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          senderPhone: e.target.value,
+                        })
+                      }
+                      className="w-full p-2.5 rounded-xl border border-input bg-background text-foreground font-mono font-bold"
+                    />
+                  </div>
+                )}
 
-                <div className="sm:col-span-3">
-                  <label className="block font-semibold mb-1 text-foreground">
-                    {language === "bn"
-                      ? "ট্রানজেকশন আইডি (TrxID) *"
-                      : "Transaction ID (TrxID) Details *"}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 9M7X8Y2Z1"
-                    value={formData.transactionId || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        transactionId: e.target.value,
-                      })
-                    }
-                    className="w-full p-2.5 rounded-xl border border-input bg-background text-foreground font-mono font-bold uppercase"
-                  />
-                </div>
+                {/* ব্যাংক পেমেন্টের জন্য গ্রাহকের ব্যাংকের নাম */}
+                {isBank && (
+                  <div>
+                    <label className="block font-semibold mb-1 text-foreground">
+                      {language === "bn"
+                        ? "গ্রাহকের ব্যাংকের নাম *"
+                        : "Sender Bank Name *"}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. IBBL / EBL / City Bank"
+                      value={formData.senderBankName || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          senderBankName: e.target.value,
+                        })
+                      }
+                      className="w-full p-2.5 rounded-xl border border-input bg-background text-foreground font-bold"
+                    />
+                  </div>
+                )}
+
+                {/* ব্যাংক পেমেন্টের জন্য গ্রাহকের অ্যাকাউন্ট নম্বর */}
+                {isBank && (
+                  <div>
+                    <label className="block font-semibold mb-1 text-foreground">
+                      {language === "bn"
+                        ? "গ্রাহকের ব্যাংক অ্যাকাউন্ট নম্বর *"
+                        : "Sender Bank Account No *"}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Account Number"
+                      value={formData.senderBankAccount || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          senderBankAccount: e.target.value,
+                        })
+                      }
+                      className="w-full p-2.5 rounded-xl border border-input bg-background text-foreground font-mono font-bold"
+                    />
+                  </div>
+                )}
+
+                {/* মোবাইল ব্যাংকিংয়ের জন্য TrxID */}
+                {!isCash && !isBank && (
+                  <div className="sm:col-span-3">
+                    <label className="block font-semibold mb-1 text-foreground">
+                      {language === "bn"
+                        ? "ট্রানজেকশন আইডি (TrxID) *"
+                        : "Transaction ID (TrxID) Details *"}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 9M7X8Y2Z1"
+                      value={formData.transactionId || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          transactionId: e.target.value,
+                        })
+                      }
+                      className="w-full p-2.5 rounded-xl border border-input bg-background text-foreground font-mono font-bold uppercase"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Payment Instruction Box */}
-              <div className="mt-4 p-4 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-emerald-300 dark:border-emerald-800 space-y-2 text-xs">
-                <div className="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-900 pb-2">
-                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold text-sm">
-                    <FaInfoCircle className="text-emerald-600" />
-                    <span>Payment Instruction</span>
+              {formData.paymentMethod === "BKASH" ||
+              formData.paymentMethod === "NAGAD" ? (
+                <div className="mt-4 p-4 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-emerald-300 dark:border-emerald-800 space-y-2 text-xs">
+                  <div className="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-900 pb-2">
+                    <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold text-sm">
+                      <FaInfoCircle className="text-emerald-600" />
+                      <span>Payment Instruction</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2.5 py-1 rounded-lg font-mono font-bold">
+                      <FaMobileAlt />
+                      <span>+880 1328-211952</span>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard("+8801328211952")}
+                        className="ml-1 text-emerald-600 hover:text-emerald-800 dark:hover:text-emerald-200 cursor-pointer"
+                        title="Copy Number"
+                      >
+                        <FaCopy />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2.5 py-1 rounded-lg font-mono font-bold">
-                    <FaMobileAlt />
-                    <span>+880 1328-211952</span>
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard("+8801328211952")}
-                      className="ml-1 text-emerald-600 hover:text-emerald-800 dark:hover:text-emerald-200 cursor-pointer"
-                      title="Copy Number"
-                    >
-                      <FaCopy />
-                    </button>
-                  </div>
-                </div>
 
-                <ul className="list-disc list-inside space-y-1 text-muted-foreground font-medium pl-1">
-                  <li>
-                    bKash / Nagad Personal Number:{" "}
-                    <span className="font-bold text-foreground">
-                      +880 1328-211952
-                    </span>
-                  </li>
-                  <li>
-                    Fee amount:{" "}
-                    <span className="font-mono font-bold text-foreground">
-                      3000 BDT
-                    </span>
-                  </li>
-                  <li>
-                    Please paste the exact Transaction ID (TrxID) from the SMS
-                    confirmation into the field above.
-                  </li>
-                </ul>
-              </div>
+                  <ul className="list-disc list-inside space-y-1 text-muted-foreground font-medium pl-1">
+                    <li>
+                      bKash / Nagad Personal Number:{" "}
+                      <span className="font-bold text-foreground">
+                        +880 1328-211952
+                      </span>
+                    </li>
+                    <li>
+                      Fee amount:{" "}
+                      <span className="font-mono font-bold text-foreground">
+                        3000 BDT
+                      </span>
+                    </li>
+                    <li>
+                      Please paste the exact Transaction ID (TrxID) from the SMS
+                      confirmation into the field above.
+                    </li>
+                  </ul>
+                </div>
+              ) : isBank ? (
+                <div className="mt-4 p-4 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-emerald-300 dark:border-emerald-800 space-y-2 text-xs">
+                  <div className="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-900 pb-2">
+                    <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold text-sm">
+                      <FaBuilding className="text-emerald-600" />
+                      <span>Al Iman Academy Bank Account (IBBL)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2.5 py-1 rounded-lg font-mono font-bold">
+                      <span>20507930200206501</span>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard("20507930200206501")}
+                        className="ml-1 text-emerald-600 hover:text-emerald-800 dark:hover:text-emerald-200 cursor-pointer"
+                        title="Copy Account Number"
+                      >
+                        <FaCopy />
+                      </button>
+                    </div>
+                  </div>
+
+                  <ul className="list-disc list-inside space-y-1 text-muted-foreground font-medium pl-1">
+                    <li>
+                      Institution Name:{" "}
+                      <span className="font-bold text-foreground">
+                       Al-Iman School and Collage
+                      </span>
+                    </li>
+                    <li>
+                      IBBL Account Number:{" "}
+                      <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300 text-sm">
+                        20507930200206501
+                      </span>
+                    </li>
+                    <li>
+                      Fee amount:{" "}
+                      <span className="font-mono font-bold text-foreground">
+                        3000 BDT
+                      </span>
+                    </li>
+                    <li>
+                      {language === "bn"
+                        ? "অনুগ্রহ করে আপনার নিজের ব্যাংকের নাম ও অ্যাকাউন্ট নম্বর উপরের বক্সে সঠিকভাবে পূরণ করুন।"
+                        : "Please fill in your sender bank name and account number in the fields above."}
+                    </li>
+                  </ul>
+                </div>
+              ) : (
+                <div className="mt-4 p-4 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-emerald-300 dark:border-emerald-800 flex items-center gap-2 text-xs font-medium text-foreground">
+                  <FaInfoCircle className="text-emerald-600 shrink-0" />
+                  <span>
+                    {language === "bn"
+                      ? "ক্যাশ পেমেন্টের ক্ষেত্রে কোনো নম্বর বা ট্রানজেকশন আইডি দিতে হবে না। ফি স্কুল অফিসে নগদে পরিশোধ করুন।"
+                      : "No sender number or Transaction ID is needed for cash payment. Please pay the fee in cash at the school office."}
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -1451,7 +1625,7 @@ const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                       : "Declaration & Terms Agreement:"}
                   </strong>
                   {language === "bn"
-                    ? "আমি এতদ্বারা সজ্ঞানে অঙ্গীকার করছি যে, উপরে প্রদত্ত সকল তথ্য সম্পূর্ণ সত্য, সঠিক ও নির্ভুল। ফর্মে প্রদত্ত যেকোনো ভুল, অসম্পূর্ণ বা ভুয়া তথ্যের জন্য আবেদনকারী/অভিভাবক নিজেই সম্পূর্ণ দায়ী থাকবেন এবং এর জন্য আল-ইমান স্কুল কর্তৃপক্ষ কোনোভাবেই দায়ী থাকবে না।"
+                    ? "আমি এতদ্বারা সজ্ঞানে অঙ্গীকার করছি যে, উপরে প্রদত্ত সকল তথ্য সম্পূর্ণ সত্য, সঠিক ও নির্ভুল। ফর্মে প্রদত্ত যেকোনো ভুল, অসম্পূর্ণ বা ভুয়া তথ্যের জন্য আবেদনকারী/অভিভাবক নিজেই সম্পূর্ণ দায়ী থাকবেন এবং এর জন্য আল-ঈমান স্কুল এবং কলেজ কর্তৃপক্ষ কোনোভাবেই দায়ী থাকবে না।"
                     : "I hereby solemnly declare that all information provided above is true, correct, and complete. The applicant/guardian will be solely responsible for any incorrect data, and the school authority shall not be held liable in any way."}
                 </span>
               </label>

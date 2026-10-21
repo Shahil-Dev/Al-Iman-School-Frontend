@@ -19,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Al-Iman School",
-  description: "Al-Iman School Management System",
+  title: "Al-Iman School and Collage",
+  description: "Al-Iman School and Collage Management System",
   icons: {
     icon: "../favicon.jpg", 
   }

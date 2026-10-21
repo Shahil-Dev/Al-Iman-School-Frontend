@@ -1,6 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import Cookies from "js-cookie";
 
 // Student Profile Type
@@ -28,14 +34,15 @@ export interface User {
   isApproved?: boolean;
   isBlocked?: boolean;
   studentProfile?: StudentProfile; // For Student Role
-  teacherProfile?: any;            // For Teacher Role
-  parentProfile?: any;             // For Parent Role
-  adminProfile?: any;              // For Admin Role
+  teacherProfile?: any; // For Teacher Role
+  parentProfile?: any; // For Parent Role
+  adminProfile?: any; // For Admin Role
   [key: string]: any;
 }
 
 interface UserContextType {
   user: User | null;
+  loading: boolean;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
   logout: () => void;
 }
@@ -44,6 +51,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Load user data from localStorage & Cookies on initial mount / refresh
   useEffect(() => {
@@ -58,13 +66,17 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         console.error("Failed to parse stored user data:", error);
       }
     }
+    setLoading(false);
   }, []);
 
   // Sync user state with localStorage whenever user state changes
-  const handleSetUser = (newUser: User | null | ((prev: User | null) => User | null)) => {
+  const handleSetUser = (
+    newUser: User | null | ((prev: User | null) => User | null),
+  ) => {
     setUser((prevUser) => {
-      const updatedUser = typeof newUser === "function" ? newUser(prevUser) : newUser;
-      
+      const updatedUser =
+        typeof newUser === "function" ? newUser(prevUser) : newUser;
+
       if (updatedUser) {
         localStorage.setItem("userInfo", JSON.stringify(updatedUser));
       } else {
@@ -79,16 +91,16 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     Cookies.remove("accessToken");
     Cookies.remove("userRole");
     Cookies.remove("studentId");
-    
+
     // Clear Local Storage
     localStorage.removeItem("userInfo");
-    
+
     setUser(null);
     window.location.href = "/login";
   };
 
   return (
-    <UserContext.Provider value={{ user, setUser: handleSetUser, logout }}>
+       <UserContext.Provider value={{ user, loading, setUser: handleSetUser, logout }}>
       {children}
     </UserContext.Provider>
   );
@@ -98,7 +110,8 @@ export const useUser = () => {
   const context = useContext(UserContext);
   if (!context) {
     return {
-      user: null,
+       user: null,
+      loading: false,
       setUser: () => {},
       logout: () => {},
     };
