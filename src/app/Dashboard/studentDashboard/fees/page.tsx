@@ -245,8 +245,15 @@ export default function StudentFeesPage() {
                             key={inv.id || idx}
                             className="hover:bg-muted/30 transition-colors"
                           >
-                            <td className="py-3.5 px-3 font-mono font-bold text-foreground">
-                              {inv.invoiceNo}
+                            <td className="py-3.5 px-3">
+                              <span className="block font-mono font-bold text-foreground">
+                                {inv.invoiceNo}
+                              </span>
+                              {inv.reason && (
+                                <span className="mt-0.5 block max-w-[220px] text-[10px] font-medium leading-snug text-muted-foreground">
+                                  {inv.reason}
+                                </span>
+                              )}
                             </td>
                             <td className="py-3.5 px-3 text-muted-foreground font-mono">
                               {new Date(inv.createdAt).toLocaleDateString(

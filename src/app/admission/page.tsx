@@ -27,7 +27,7 @@ import { useLanguage } from "@/src/context/LanguageContext";
 import { toast } from "sonner";
 
 export default function PublicAdmissionApplyPage() {
-  const { language, setLanguage } = useLanguage();
+const { language, toggleLanguage } = useLanguage();
   const [classesList, setClassesList] = useState<any[]>([]);
   const [loadingClasses, setLoadingClasses] = useState(true);
   const [submitting, setSubmitting] = useState(false);

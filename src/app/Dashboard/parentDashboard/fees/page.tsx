@@ -192,7 +192,9 @@ export default function ParentFeesPage() {
               <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border/50 pb-3">
                 <FaReceipt className="text-primary" />
                 <span>
-                  {isBn ? "ফি বিবরণী ও রসিদ তালিকা" : "Invoice History & Receipts"}
+                  {isBn
+                    ? "ফি বিবরণী ও রসিদ তালিকা"
+                    : "Invoice History & Receipts"}
                 </span>
               </h3>
 
@@ -200,7 +202,9 @@ export default function ParentFeesPage() {
                 <div className="p-8 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
                   <FaSpinner className="animate-spin text-primary" />
                   <span>
-                    {isBn ? "ইনভয়েস লোড হচ্ছে..." : "Fetching invoice records..."}
+                    {isBn
+                      ? "ইনভয়েস লোড হচ্ছে..."
+                      : "Fetching invoice records..."}
                   </span>
                 </div>
               ) : invoices.length === 0 ? (
@@ -251,8 +255,15 @@ export default function ParentFeesPage() {
                             key={inv.id || idx}
                             className="hover:bg-muted/20 transition-colors"
                           >
-                            <td className="py-3.5 px-3 font-mono font-bold text-foreground">
-                              {inv.invoiceNo}
+                            <td className="py-3.5 px-3">
+                              <span className="block font-mono font-bold text-foreground">
+                                {inv.invoiceNo}
+                              </span>
+                              {inv.reason && (
+                                <span className="mt-0.5 block max-w-[220px] text-[10px] font-medium leading-snug text-muted-foreground">
+                                  {inv.reason}
+                                </span>
+                              )}
                             </td>
                             <td className="py-3.5 px-3 font-mono text-muted-foreground">
                               {new Date(inv.createdAt).toLocaleDateString(

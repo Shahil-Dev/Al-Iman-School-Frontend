@@ -112,41 +112,65 @@ export default function AcademicManagementPage() {
     loadData();
   }, []);
 
-  // Load Sections when Class selected in Routine Form
+
+   // Load Sections when Class selected in Routine Form
   useEffect(() => {
-    if (!routineForm.classId) {
-      setSections([]);
-      return;
-    }
+    const classId = routineForm.classId;
+
+    // Clear stale sections and selection as soon as the class changes
+    setSections([]);
+    setRoutineForm((prev) => ({ ...prev, sectionId: "" }));
+    if (!classId) return;
+
+    let cancelled = false;
     axiosInstance
-      .get(`/academic/sections?classId=${routineForm.classId}`)
+      .get(`/academic/sections?classId=${classId}`)
       .then((res) => {
-        const secList = res.data?.data || [];
+        if (cancelled) return;
+        // Keep only sections that belong to the selected class
+        const secList = (res.data?.data || []).filter(
+          (s: any) => s.classId === classId,
+        );
         setSections(secList);
-        if (secList.length > 0) {
-          setRoutineForm((prev) => ({ ...prev, sectionId: secList[0].id }));
-        }
+        setRoutineForm((prev) => ({ ...prev, sectionId: secList[0]?.id ?? "" }));
       })
-      .catch(() => setSections([]));
+      .catch(() => {
+        if (!cancelled) setSections([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [routineForm.classId]);
 
-  // Load Sections for View Routine Section Filter
+ 
+   // Load Sections for View Routine Section Filter
   useEffect(() => {
-    if (!viewClassId) {
-      setViewSections([]);
-      setViewSectionId("");
-      return;
-    }
+    // Clear stale section options and routines as soon as the class changes
+    setViewSections([]);
+    setViewSectionId("");
+    setRoutines([]);
+    if (!viewClassId) return;
+
+    let cancelled = false;
     axiosInstance
       .get(`/academic/sections?classId=${viewClassId}`)
       .then((res) => {
-        const secList = res.data?.data || [];
+        if (cancelled) return;
+        // Keep only sections that belong to the selected class
+        const secList = (res.data?.data || []).filter(
+          (s: any) => s.classId === viewClassId,
+        );
         setViewSections(secList);
-        if (secList.length > 0) {
-          setViewSectionId(secList[0].id);
-        }
+        setViewSectionId(secList[0]?.id ?? "");
       })
-      .catch(() => setViewSections([]));
+      .catch(() => {
+        if (!cancelled) setViewSections([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [viewClassId]);
 
   // Fetch Class Routine List

@@ -213,6 +213,18 @@ export default function PaymentModal({
               </span>
               <span className="font-mono font-bold">{invoice.invoiceNo}</span>
             </div>
+
+            {invoice.reason && (
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">
+                  {isBn ? "বিবরণ:" : "Reason:"}
+                </span>
+                <span className="text-right font-semibold">
+                  {invoice.reason}
+                </span>
+              </div>
+            )}
+
             <div className="flex justify-between">
               <span className="text-muted-foreground">
                 {isBn ? "প্রদেয় পরিমাণ:" : "Amount Due:"}
@@ -284,7 +296,9 @@ export default function PaymentModal({
               <div className="flex items-center gap-2 font-bold text-foreground">
                 <FaInfoCircle className="text-primary" />
                 <span>
-                  {isBn ? "ব্যাংকের মাধ্যমে পেমেন্টের নিয়ম" : "How to pay via Bank"}
+                  {isBn
+                    ? "ব্যাংকের মাধ্যমে পেমেন্টের নিয়ম"
+                    : "How to pay via Bank"}
                 </span>
               </div>
               <div className="space-y-1 font-medium">

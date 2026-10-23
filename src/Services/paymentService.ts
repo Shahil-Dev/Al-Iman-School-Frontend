@@ -1,6 +1,5 @@
 import axiosInstance from "../lib/axiosInstance";
 
-
 export interface IFeeStructurePayload {
   classId: string;
   feeHeadId: string;
@@ -9,10 +8,12 @@ export interface IFeeStructurePayload {
 
 export interface IGenerateMonthlyInvoicesPayload {
   dueDate: string;
+  reason?: string;
 }
 
 export interface ICreateInvoicePayload {
   studentId: string;
+  reason?: string;
   amount: number;
   dueDate: string;
 }
@@ -36,19 +37,28 @@ export interface IApprovePaymentPayload {
 export const paymentService = {
   // 1. Set/Update Class Fee Structure (Admin)
   setFeeStructure: async (payload: IFeeStructurePayload) => {
-    const response = await axiosInstance.post("/payments/fee-structure", payload);
+    const response = await axiosInstance.post(
+      "/payments/fee-structure",
+      payload,
+    );
     return response.data;
   },
 
   // 2. Bulk Monthly Invoice Generator (Admin)
   generateMonthlyInvoices: async (payload: IGenerateMonthlyInvoicesPayload) => {
-    const response = await axiosInstance.post("/payments/generate-monthly-invoices", payload);
+    const response = await axiosInstance.post(
+      "/payments/generate-monthly-invoices",
+      payload,
+    );
     return response.data;
   },
 
   // 3. Create Manual Single Invoice (Admin)
   createInvoice: async (payload: ICreateInvoicePayload) => {
-    const response = await axiosInstance.post("/payments/create-invoice", payload);
+    const response = await axiosInstance.post(
+      "/payments/create-invoice",
+      payload,
+    );
     return response.data;
   },
 
@@ -60,7 +70,10 @@ export const paymentService = {
 
   // 5. Approve or Reject Payment (Admin)
   approvePayment: async (payload: IApprovePaymentPayload) => {
-    const response = await axiosInstance.patch("/payments/approve-payment", payload);
+    const response = await axiosInstance.patch(
+      "/payments/approve-payment",
+      payload,
+    );
     return response.data;
   },
 

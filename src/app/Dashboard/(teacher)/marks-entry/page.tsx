@@ -47,19 +47,30 @@ export default function MarksEntryPage() {
 
   // 2. Fetch Sections when Class changes
   useEffect(() => {
-    if (!selectedClassId) {
-      setSections([]);
-      setSelectedSectionId("");
-      return;
-    }
+    // Clear stale sections and selection as soon as the class changes
+    setSections([]);
+    setSelectedSectionId("");
+    if (!selectedClassId) return;
+
+    let cancelled = false;
     axiosInstance
       .get(`/academic/sections?classId=${selectedClassId}`)
       .then((res) => {
-        const secList = res.data?.data || [];
+        if (cancelled) return;
+        // Keep only sections that belong to the selected class
+        const secList = (res.data?.data || []).filter(
+          (s: any) => s.classId === selectedClassId,
+        );
         setSections(secList);
-        if (secList.length > 0) setSelectedSectionId(secList[0].id);
+        setSelectedSectionId(secList[0]?.id ?? "");
       })
-      .catch(() => setSections([]));
+      .catch(() => {
+        if (!cancelled) setSections([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedClassId]);
 
   // 3. Load Student list for Marks Input

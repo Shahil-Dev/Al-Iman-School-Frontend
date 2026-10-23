@@ -4,9 +4,10 @@ import "./globals.css";
 import { LanguageProvider } from "@/src/context/LanguageContext";
 import { UserProvider } from "@/src/context/UserContext";
 import { ThemeProvider } from "@/src/components/ui/ThemeProvider";
-import { Toaster } from "sonner"; // <--- Sonner Toaster ইম্পোর্ট
+import { Toaster } from "sonner";
 import { NavbarMain } from "../components/ui/Navbar";
 import Footer from "../components/ui/Footer";
+import GlobalLoader from "@/src/components/ui/GlobalLoader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,12 +19,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// The favicon is served automatically from src/app/icon.jpg
 export const metadata: Metadata = {
   title: "Al-Iman School and Collage",
   description: "Al-Iman School and Collage Management System",
-  icons: {
-    icon: "../favicon.jpg", 
-  }
 };
 
 export default function RootLayout({
@@ -45,9 +44,10 @@ export default function RootLayout({
         >
           <UserProvider>
             <LanguageProvider>
-              <NavbarMain></NavbarMain>
-              {children }
-              <Footer></Footer>
+              <GlobalLoader />
+              <NavbarMain />
+              {children}
+              <Footer />
               <Toaster position="top-right" richColors closeButton />
             </LanguageProvider>
           </UserProvider>

@@ -17,7 +17,8 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useLanguage } from "@/src/context/LanguageContext";
-import { useUser } from "@/src/hooks/useUser";
+import { useUser } from "@/src/context/UserContext";
+import UserAvatar from "@/src/components/ui/UserAvatar";
 
 const navigationItems = [
   { href: "/", bnLabel: "হোম", enLabel: "Home" },
@@ -48,7 +49,7 @@ export const NavbarMain = () => {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
 
-  const { user } = useUser();
+  const { user, loading, profileLoading } = useUser();
   const { theme, setTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
 
@@ -79,6 +80,9 @@ export const NavbarMain = () => {
     e: React.MouseEvent<HTMLAnchorElement>,
     href: string,
   ) => {
+    // While the session is still resolving, never bounce a logged-in user to login
+    if (loading) return;
+
     const protectedPaths = [
       "/notices",
       "/Dashboard/TeacherDashboard",
@@ -182,25 +186,24 @@ export const NavbarMain = () => {
               </button>
             )}
 
-            {user ? (
+            {loading ? (
+              <span
+                aria-hidden="true"
+                className="h-11 w-11 animate-pulse rounded-xl bg-[#1a1a1a]/10 dark:bg-white/10"
+              />
+            ) : user ? (
               <Link
                 href="/Dashboard"
-                className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-[#B8860B]/30 bg-[#1a1a1a] dark:bg-[#B8860B] text-white dark:text-slate-950 font-bold text-base shadow-md hover:scale-105 transition-transform overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B]"
-                title="Go to Dashboard"
+                aria-label={t("ড্যাশবোর্ডে যান", "Go to Dashboard")}
+                title={t("ড্যাশবোর্ডে যান", "Go to Dashboard")}
+                className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B]"
               >
-                {user.image ? (
-                  <Image
-                    src={user.image}
-                    alt={user.name || "User Avatar"}
-                    fill
-                    sizes="44px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <span>
-                    {(user.name || user.email || "U").charAt(0).toUpperCase()}
-                  </span>
-                )}
+                <UserAvatar
+                  user={user}
+                  size={44}
+                  loading={profileLoading}
+                  className="rounded-xl border border-[#B8860B]/30 bg-[#1a1a1a] dark:bg-[#B8860B] text-white dark:text-slate-950 shadow-md transition-transform hover:scale-105"
+                />
               </Link>
             ) : (
               <Link
@@ -217,25 +220,26 @@ export const NavbarMain = () => {
 
           {/* Mobile Menu Actions */}
           <div className="flex items-center gap-2 md:hidden">
-            {user && (
-              <Link
-                href="/Dashboard"
-                className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-[#B8860B]/30 bg-[#1a1a1a] dark:bg-[#B8860B] text-white dark:text-slate-950 font-bold text-sm overflow-hidden"
-              >
-                {user.image ? (
-                  <Image
-                    src={user.image}
-                    alt={user.name || "User Avatar"}
-                    fill
-                    sizes="36px"
-                    className="object-cover"
+            {loading ? (
+              <span
+                aria-hidden="true"
+                className="h-9 w-9 animate-pulse rounded-lg bg-[#1a1a1a]/10 dark:bg-white/10"
+              />
+            ) : (
+              user && (
+                <Link
+                  href="/Dashboard"
+                  aria-label={t("ড্যাশবোর্ডে যান", "Go to Dashboard")}
+                  className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#B8860B]"
+                >
+                  <UserAvatar
+                    user={user}
+                    size={36}
+                    loading={profileLoading}
+                    className="rounded-lg border border-[#B8860B]/30 bg-[#1a1a1a] dark:bg-[#B8860B] text-white dark:text-slate-950"
                   />
-                ) : (
-                  <span>
-                    {(user.name || user.email || "U").charAt(0).toUpperCase()}
-                  </span>
-                )}
-              </Link>
+                </Link>
+              )
             )}
 
             <button
@@ -343,7 +347,7 @@ export const NavbarMain = () => {
                 )}
               </div>
 
-              {!user && (
+              {!loading && !user && (
                 <div className="mt-4 border-t border-[#1a1a1a]/10 dark:border-white/10 pt-4">
                   <Link
                     href="/login"

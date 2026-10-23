@@ -84,8 +84,12 @@ export default function MarkEntryPage() {
     fetchInitialData();
   }, []);
 
-  useEffect(() => {
+   useEffect(() => {
+    // Drop stale sections from the previous class right away
+    setSections([]);
     if (!selectedClass) return;
+
+    let cancelled = false;
     const fetchClassDetails = async () => {
       try {
         const config = getAuthHeaders();
@@ -101,13 +105,23 @@ export default function MarkEntryPage() {
           ),
         ]);
 
-        setSections(secRes.data.data || []);
+        if (cancelled) return;
+        // Keep only sections that belong to the selected class
+        setSections(
+          (secRes.data.data || []).filter(
+            (s: any) => s.classId === selectedClass
+          )
+        );
         setSubjects(subRes.data.data || []);
       } catch (err) {
         console.error("Error fetching sections/subjects:", err);
       }
     };
     fetchClassDetails();
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedClass]);
 
   const handleLoadStudents = async () => {

@@ -8,6 +8,7 @@ import React, {
   ReactNode,
 } from "react";
 import Cookies from "js-cookie";
+import axiosInstance from "@/src/lib/axiosInstance";
 
 // Student Profile Type
 export interface StudentProfile {
@@ -43,31 +44,40 @@ export interface User {
 interface UserContextType {
   user: User | null;
   loading: boolean;
+  profileLoading: boolean;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
   logout: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+const PROFILE_KEYS = [
+  "studentProfile",
+  "teacherProfile",
+  "parentProfile",
+  "adminProfile",
+] as const;
+
+// Base64 photos can be huge; keep them in memory only so localStorage never overflows
+const sanitizeForStorage = (value: User): User => {
+  const copy: any = { ...value };
+  for (const key of PROFILE_KEYS) {
+    const profile = copy[key];
+    if (
+      profile &&
+      typeof profile.photoUrl === "string" &&
+      profile.photoUrl.startsWith("data:")
+    ) {
+      copy[key] = { ...profile, photoUrl: undefined };
+    }
+  }
+  return copy as User;
+};
+
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Load user data from localStorage & Cookies on initial mount / refresh
-  useEffect(() => {
-    const token = Cookies.get("accessToken");
-    const storedUser = localStorage.getItem("userInfo");
-
-    if (token && storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error("Failed to parse stored user data:", error);
-      }
-    }
-    setLoading(false);
-  }, []);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   // Sync user state with localStorage whenever user state changes
   const handleSetUser = (
@@ -78,13 +88,69 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         typeof newUser === "function" ? newUser(prevUser) : newUser;
 
       if (updatedUser) {
-        localStorage.setItem("userInfo", JSON.stringify(updatedUser));
+        try {
+          localStorage.setItem(
+            "userInfo",
+            JSON.stringify(sanitizeForStorage(updatedUser)),
+          );
+        } catch (error) {
+          console.error("Failed to persist user data:", error);
+        }
       } else {
         localStorage.removeItem("userInfo");
       }
       return updatedUser;
     });
   };
+
+  // Load user from localStorage first, then refresh the full profile (with photo) from the API
+  useEffect(() => {
+    let cancelled = false;
+    const token = Cookies.get("accessToken");
+    const storedUser = localStorage.getItem("userInfo");
+
+    if (!token || token === "undefined" || token === "null") {
+      setLoading(false);
+      return;
+    }
+
+    let hasStoredUser = false;
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+        hasStoredUser = true;
+      } catch (error) {
+        console.error("Failed to parse stored user data:", error);
+      }
+    }
+
+    // When the user is already known, release the global loader right away
+    if (hasStoredUser) setLoading(false);
+    setProfileLoading(true);
+
+    axiosInstance
+      .get("/auth/me", { timeout: 8000 })
+      .then((res) => {
+        if (cancelled) return;
+        const fresh = res.data?.data || res.data;
+        if (fresh && typeof fresh === "object") {
+          handleSetUser((prev) => ({ ...(prev || {}), ...fresh }));
+        }
+      })
+      .catch(() => {
+        // Keep the stored user if the refresh fails
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setProfileLoading(false);
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const logout = () => {
     // Clear all Auth Cookies
@@ -100,7 +166,15 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-       <UserContext.Provider value={{ user, loading, setUser: handleSetUser, logout }}>
+    <UserContext.Provider
+      value={{
+        user,
+        loading,
+        profileLoading,
+        setUser: handleSetUser,
+        logout,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );
@@ -110,8 +184,9 @@ export const useUser = () => {
   const context = useContext(UserContext);
   if (!context) {
     return {
-       user: null,
+      user: null,
       loading: false,
+      profileLoading: false,
       setUser: () => {},
       logout: () => {},
     };

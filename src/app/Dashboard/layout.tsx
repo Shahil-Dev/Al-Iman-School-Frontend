@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import UserAvatar from "@/src/components/ui/UserAvatar";
+import { getUserDisplay } from "@/src/lib/userDisplay";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useUser } from "@/src/context/UserContext";
@@ -59,8 +61,8 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, logout, loading } = useUser();
-  const { language, setLanguage } = useLanguage();
+  const { user, logout, loading, profileLoading } = useUser();
+  const { language, toggleLanguage } = useLanguage();
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
@@ -76,11 +78,28 @@ export default function DashboardLayout({
       const role = user.role;
       const lowerPath = pathname.toLowerCase();
 
-      if (role === "STUDENT" && !lowerPath.startsWith("/dashboard/studentdashboard") && !lowerPath.startsWith("/dashboard/profile")) {
+      if (
+        role === "STUDENT" &&
+        !lowerPath.startsWith("/dashboard/studentdashboard") &&
+        !lowerPath.startsWith("/dashboard/profile")
+      ) {
         router.replace("/Dashboard/studentDashboard");
-      } else if (role === "PARENT" && !lowerPath.startsWith("/dashboard/parentdashboard") && !lowerPath.startsWith("/dashboard/reviews") && !lowerPath.startsWith("/dashboard/profile")) {
+      } else if (
+        role === "PARENT" &&
+        !lowerPath.startsWith("/dashboard/parentdashboard") &&
+        !lowerPath.startsWith("/dashboard/reviews") &&
+        !lowerPath.startsWith("/dashboard/profile")
+      ) {
         router.replace("/Dashboard/parentDashboard");
-      } else if (role === "TEACHER" && !lowerPath.startsWith("/dashboard/teacherdashboard") && !lowerPath.startsWith("/dashboard/marks/entry") && !lowerPath.startsWith("/dashboard/attendance") && !lowerPath.startsWith("/dashboard/my-routine") && !lowerPath.startsWith("/dashboard/notices") && !lowerPath.startsWith("/dashboard/profile")) {
+      } else if (
+        role === "TEACHER" &&
+        !lowerPath.startsWith("/dashboard/teacherdashboard") &&
+        !lowerPath.startsWith("/dashboard/marks/entry") &&
+        !lowerPath.startsWith("/dashboard/attendance") &&
+        !lowerPath.startsWith("/dashboard/my-routine") &&
+        !lowerPath.startsWith("/dashboard/notices") &&
+        !lowerPath.startsWith("/dashboard/profile")
+      ) {
         router.replace("/Dashboard/TeacherDashboard");
       }
     }
@@ -419,8 +438,9 @@ export default function DashboardLayout({
 
   const navItems = getNavItems();
   const roleLabel = user?.role || "STUDENT";
-  const userInitial =
-    user?.name?.charAt(0)?.toUpperCase() || roleLabel.charAt(0);
+  // const userInitial =
+  //   user?.name?.charAt(0)?.toUpperCase() || roleLabel.charAt(0);
+  const { name: displayName } = getUserDisplay(user);
 
   const spring = prefersReducedMotion
     ? { type: "tween" as const, duration: 0 }
@@ -642,12 +662,15 @@ export default function DashboardLayout({
                 : "bg-muted/40 hover:bg-muted/80"
             }`}
           >
-            <div className="w-8 h-8 rounded-full bg-primary/12 text-primary flex items-center justify-center font-semibold text-[11px] ring-1 ring-primary/20 shrink-0">
-              {userInitial}
-            </div>
+            <UserAvatar
+              user={user}
+              size={32}
+              loading={profileLoading}
+              className="rounded-full bg-primary/10 text-primary ring-1 ring-primary/20"
+            />
             <div className="min-w-0 flex-1">
               <p className="text-[12.5px] font-semibold text-foreground truncate leading-tight">
-                {user?.name || "User"}
+                {displayName}
               </p>
               <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.1em] leading-tight mt-0.5 truncate">
                 {roleLabel.replace("_", " ")}
