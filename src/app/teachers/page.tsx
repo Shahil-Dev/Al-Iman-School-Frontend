@@ -64,7 +64,7 @@ export default function TeachersPage() {
             <p className="text-xs md:text-sm text-emerald-100/90 max-w-2xl">
               {isBn
                 ? "অভিজ্ঞ ও নিবেদিতপ্রাণ শিক্ষকবৃন্দের তত্ত্বাবধানে আল-ঈমান স্কুলের শিক্ষার্থীরা গড়ে উঠছে।"
-                : "Meet our qualified and dedicated educators guiding the students of Al-Iman School and Collage."}
+                : "Meet our qualified and dedicated educators guiding the students of Al-Iman School and College."}
             </p>
           </div>
         </div>

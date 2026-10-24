@@ -21,8 +21,8 @@ const geistMono = Geist_Mono({
 
 // The favicon is served automatically from src/app/icon.jpg
 export const metadata: Metadata = {
-  title: "Al-Iman School and Collage",
-  description: "Al-Iman School and Collage Management System",
+  title: "Al-Iman School and College",
+  description: "Al-Iman School and College Management System",
 };
 
 export default function RootLayout({

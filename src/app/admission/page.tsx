@@ -380,7 +380,7 @@ const { language, toggleLanguage } = useLanguage();
           <div className="border-b-2 border-emerald-800 pb-4 mb-6 flex justify-between items-start">
             <div>
               <h1 className="text-2xl font-black text-emerald-900 tracking-tight">
-                AL-IMAN ACADEMY SCHOOL AND COLLAGE 
+                AL-IMAN ACADEMY SCHOOL AND College 
               </h1>
               <p className="text-xs text-slate-600 font-medium">
                 Official Student Admission Application Slip
@@ -501,7 +501,7 @@ const { language, toggleLanguage } = useLanguage();
             </div>
             <div className="text-center border-t border-slate-400 pt-1 w-36">
               <p className="font-bold text-slate-700">Authorized Officer</p>
-              <p>Al-Iman School and Collage</p>
+              <p>Al-Iman School and College</p>
             </div>
           </div>
         </div>
@@ -528,7 +528,7 @@ const { language, toggleLanguage } = useLanguage();
             <span>
               {language === "bn"
                 ? "আল-ঈমান স্কুল • অনলাইন ভর্তি পোর্টাল"
-                : "Al-Iman School and Collage • Admission Portal"}
+                : "Al-Iman School and College • Admission Portal"}
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
@@ -1572,7 +1572,7 @@ const { language, toggleLanguage } = useLanguage();
                     <li>
                       Institution Name:{" "}
                       <span className="font-bold text-foreground">
-                       Al-Iman School and Collage
+                       Al-Iman School and College
                       </span>
                     </li>
                     <li>

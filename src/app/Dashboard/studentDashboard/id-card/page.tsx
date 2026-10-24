@@ -97,7 +97,7 @@ export default function StudentIdCardPage() {
               <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full blur-sm" />
               <div className="relative z-10 space-y-1">
                 <h2 className="text-lg font-extrabold tracking-wide uppercase">
-               Al-Iman School and Collage
+               Al-Iman School and College
                 </h2>
                 <p className="text-[10px] opacity-90 tracking-wider uppercase font-semibold">
                   Excellence in Education
@@ -196,7 +196,7 @@ export default function StudentIdCardPage() {
                 </div>
                 <div className="text-right">
                   <span className="block font-semibold text-foreground">
-                   Al-Iman School and Collage ERP
+                   Al-Iman School and College ERP
                   </span>
                   <span className="text-[9px]">Authorized Student</span>
                 </div>

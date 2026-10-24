@@ -260,7 +260,7 @@ export default function StudentResultsPage() {
             <CardContent className="space-y-6 p-0">
               <div className="text-center space-y-1.5 border-b-2 border-primary/20 pb-6">
                 <h2 className="text-xl sm:text-2xl font-extrabold text-primary tracking-tight">
-                  Al-Iman School & Collage
+                  Al-Iman School & College
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   Official Academic Transcript & Marksheet
@@ -396,7 +396,7 @@ export default function StudentResultsPage() {
                     Principal / Controller of Exams
                   </p>
                   <p className="text-[10px] text-muted-foreground">
-                     Al-Iman School & Collage
+                     Al-Iman School & College
                   </p>
                 </div>
               </div>

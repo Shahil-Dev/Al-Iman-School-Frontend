@@ -37,7 +37,7 @@ export default function GlobalLoader() {
             </span>
           </div>
           <p className="text-sm font-semibold tracking-wide text-foreground">
-            Al-Iman School and Collage
+            Al-Iman School and College
           </p>
           <span className="sr-only">Loading…</span>
         </motion.div>

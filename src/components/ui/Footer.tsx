@@ -198,7 +198,7 @@ export default function Footer() {
           <p>
             © {new Date().getFullYear()}{" "}
             <span className="text-emerald-400 font-bold">
-              Al-Iman School and collage
+              Al-Iman School and College
             </span>
             . {isBn ? "সর্বস্বত্ব সংরক্ষিত।" : "All rights reserved."}
           </p>

@@ -107,7 +107,7 @@ export default function PendingTeachersPage() {
             <span>Pending Teacher Approvals</span>
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Review detailed teacher applications and approve qualified candidates for Al-Iman School and Collage.
+            Review detailed teacher applications and approve qualified candidates for Al-Iman School and College.
           </p>
         </div>
         <div className="px-4 py-2 rounded-xl bg-[#c9a961]/10 border border-[#c9a961]/20 text-[#c9a961] text-xs font-bold w-fit">

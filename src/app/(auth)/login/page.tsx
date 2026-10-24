@@ -311,7 +311,7 @@ function LoginFormContent() {
           </Link>
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
-              Al-Iman School and Collage ERP
+              Al-Iman School and College ERP
             </h1>
             <p className="text-xs text-muted-foreground mt-1 tracking-wide uppercase font-semibold">
               مدرسة الإيمان الإسلامية

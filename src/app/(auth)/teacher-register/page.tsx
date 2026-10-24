@@ -190,7 +190,7 @@ export default function TeacherRegisterPage() {
             </div>
           </Link>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
-           Al-Iman School and Collage Teacher Application
+           Al-Iman School and College Teacher Application
           </h1>
         </div>
 

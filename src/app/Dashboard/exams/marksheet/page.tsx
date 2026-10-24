@@ -325,7 +325,7 @@ export default function StudentMarksheetPage() {
             <div className="text-center pb-6 border-b border-border/80 space-y-1">
               <div className="flex items-center justify-center gap-2 text-primary font-bold text-xl">
                 <FaUniversity />
-                <span>Al-Iman School and Collage</span>
+                <span>Al-Iman School and College</span>
               </div>
               <p className="text-xs text-muted-foreground font-medium">
                 Academic Progress & Official Mark Sheet

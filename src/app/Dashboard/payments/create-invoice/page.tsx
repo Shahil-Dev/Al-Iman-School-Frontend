@@ -19,6 +19,17 @@ interface IStudent {
   studentIdNo: string;
 }
 
+// Preset fee reasons; the stored text is shown to parents and students as-is
+const REASON_OPTIONS = [
+  { key: "TUITION", bn: "মাসিক বেতন", en: "Monthly Tuition Fee" },
+  { key: "EXAM", bn: "পরীক্ষার ফি", en: "Exam Fee" },
+  { key: "ADMISSION", bn: "ভর্তি ফি", en: "Admission Fee" },
+  { key: "OTHER", bn: "অন্যান্য (নিজে লিখুন)", en: "Other (write below)" },
+];
+
+const presetReasonText = (option: { bn: string; en: string }) =>
+  `${option.bn} (${option.en})`;
+
 export default function CreateInvoicePage() {
   const { language } = useLanguage();
   const isBn = language === "bn";
@@ -31,6 +42,12 @@ export default function CreateInvoicePage() {
   const [amount, setAmount] = useState<number>(1500);
   const [dueDate, setDueDate] = useState<string>("");
   const [bulkDueDate, setBulkDueDate] = useState<string>("");
+
+  const [reasonKey, setReasonKey] = useState("");
+  const [customReason, setCustomReason] = useState("");
+  const [bulkReason, setBulkReason] = useState(
+    presetReasonText(REASON_OPTIONS[0]),
+  );
 
   const [loading, setLoading] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -60,6 +77,12 @@ export default function CreateInvoicePage() {
       .catch(() => setStudents([]));
   }, [selectedClassId]);
 
+  const resolveReason = (): string => {
+    if (reasonKey === "OTHER") return customReason.trim();
+    const option = REASON_OPTIONS.find((o) => o.key === reasonKey);
+    return option ? presetReasonText(option) : "";
+  };
+
   // Single Invoice Handler
   const handleCreateInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +90,15 @@ export default function CreateInvoicePage() {
       setMsg({
         type: "error",
         text: isBn ? "অনুগ্রহ করে সকল তথ্য সঠিকভাবে প্রদান করুন।" : "Please fill in all required fields.",
+      });
+      return;
+    }
+
+    const reason = resolveReason();
+    if (!reason) {
+      setMsg({
+        type: "error",
+        text: isBn ? "ফি-এর কারণ বা বিবরণ লিখুন।" : "Please select or write the reason for this fee.",
       });
       return;
     }
@@ -79,6 +111,7 @@ export default function CreateInvoicePage() {
         studentId: selectedStudentId,
         amount: Number(amount),
         dueDate,
+        reason,
       });
 
       setMsg({
@@ -89,6 +122,7 @@ export default function CreateInvoicePage() {
       });
 
       setSelectedStudentId("");
+      setCustomReason("");
     } catch (err: any) {
       setMsg({
         type: "error",
@@ -109,18 +143,19 @@ export default function CreateInvoicePage() {
 
       const res = await paymentService.generateMonthlyInvoices({
         dueDate: bulkDueDate,
+        reason: bulkReason.trim() || undefined,
       });
 
       setMsg({
         type: "success",
         text: isBn
-          ? `সফলভাবে ${res?.data?.createdCount || 0} জন শিক্ষার্থীর জন্য মাসিক ইনভয়েস জেনারেট হয়েছে!`
+          ? `সফলভাবে ${res?.data?.createdCount || 0} জন শিক্ষার্থীর জন্য মাসিক ইনভয়েস জেনারেট হয়েছে!`
           : `Successfully generated monthly invoices for students!`,
       });
     } catch (err: any) {
       setMsg({
         type: "error",
-        text: err?.response?.data?.message || (isBn ? "বাল্ক ইনভয়েস জেনারেট করতে সমস্যা হয়েছে।" : "Failed to generate bulk invoices."),
+        text: err?.response?.data?.message || (isBn ? "বাল্ক ইনভয়েস জেনারেট করতে সমস্যা হয়েছে।" : "Failed to generate bulk invoices."),
       });
     } finally {
       setBulkLoading(false);
@@ -165,9 +200,24 @@ export default function CreateInvoicePage() {
           </div>
           <p className="text-xs text-muted-foreground">
             {isBn
-              ? "শ্রেণিভিত্তিক ফি স্ট্রাকচার অনুযায়ী সব সক্রিয় শিক্ষার্থীর ইনভয়েস একবারে তৈরি হবে এবং হোয়াটসঅ্যাপে নোটিফিকেশন যাবে।"
+              ? "শ্রেণিভিত্তিক ফি স্ট্রাকচার অনুযায়ী সব সক্রিয় শিক্ষার্থীর ইনভয়েস একবারে তৈরি হবে এবং হোয়াটসঅ্যাপে নোটিফিকেশন যাবে।"
               : "Automatically generate invoices for all active students based on class fee structures."}
           </p>
+
+          <div>
+            <label className="text-xs font-semibold text-foreground block mb-1.5">
+              {isBn ? "ইনভয়েসের বিবরণ (সবার ইনভয়েসে দেখাবে)" : "Invoice Description (shown on every invoice)"}
+            </label>
+            <input
+              type="text"
+              maxLength={200}
+              value={bulkReason}
+              onChange={(e) => setBulkReason(e.target.value)}
+              placeholder={isBn ? "যেমন: মাসিক বেতন (অক্টোবর ২০২৬)" : "e.g. Monthly Tuition Fee (October 2026)"}
+              className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground font-semibold"
+            />
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="date"
@@ -236,6 +286,35 @@ export default function CreateInvoicePage() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="font-semibold text-foreground block mb-1.5">
+                {isBn ? "ফি-এর কারণ / বিবরণ *" : "Reason / Fee Type *"}
+              </label>
+              <select
+                value={reasonKey}
+                onChange={(e) => setReasonKey(e.target.value)}
+                className="w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground font-semibold"
+              >
+                <option value="">{isBn ? "-- কারণ সিলেক্ট করুন --" : "-- Select Reason --"}</option>
+                {REASON_OPTIONS.map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {isBn ? option.bn : option.en}
+                  </option>
+                ))}
+              </select>
+
+              {reasonKey === "OTHER" && (
+                <input
+                  type="text"
+                  maxLength={200}
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  placeholder={isBn ? "যেমন: শিক্ষা সফরের ফি" : "e.g. Educational Tour Fee"}
+                  className="mt-2 w-full px-3.5 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground font-semibold"
+                />
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
