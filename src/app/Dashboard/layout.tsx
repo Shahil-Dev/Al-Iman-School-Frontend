@@ -266,6 +266,12 @@ export default function DashboardLayout({
               icon: FaMoneyCheckAlt,
             },
             {
+              label: isBn ? "ক্যাশ পেমেন্ট গ্রহণ" : "Collect Cash Payment",
+              href: "/Dashboard/payments/collect-fee",
+              icon: FaMoneyCheckAlt,
+            },
+          
+            {
               label: isBn ? "বকেয়া রিপোর্ট" : "Due Fees Report",
               href: "/Dashboard/accounts/due-report",
               icon: FaFileInvoiceDollar,
