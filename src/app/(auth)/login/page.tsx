@@ -314,7 +314,7 @@ function LoginFormContent() {
               Al-Iman School and College ERP
             </h1>
             <p className="text-xs text-muted-foreground mt-1 tracking-wide uppercase font-semibold">
-              مدرسة الإيمان الإسلامية
+              مدرسة الايمان
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               Sign in to access your ERP Portal
