@@ -34,6 +34,7 @@ type LangType = "EN" | "BN";
 type ClassOption = {
   id: string;
   name: string;
+  hasClassTeacher?: boolean;
 };
 
 export default function TeacherRegisterPage() {
@@ -53,6 +54,7 @@ export default function TeacherRegisterPage() {
   });
 
   const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [classesError, setClassesError] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -65,10 +67,13 @@ export default function TeacherRegisterPage() {
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        const res = await axiosInstance.get("/academic-management/classes");
+        const res = await axiosInstance.get("/academic/public/classes");
         setClasses(res.data?.data || []);
       } catch (err) {
-        console.error("Failed to load classes");
+        console.error("Failed to load classes", err);
+        setClassesError(
+          "Could not load the class list. Please refresh the page.",
+        );
       }
     };
     fetchClasses();
@@ -86,7 +91,7 @@ export default function TeacherRegisterPage() {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -147,7 +152,7 @@ export default function TeacherRegisterPage() {
       setError(
         err.response?.data?.message ||
           err.message ||
-          "Registration failed! Please check your input."
+          "Registration failed! Please check your input.",
       );
     } finally {
       setLoading(false);
@@ -190,7 +195,7 @@ export default function TeacherRegisterPage() {
             </div>
           </Link>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
-           Al-Iman School and College Teacher Application
+            Al-Iman School and College Teacher Application
           </h1>
         </div>
 
@@ -226,7 +231,9 @@ export default function TeacherRegisterPage() {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold mb-1">Full Name *</label>
+                      <label className="block text-xs font-semibold mb-1">
+                        Full Name *
+                      </label>
                       <Input
                         name="name"
                         required
@@ -237,7 +244,9 @@ export default function TeacherRegisterPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold mb-1">Email Address *</label>
+                      <label className="block text-xs font-semibold mb-1">
+                        Email Address *
+                      </label>
                       <Input
                         name="email"
                         type="email"
@@ -249,7 +258,9 @@ export default function TeacherRegisterPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold mb-1">Password *</label>
+                      <label className="block text-xs font-semibold mb-1">
+                        Password *
+                      </label>
                       <Input
                         name="password"
                         type="password"
@@ -260,7 +271,9 @@ export default function TeacherRegisterPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold mb-1">Confirm Password *</label>
+                      <label className="block text-xs font-semibold mb-1">
+                        Confirm Password *
+                      </label>
                       <Input
                         name="confirmPassword"
                         type="password"
@@ -280,7 +293,9 @@ export default function TeacherRegisterPage() {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold mb-1">Designation *</label>
+                      <label className="block text-xs font-semibold mb-1">
+                        Designation *
+                      </label>
                       <Input
                         name="designation"
                         required
@@ -290,7 +305,9 @@ export default function TeacherRegisterPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold mb-1">Department</label>
+                      <label className="block text-xs font-semibold mb-1">
+                        Department
+                      </label>
                       <Input
                         name="department"
                         value={formData.department}
@@ -299,7 +316,9 @@ export default function TeacherRegisterPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold mb-1">Class Teacher Of (শ্রেণি শিক্ষক)</label>
+                      <label className="block text-xs font-semibold mb-1">
+                        Class Teacher Of (শ্রেণি শিক্ষক)
+                      </label>
                       <select
                         name="classTeacherOfId"
                         value={formData.classTeacherOfId}
@@ -308,11 +327,23 @@ export default function TeacherRegisterPage() {
                       >
                         <option value="">None (সাধারণ শিক্ষক)</option>
                         {classes.map((cls) => (
-                          <option key={cls.id} value={cls.id}>
+                          <option
+                            key={cls.id}
+                            value={cls.id}
+                            disabled={cls.hasClassTeacher}
+                          >
                             {cls.name}
+                            {cls.hasClassTeacher
+                              ? " (class teacher already assigned)"
+                              : ""}
                           </option>
                         ))}
                       </select>
+                      {classesError && (
+                        <p className="mt-1 text-[11px] font-medium text-destructive">
+                          {classesError}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -324,7 +355,9 @@ export default function TeacherRegisterPage() {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold mb-1">Mobile Number *</label>
+                      <label className="block text-xs font-semibold mb-1">
+                        Mobile Number *
+                      </label>
                       <Input
                         name="phone"
                         required
@@ -337,7 +370,9 @@ export default function TeacherRegisterPage() {
 
                     {/* File Browser for Image */}
                     <div>
-                      <label className="block text-xs font-semibold mb-1">Profile Photo (ছবি নির্বাচন করুন)</label>
+                      <label className="block text-xs font-semibold mb-1">
+                        Profile Photo (ছবি নির্বাচন করুন)
+                      </label>
                       <div className="flex items-center gap-3">
                         <label className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-muted/40 text-xs text-foreground cursor-pointer hover:border-[#c9a961] transition-all">
                           <FaCamera className="text-[#c9a961]" />
@@ -351,7 +386,11 @@ export default function TeacherRegisterPage() {
                         </label>
                         {photoPreview && (
                           <div className="w-10 h-10 rounded-xl overflow-hidden border border-border">
-                            <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                            <img
+                              src={photoPreview}
+                              alt="Preview"
+                              className="w-full h-full object-cover"
+                            />
                           </div>
                         )}
                       </div>
@@ -364,7 +403,11 @@ export default function TeacherRegisterPage() {
                   disabled={loading}
                   className="w-full bg-gradient-to-r from-[#c9a961] to-[#a88a44] text-white h-11 rounded-xl text-xs font-bold shadow-md"
                 >
-                  {loading ? <FaSpinner className="animate-spin text-sm" /> : "Submit Teacher Application"}
+                  {loading ? (
+                    <FaSpinner className="animate-spin text-sm" />
+                  ) : (
+                    "Submit Teacher Application"
+                  )}
                 </Button>
               </form>
             )}
