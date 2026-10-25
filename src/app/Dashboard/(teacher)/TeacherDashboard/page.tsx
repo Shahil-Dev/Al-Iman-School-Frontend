@@ -56,7 +56,7 @@ export default function TeacherDashboardPage() {
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
             {isBn
-              ? "আল-ঈমান স্কুল অ্যান্ড কলেজের শিক্ষক প্যানেলে আপনাকে স্বাগতম। আপনার দৈনিক ক্লাস ও একাডেমিক কার্যক্রম পরিচালনা করুন।"
+              ? "আল-ঈমান স্কুল এন্ড কলেজের শিক্ষক প্যানেলে আপনাকে স্বাগতম। আপনার দৈনিক ক্লাস ও একাডেমিক কার্যক্রম পরিচালনা করুন।"
               : "Welcome to Al-Iman School & College Teacher Portal. Manage your daily classes & academic tasks."}
           </p>
         </div>
