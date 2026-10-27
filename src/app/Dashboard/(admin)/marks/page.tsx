@@ -1,238 +1,268 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
+import { FaSearch, FaSave, FaSpinner, FaUserGraduate } from "react-icons/fa";
+import axiosInstance from "@/src/lib/axiosInstance";
+import { useLanguage } from "@/src/context/LanguageContext";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
+interface IClass { id: string; name: string; }
+interface ISection { id: string; name: string; classId: string; }
+interface ISubject { id: string; name: string; fullMarks: number; hasMT: boolean; }
+interface IExam { id: string; name: string; }
+interface IStudent {
+  id: string;
+  firstName: string;
+  lastName: string;
+  studentCode?: string;
+  studentIdNo?: string;
+  rollNo?: number;
+  classId?: string;
+  sectionId?: string;
+}
+
+interface IMarksRow {
+  subjectId: string;
+  subjectName: string;
+  fullMarks: number;
+  hasMT: boolean;
+  mtMarks: number;
+  terminal: number;
+}
 
 const springSoft = { type: "spring" as const, stiffness: 380, damping: 32 };
 const springGentle = { type: "spring" as const, stiffness: 260, damping: 28 };
 
-export default function MarkEntryPage() {
+export default function StudentMarkEntryPage() {
+  const { language } = useLanguage();
+  const isBn = language === "bn";
   const shouldReduceMotion = useReducedMotion();
+  const t = (en: string, bn: string) => (isBn ? bn : en);
 
-  const [classes, setClasses] = useState<any[]>([]);
-  const [sections, setSections] = useState<any[]>([]);
-  const [subjects, setSubjects] = useState<any[]>([]);
-  const [exams, setExams] = useState<any[]>([]);
+  const [classes, setClasses] = useState<IClass[]>([]);
+  const [sections, setSections] = useState<ISection[]>([]);
+  const [subjects, setSubjects] = useState<ISubject[]>([]);
+  const [exams, setExams] = useState<IExam[]>([]);
 
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedSection, setSelectedSection] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedExam, setSelectedExam] = useState("");
+  const [studentSearch, setStudentSearch] = useState("");
 
-  const [students, setStudents] = useState<any[]>([]);
-  const [marksData, setMarksData] = useState<{
-    [studentId: string]: { mtMarks: number; terminal: number };
-  }>({});
-  const [loading, setLoading] = useState(false);
+  const [students, setStudents] = useState<IStudent[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<IStudent | null>(null);
+  const [marksRows, setMarksRows] = useState<IMarksRow[]>([]);
+
+  const [loadingClasses, setLoadingClasses] = useState(false);
+  const [loadingSections, setLoadingSections] = useState(false);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+  const [loadingStudents, setLoadingStudents] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const getAuthHeaders = () => {
-    let token =
-      localStorage.getItem("accessToken") ||
-      localStorage.getItem("token") ||
-      localStorage.getItem("auth_token");
-
-    if (!token && typeof document !== "undefined") {
-      const match = document.cookie.match(
-        new RegExp("(^| )accessToken=([^;]+)")
-      );
-      if (match) token = match[2];
-    }
-
-    if (!token) {
-      console.warn(
-        "⚠️ No Access Token found! Please log in as SUPER_ADMIN or TEACHER."
-      );
-      return { headers: {} };
-    }
-
-    const cleanToken = token.replace(/^Bearer\s+/i, "");
-
-    return {
-      headers: {
-        Authorization: `Bearer ${cleanToken}`,
-      },
-    };
-  };
-
+  // 1) Load exams and classes once
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const config = getAuthHeaders();
-
-        const [classRes, examRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/academic/classes`, config),
-          axios.get(`${API_BASE_URL}/exams`, config),
-        ]);
-
-        setClasses(classRes.data.data || []);
-        setExams(examRes.data.data || []);
-      } catch (err: any) {
-        console.error("Error fetching initial dropdown data:", err);
-        if (err.response?.status === 401) {
-          toast.error(
-            "Session expired or Unauthorized! Make sure you are logged in as SUPER_ADMIN or TEACHER."
-          );
-        }
-      }
+    let cancelled = false;
+    setLoadingClasses(true);
+    Promise.all([
+      axiosInstance.get("/academic/classes"),
+      axiosInstance.get("/exams"),
+    ])
+      .then(([classRes, examRes]) => {
+        if (cancelled) return;
+        setClasses(classRes.data?.data || []);
+        setExams(examRes.data?.data || []);
+      })
+      .catch(() => {
+        if (!cancelled) toast.error(t("Failed to load classes/exams.", "ক্লাস/পরীক্ষা লোড করা যায়নি।"));
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingClasses(false);
+      });
+    return () => {
+      cancelled = true;
     };
-    fetchInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-   useEffect(() => {
-    // Drop stale sections from the previous class right away
+  // 2) Sections + Subjects when class changes
+  useEffect(() => {
     setSections([]);
+    setSubjects([]);
+    setSelectedSection("");
+    setStudents([]);
+    setSelectedStudent(null);
+    setMarksRows([]);
     if (!selectedClass) return;
 
     let cancelled = false;
-    const fetchClassDetails = async () => {
-      try {
-        const config = getAuthHeaders();
+    setLoadingSections(true);
+    setLoadingSubjects(true);
 
-        const [secRes, subRes] = await Promise.all([
-          axios.get(
-            `${API_BASE_URL}/academic/sections?classId=${selectedClass}`,
-            config
-          ),
-          axios.get(
-            `${API_BASE_URL}/subjects?classId=${selectedClass}`,
-            config
-          ),
-        ]);
-
+    axiosInstance
+      .get(`/academic/sections?classId=${selectedClass}`)
+      .then((res) => {
         if (cancelled) return;
-        // Keep only sections that belong to the selected class
-        setSections(
-          (secRes.data.data || []).filter(
-            (s: any) => s.classId === selectedClass
-          )
+        const list: ISection[] = (res.data?.data || []).filter(
+          (s: ISection) => s.classId === selectedClass,
         );
-        setSubjects(subRes.data.data || []);
-      } catch (err) {
-        console.error("Error fetching sections/subjects:", err);
-      }
-    };
-    fetchClassDetails();
+        setSections(list);
+      })
+      .catch(() => {
+        if (!cancelled) toast.error(t("Failed to load sections.", "সেকশন লোড করা যায়নি।"));
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSections(false);
+      });
+
+    axiosInstance
+      .get(`/subjects/class/${selectedClass}`)
+      .then((res) => {
+        if (cancelled) return;
+        setSubjects(res.data?.data || []);
+      })
+      .catch(() => {
+        if (!cancelled) toast.error(t("Failed to load subjects.", "বিষয় লোড করা যায়নি।"));
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSubjects(false);
+      });
 
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClass]);
 
+  // 3) Load students
   const handleLoadStudents = async () => {
-    if (
-      !selectedClass ||
-      !selectedSection ||
-      !selectedSubject ||
-      !selectedExam
-    ) {
-      toast.error("Please select Class, Section, Subject, and Exam Term!");
+    if (!selectedClass || !selectedSection) {
+      toast.error(t("Select class and section first.", "আগে ক্লাস ও সেকশন নির্বাচন করুন।"));
+      return;
+    }
+    setLoadingStudents(true);
+    try {
+      const params = new URLSearchParams({
+        classId: selectedClass,
+        sectionId: selectedSection,
+      });
+      if (studentSearch.trim()) params.set("searchTerm", studentSearch.trim());
+      const res = await axiosInstance.get(`/students?${params.toString()}`);
+      const list: IStudent[] = res.data?.data || [];
+      setStudents(list);
+      setSelectedStudent(null);
+      setMarksRows([]);
+      if (list.length === 0) {
+        toast.info(t("No students found for this filter.", "এই ফিল্টারে কোনো শিক্ষার্থী নেই।"));
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || t("Failed to load students.", "শিক্ষার্থী লোড ব্যর্থ।"));
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  // 4) When a student is picked, prefill rows with all subjects
+  const handleSelectStudent = (student: IStudent) => {
+    setSelectedStudent(student);
+    setMarksRows(
+      subjects.map((s) => ({
+        subjectId: s.id,
+        subjectName: s.name,
+        fullMarks: s.fullMarks,
+        hasMT: s.hasMT !== false,
+        mtMarks: 0,
+        terminal: 0,
+      })),
+    );
+  };
+
+  const handleMarkChange = (
+    subjectId: string,
+    field: "mtMarks" | "terminal",
+    raw: string,
+  ) => {
+    const num = Math.max(0, Number(raw) || 0);
+    setMarksRows((prev) =>
+      prev.map((row) =>
+        row.subjectId === subjectId ? { ...row, [field]: num } : row,
+      ),
+    );
+  };
+
+  // 5) Submit
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedExam || !selectedStudent || marksRows.length === 0) {
+      toast.error(t("Select exam and a student first.", "আগে পরীক্ষা ও একজন শিক্ষার্থী নির্বাচন করুন।"));
       return;
     }
 
-    setLoading(true);
-    try {
-      const config = getAuthHeaders();
-
-      const studentRes = await axios.get(
-        `${API_BASE_URL}/students?classId=${selectedClass}&sectionId=${selectedSection}`,
-        config
-      );
-
-      const fetchedStudents = studentRes.data.data || [];
-      setStudents(fetchedStudents);
-
-      const initialMarks: any = {};
-      fetchedStudents.forEach((st: any) => {
-        initialMarks[st.id] = { mtMarks: 0, terminal: 0 };
-      });
-      setMarksData(initialMarks);
-    } catch (err) {
-      toast.error("Failed to load students list!");
-    } finally {
-      setLoading(false);
+    // client-side validation
+    for (const row of marksRows) {
+      const total = (row.hasMT ? row.mtMarks : 0) + row.terminal;
+      if (total > row.fullMarks) {
+        toast.error(
+          t(
+            `"${row.subjectName}" total exceeds full marks (${row.fullMarks}).`,
+            `"${row.subjectName}" এর মোট নম্বর পূর্ণমান (${row.fullMarks}) ছাড়িয়েছে।`,
+          ),
+        );
+        return;
+      }
     }
-  };
-
-  const handleInputChange = (
-    studentId: string,
-    field: "mtMarks" | "terminal",
-    value: string
-  ) => {
-    const numVal = Math.max(0, Number(value) || 0);
-    setMarksData((prev) => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId],
-        [field]: numVal,
-      },
-    }));
-  };
-
-  const handleSubmitMarks = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (students.length === 0) return;
 
     setSubmitting(true);
     try {
-      const config = getAuthHeaders();
-
       const payload = {
         examId: selectedExam,
-        subjectId: selectedSubject,
-        marks: students.map((st) => ({
-          studentId: st.id,
-          mtMarks: marksData[st.id]?.mtMarks || 0,
-          terminal: marksData[st.id]?.terminal || 0,
+        studentId: selectedStudent.id,
+        marks: marksRows.map((row) => ({
+          subjectId: row.subjectId,
+          mtMarks: row.hasMT ? row.mtMarks : 0,
+          terminal: row.terminal,
         })),
       };
-
-      await axios.post(
-        `${API_BASE_URL}/marks/save-bulk-marks`,
-        payload,
-        config
-      );
-      toast.success("Marks saved and GPA calculated successfully!");
+      await axiosInstance.post("/marks/save-student-marks", payload);
+      toast.success(t("Marks saved and GPA calculated.", "নম্বর সংরক্ষিত ও GPA হিসাব সম্পন্ন।"));
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to save marks!");
+      toast.error(err?.response?.data?.message || t("Failed to save marks.", "নম্বর সংরক্ষণ ব্যর্থ।"));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const currentSubject = subjects.find((s) => s.id === selectedSubject);
-  const showMT = currentSubject?.hasMT !== false;
+  const canLoad = Boolean(selectedClass && selectedSection) && !loadingStudents;
+  const canSubmit =
+    Boolean(selectedExam && selectedStudent) && marksRows.length > 0 && !submitting;
+
+  const totalRow = useMemo(() => {
+    const totalObtained = marksRows.reduce(
+      (sum, r) => sum + (r.hasMT ? r.mtMarks : 0) + r.terminal,
+      0,
+    );
+    const totalFull = marksRows.reduce((sum, r) => sum + r.fullMarks, 0);
+    return { totalObtained, totalFull };
+  }, [marksRows]);
 
   const fadeUp = shouldReduceMotion
-    ? {
-        initial: { opacity: 0 },
-        animate: { opacity: 1 },
-        transition: { duration: 0.12 },
-      }
-    : {
-        initial: { opacity: 0, y: 10 },
-        animate: { opacity: 1, y: 0 },
-        transition: springGentle,
-      };
+    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.12 } }
+    : { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: springGentle };
 
   return (
-    <div className="relative min-h-[60vh] p-4 sm:p-6 max-w-7xl mx-auto space-y-7 font-sans text-foreground">
-      {/* Header */}
+    <div className="relative min-h-[60vh] p-4 sm:p-6 max-w-7xl mx-auto space-y-6 font-sans text-foreground">
       <motion.header {...fadeUp} className="space-y-1.5">
         <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-          Results
+          {t("Results", "ফলাফল")}
         </p>
         <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.7rem]">
-          Exam & Result Entry
+          {t("Student Mark Entry", "শিক্ষার্থীর নম্বর এন্ট্রি")}
         </h1>
-        <p className="max-w-lg text-sm leading-relaxed text-muted-foreground">
-          Select class, section, subject and exam, then enter marks for the
-          class.
+        <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
+          {t(
+            "Pick exam, class, section and one student — all subjects load together and can be saved in one click.",
+            "পরীক্ষা, ক্লাস, সেকশন ও একজন শিক্ষার্থী নির্বাচন করুন — সব বিষয় একসাথে লোড হবে, এক ক্লিকে সংরক্ষণ হবে।",
+          )}
         </p>
       </motion.header>
 
@@ -240,34 +270,39 @@ export default function MarkEntryPage() {
       <motion.div
         {...fadeUp}
         transition={{ ...springGentle, delay: shouldReduceMotion ? 0 : 0.03 }}
-        className="rounded-lg border border-border/80 bg-card p-5 sm:p-6"
+        className="rounded-lg border border-border/80 bg-card p-5 sm:p-6 space-y-5"
       >
-        <div className="mb-5">
-          <h2 className="text-sm font-medium text-foreground">Filters</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            All fields required before loading students
-          </p>
-        </div>
-
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-1.5">
-            <label
-              htmlFor="class-select"
-              className="block text-xs font-medium text-muted-foreground"
-            >
-              Class
+            <label className="block text-xs font-medium text-muted-foreground">
+              {t("Exam", "পরীক্ষা")}
             </label>
             <select
-              id="class-select"
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-foreground/20"
-              value={selectedClass}
-              onChange={(e) => {
-                setSelectedClass(e.target.value);
-                setSelectedSection("");
-                setSelectedSubject("");
-              }}
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+              value={selectedExam}
+              onChange={(e) => setSelectedExam(e.target.value)}
+              disabled={loadingClasses}
             >
-              <option value="">— Choose Class —</option>
+              <option value="">{t("— Choose Exam —", "— পরীক্ষা —")}</option>
+              {exams.map((ex) => (
+                <option key={ex.id} value={ex.id}>
+                  {ex.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-muted-foreground">
+              {t("Class", "ক্লাস")}
+            </label>
+            <select
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              disabled={loadingClasses}
+            >
+              <option value="">{t("— Choose Class —", "— ক্লাস —")}</option>
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -277,20 +312,16 @@ export default function MarkEntryPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label
-              htmlFor="section-select"
-              className="block text-xs font-medium text-muted-foreground"
-            >
-              Section
+            <label className="block text-xs font-medium text-muted-foreground">
+              {t("Section", "সেকশন")}
             </label>
             <select
-              id="section-select"
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-foreground/20 disabled:opacity-50"
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 disabled:opacity-50"
               value={selectedSection}
               onChange={(e) => setSelectedSection(e.target.value)}
-              disabled={!selectedClass}
+              disabled={!selectedClass || loadingSections}
             >
-              <option value="">— Choose Section —</option>
+              <option value="">{t("— Choose Section —", "— সেকশন —")}</option>
               {sections.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -300,216 +331,238 @@ export default function MarkEntryPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label
-              htmlFor="subject-select"
-              className="block text-xs font-medium text-muted-foreground"
-            >
-              Subject
+            <label className="block text-xs font-medium text-muted-foreground">
+              {t("Search student (code / name)", "শিক্ষার্থী খুঁজুন (কোড/নাম)")}
             </label>
-            <select
-              id="subject-select"
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-foreground/20 disabled:opacity-50"
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              disabled={!selectedClass}
-            >
-              <option value="">— Choose Subject —</option>
-              {subjects.map((sub) => (
-                <option key={sub.id} value={sub.id}>
-                  {sub.name} (Full Marks: {sub.fullMarks})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <label
-              htmlFor="exam-select"
-              className="block text-xs font-medium text-muted-foreground"
-            >
-              Exam Term
-            </label>
-            <select
-              id="exam-select"
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-foreground/20"
-              value={selectedExam}
-              onChange={(e) => setSelectedExam(e.target.value)}
-            >
-              <option value="">— Choose Exam —</option>
-              {exams.map((ex) => (
-                <option key={ex.id} value={ex.id}>
-                  {ex.name}
-                </option>
-              ))}
-            </select>
+            <input
+              type="text"
+              placeholder={t("e.g. STU-26-0001", "যেমন STU-26-0001")}
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+              value={studentSearch}
+              onChange={(e) => setStudentSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (canLoad) handleLoadStudents();
+                }
+              }}
+            />
           </div>
         </div>
 
-        <div className="mt-5">
+        <div>
           <button
             type="button"
             onClick={handleLoadStudents}
-            disabled={loading}
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-foreground px-4 text-sm font-medium text-background transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/30 disabled:pointer-events-none disabled:opacity-40"
+            disabled={!canLoad}
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-foreground px-4 text-sm font-medium text-background hover:opacity-90 disabled:opacity-40 disabled:pointer-events-none"
           >
-            {loading ? (
+            {loadingStudents ? (
               <>
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-background/30 border-t-background" />
-                Loading…
+                <FaSpinner className="animate-spin text-[12px]" />
+                {t("Loading…", "লোড হচ্ছে…")}
               </>
             ) : (
-              "Load Student List"
+              <>
+                <FaSearch className="text-[12px]" />
+                {t("Load students", "শিক্ষার্থী লোড করুন")}
+              </>
             )}
           </button>
         </div>
+
+        {loadingSubjects && (
+          <p className="text-xs text-muted-foreground">
+            {t("Loading subjects for this class…", "এই ক্লাসের বিষয়গুলো লোড হচ্ছে…")}
+          </p>
+        )}
       </motion.div>
+
+      {/* Student list */}
+      <AnimatePresence>
+        {students.length > 0 && (
+          <motion.div
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={springGentle}
+            className="rounded-lg border border-border/80 bg-card"
+          >
+            <div className="border-b border-border/70 px-5 py-3">
+              <h2 className="text-sm font-medium">
+                {t("Choose a student", "একজন শিক্ষার্থী বাছাই করুন")}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {students.length} {t("result(s)", "টি ফলাফল")}
+              </p>
+            </div>
+            <div className="max-h-72 overflow-y-auto">
+              <ul className="divide-y divide-border/50">
+                {students.map((st) => {
+                  const isSel = selectedStudent?.id === st.id;
+                  return (
+                    <li key={st.id}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectStudent(st)}
+                        className={`w-full flex items-center gap-3 px-5 py-2.5 text-left text-sm transition-colors ${
+                          isSel
+                            ? "bg-primary/10 text-foreground font-semibold"
+                            : "hover:bg-muted/40 text-foreground"
+                        }`}
+                      >
+                        <FaUserGraduate className="text-[12px] text-muted-foreground shrink-0" />
+                        <span className="font-medium">
+                          {st.firstName} {st.lastName}
+                        </span>
+                        <span className="ml-auto flex gap-3 text-xs text-muted-foreground tabular-nums">
+                          {st.studentCode && (
+                            <span className="font-mono">{st.studentCode}</span>
+                          )}
+                          {st.rollNo != null && <span>Roll {st.rollNo}</span>}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Marks table */}
       <AnimatePresence>
-        {students.length > 0 && (
+        {selectedStudent && marksRows.length > 0 && (
           <motion.form
-            onSubmit={handleSubmitMarks}
-            initial={
-              shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }
-            }
+            onSubmit={handleSubmit}
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
-            transition={shouldReduceMotion ? { duration: 0.12 } : springGentle}
+            transition={springGentle}
             className="overflow-hidden rounded-lg border border-border/80 bg-card"
           >
-            <div className="flex flex-col gap-3 border-b border-border/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <div className="space-y-0.5">
-                <h2 className="text-sm font-medium text-foreground">
-                  Enter marks
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  {currentSubject?.name}
-                  {currentSubject?.fullMarks != null && (
-                    <> · Full marks {currentSubject.fullMarks}</>
+            <div className="flex flex-col gap-3 border-b border-border/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-sm font-medium">
+                  {selectedStudent.firstName} {selectedStudent.lastName}
+                  {selectedStudent.studentCode && (
+                    <span className="ml-2 text-xs font-normal text-muted-foreground font-mono">
+                      {selectedStudent.studentCode}
+                    </span>
                   )}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {marksRows.length} {t("subjects", "বিষয়")}
                 </p>
               </div>
-
               <button
                 type="submit"
-                disabled={submitting}
-                className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md bg-foreground px-4 text-sm font-medium text-background transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/30 disabled:pointer-events-none disabled:opacity-40"
+                disabled={!canSubmit}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-foreground px-4 text-sm font-medium text-background hover:opacity-90 disabled:opacity-40 disabled:pointer-events-none"
               >
                 {submitting ? (
                   <>
-                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-background/30 border-t-background" />
-                    Saving…
+                    <FaSpinner className="animate-spin text-[12px]" />
+                    {t("Saving…", "সংরক্ষণ হচ্ছে…")}
                   </>
                 ) : (
-                  "Save All Marks & Calculate GPA"
+                  <>
+                    <FaSave className="text-[12px]" />
+                    {t("Save all marks", "সব নম্বর সংরক্ষণ করুন")}
+                  </>
                 )}
               </button>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px] text-left text-sm">
+              <table className="w-full min-w-[720px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-border/70 bg-muted/20">
-                    <th className="px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground sm:px-6">
-                      Roll
+                    <th className="px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                      {t("Subject", "বিষয়")}
                     </th>
                     <th className="px-3 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                      Student Name
+                      {t("Full marks", "পূর্ণমান")}
                     </th>
                     <th className="px-3 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                      Student ID
+                      {t("Model Test", "মডেল টেস্ট")}
                     </th>
-                    {showMT && (
-                      <th className="px-3 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                        MT Marks
-                      </th>
-                    )}
                     <th className="px-3 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                      Terminal
+                      {t("Terminal", "টার্মিনাল")}
                     </th>
-                    <th className="px-5 py-2.5 text-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground sm:px-6">
-                      Total
+                    <th className="px-5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                      {t("Total", "মোট")}
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  {students.map((st, index) => {
-                    const mt = marksData[st.id]?.mtMarks || 0;
-                    const term = marksData[st.id]?.terminal || 0;
-                    const total = mt + term;
-
+                  {marksRows.map((row) => {
+                    const total = (row.hasMT ? row.mtMarks : 0) + row.terminal;
+                    const over = total > row.fullMarks;
                     return (
-                      <motion.tr
-                        key={st.id}
-                        initial={
-                          shouldReduceMotion
-                            ? { opacity: 0 }
-                            : { opacity: 0, y: 4 }
-                        }
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={
-                          shouldReduceMotion
-                            ? { duration: 0.08 }
-                            : {
-                                ...springSoft,
-                                delay: Math.min(index * 0.015, 0.28),
-                              }
-                        }
-                        className="transition-colors hover:bg-muted/30"
-                      >
-                        <td className="px-5 py-2.5 font-medium tabular-nums text-foreground sm:px-6">
-                          {st.rollNo ?? "—"}
+                      <tr key={row.subjectId} className="hover:bg-muted/30">
+                        <td className="px-5 py-2.5 font-medium text-foreground">
+                          {row.subjectName}
+                          {!row.hasMT && (
+                            <span className="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+                              {t("No MT", "MT নেই")}
+                            </span>
+                          )}
                         </td>
-                        <td className="px-3 py-2.5 font-medium text-foreground">
-                          {st.firstName} {st.lastName}
+                        <td className="px-3 py-2.5 font-mono text-muted-foreground tabular-nums">
+                          {row.fullMarks}
                         </td>
-                        <td className="px-3 py-2.5 text-sm text-muted-foreground">
-                          {st.studentIdNo}
-                        </td>
-                        {showMT && (
-                          <td className="px-3 py-2.5">
+                        <td className="px-3 py-2.5">
+                          {row.hasMT ? (
                             <input
                               type="number"
                               min={0}
-                              className="h-8 w-[5.25rem] rounded-md border border-input bg-background px-2.5 font-mono text-sm tabular-nums text-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-foreground/20"
-                              value={marksData[st.id]?.mtMarks || ""}
+                              max={row.fullMarks}
+                              className="h-8 w-[5.5rem] rounded-md border border-input bg-background px-2.5 font-mono text-sm tabular-nums focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                              value={row.mtMarks || ""}
                               onChange={(e) =>
-                                handleInputChange(
-                                  st.id,
-                                  "mtMarks",
-                                  e.target.value
-                                )
+                                handleMarkChange(row.subjectId, "mtMarks", e.target.value)
                               }
-                              aria-label={`MT marks for ${st.firstName} ${st.lastName}`}
                             />
-                          </td>
-                        )}
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </td>
                         <td className="px-3 py-2.5">
                           <input
                             type="number"
                             min={0}
-                            required
-                            className="h-8 w-[5.5rem] rounded-md border border-input bg-background px-2.5 font-mono text-sm tabular-nums text-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-foreground/20"
-                            value={marksData[st.id]?.terminal || ""}
+                            max={row.fullMarks}
+                            className="h-8 w-[5.5rem] rounded-md border border-input bg-background px-2.5 font-mono text-sm tabular-nums focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                            value={row.terminal || ""}
                             onChange={(e) =>
-                              handleInputChange(
-                                st.id,
-                                "terminal",
-                                e.target.value
-                              )
+                              handleMarkChange(row.subjectId, "terminal", e.target.value)
                             }
-                            aria-label={`Terminal marks for ${st.firstName} ${st.lastName}`}
                           />
                         </td>
-                        <td className="px-5 py-2.5 text-center sm:px-6">
-                          <span className="inline-block min-w-[2.25rem] font-mono text-sm font-semibold tabular-nums text-foreground">
-                            {total}
-                          </span>
+                        <td
+                          className={`px-5 py-2.5 text-right font-mono text-sm font-semibold tabular-nums ${
+                            over ? "text-destructive" : "text-foreground"
+                          }`}
+                        >
+                          {total}
+                          {over && <span className="ml-1 text-[10px]">⚠</span>}
                         </td>
-                      </motion.tr>
+                      </tr>
                     );
                   })}
                 </tbody>
+                <tfoot>
+                  <tr className="border-t border-border/70 bg-muted/20">
+                    <td className="px-5 py-2.5 text-xs font-medium text-muted-foreground" colSpan={4}>
+                      {t("Grand total", "সর্বমোট")}
+                    </td>
+                    <td className="px-5 py-2.5 text-right font-mono text-sm font-semibold tabular-nums">
+                      {totalRow.totalObtained} / {totalRow.totalFull}
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </motion.form>

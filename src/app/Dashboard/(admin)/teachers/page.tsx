@@ -5,25 +5,16 @@ import {
   FaChalkboardTeacher,
   FaSpinner,
   FaSearch,
-  FaEnvelope,
-  FaPhone,
-  FaGraduationCap,
-  FaBook,
-  FaEye,
   FaTimes,
-  FaCheckCircle,
-  FaClock,
-  FaBuilding,
-  FaIdCard,
-  FaVenusMars,
-  FaTint,
   FaUser,
   FaEdit,
   FaTrashAlt,
   FaSave,
+  FaCamera,
   FaExclamationTriangle,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import axiosInstance from "@/src/lib/axiosInstance";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
@@ -32,14 +23,15 @@ type Teacher = {
   id: string;
   name: string;
   designation: string;
-  department?: string;
-  qualification?: string;
+  department?: string | null;
+  qualification?: string | null;
   phone: string;
-  nidOrPassport?: string;
+  nidOrPassport?: string | null;
   gender: string;
-  bloodGroup?: string;
-  photoUrl?: string;
+  bloodGroup?: string | null;
+  photoUrl?: string | null;
   createdAt: string;
+  classTeacherOf?: { id: string; name: string } | null;
   user: {
     id: string;
     email: string;
@@ -47,110 +39,237 @@ type Teacher = {
   };
 };
 
+type ClassOption = {
+  id: string;
+  name: string;
+  hasClassTeacher?: boolean;
+};
+
+type EditForm = {
+  name: string;
+  email: string;
+  phone: string;
+  designation: string;
+  department: string;
+  qualification: string;
+  gender: string;
+  bloodGroup: string;
+  nidOrPassport: string;
+  classTeacherOfId: string;
+};
+
+const initialOf = (name?: string) =>
+  (Array.from((name || "").trim())[0] || "T").toUpperCase();
+
+// Shrinks a selected photo before it is sent as Base64
+const compressImage = (file: File, max = 400): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read the file"));
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Invalid image file"));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height) {
+          if (width > max) {
+            height = Math.round((height * max) / width);
+            width = max;
+          }
+        } else if (height > max) {
+          width = Math.round((width * max) / height);
+          height = max;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d")?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.7));
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+
+const inputClass =
+  "w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40";
+
 export default function AllTeachersPage() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [classes, setClasses] = useState<ClassOption[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
-  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
-  const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch all teachers from backend
+  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [form, setForm] = useState<EditForm | null>(null);
+  const [newPhoto, setNewPhoto] = useState<string | null>(null);
+  const [photoName, setPhotoName] = useState<string>("");
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
+
+  const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const fetchTeachers = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await axiosInstance.get("/teachers");
+      const res = await axiosInstance.get("/teachers/admin/all");
       setTeachers(res.data?.data || []);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to load teachers list.");
+      setError(
+        err.response?.data?.message || "শিক্ষকদের তালিকা লোড করা যায়নি।",
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchTeachers();
-  }, []);
-
-  // Execute Delete Action
-  const confirmDeleteTeacher = async () => {
-    if (!deletingTeacher) return;
-
+  // Class list flags the classes that already have a class teacher
+  const fetchClasses = async () => {
     try {
-      setDeletingId(deletingTeacher.id);
-      await axiosInstance.delete(`/teachers/${deletingTeacher.id}`);
-      setTeachers((prev) => prev.filter((item) => item.id !== deletingTeacher.id));
-      if (selectedTeacher?.id === deletingTeacher.id) setSelectedTeacher(null);
-      setDeletingTeacher(null);
-    } catch (err: any) {
-      alert(
-        err.response?.data?.message ||
-          "শিক্ষকের প্রোফাইল ডিলিট করা সম্ভব হয়নি।"
-      );
-    } finally {
-      setDeletingId(null);
+      const res = await axiosInstance.get("/academic/public/classes");
+      setClasses(res.data?.data || []);
+    } catch (err) {
+      console.error("Failed to load classes", err);
     }
   };
 
-  // Handle Update Teacher Submit
+  useEffect(() => {
+    fetchTeachers();
+    fetchClasses();
+  }, []);
+
+  const openEdit = (teacher: Teacher) => {
+    setEditingTeacher(teacher);
+    setNewPhoto(null);
+    setPhotoName("");
+    setForm({
+      name: teacher.name || "",
+      email: teacher.user?.email || "",
+      phone: teacher.phone || "",
+      designation: teacher.designation || "",
+      department: teacher.department || "",
+      qualification: teacher.qualification || "",
+      gender: teacher.gender || "MALE",
+      bloodGroup: teacher.bloodGroup || "",
+      nidOrPassport: teacher.nidOrPassport || "",
+      classTeacherOfId: teacher.classTeacherOf?.id || "",
+    });
+  };
+
+  const closeEdit = () => {
+    if (isUpdating) return;
+    setEditingTeacher(null);
+    setForm(null);
+    setNewPhoto(null);
+    setPhotoName("");
+  };
+
+  const setField = (field: keyof EditForm, value: string) =>
+    setForm((prev) => (prev ? { ...prev, [field]: value } : prev));
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("অনুগ্রহ করে একটি ছবি (JPG/PNG) নির্বাচন করুন।");
+      return;
+    }
+
+    try {
+      setNewPhoto(await compressImage(file));
+      setPhotoName(file.name);
+    } catch {
+      toast.error("ছবিটি প্রসেস করা যায়নি, অন্য ছবি চেষ্টা করুন।");
+    }
+  };
+
   const handleUpdateTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingTeacher) return;
+    if (!editingTeacher || !form) return;
 
     try {
       setIsUpdating(true);
-      const payload = {
-        name: editingTeacher.name,
-        designation: editingTeacher.designation,
-        department: editingTeacher.department,
-        qualification: editingTeacher.qualification,
-        phone: editingTeacher.phone,
-        gender: editingTeacher.gender,
-        bloodGroup: editingTeacher.bloodGroup,
-        nidOrPassport: editingTeacher.nidOrPassport,
+
+      const payload: Record<string, unknown> = {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        designation: form.designation.trim(),
+        department: form.department.trim(),
+        qualification: form.qualification.trim(),
+        gender: form.gender,
+        bloodGroup: form.bloodGroup.trim(),
+        nidOrPassport: form.nidOrPassport.trim(),
+        // null removes the class teacher assignment
+        classTeacherOfId: form.classTeacherOfId || null,
       };
+      if (newPhoto) payload.photoUrl = newPhoto;
 
       const res = await axiosInstance.patch(
         `/teachers/${editingTeacher.id}`,
-        payload
+        payload,
       );
+      const updated = res.data?.data;
 
-      const updatedData = res.data?.data || payload;
-
-      setTeachers((prev) =>
-        prev.map((item) =>
-          item.id === editingTeacher.id ? { ...item, ...updatedData } : item
-        )
-      );
-
-      setEditingTeacher(null);
-      if (selectedTeacher?.id === editingTeacher.id) {
-        setSelectedTeacher({ ...selectedTeacher, ...updatedData });
+      if (updated) {
+        setTeachers((prev) =>
+          prev.map((item) =>
+            item.id === editingTeacher.id ? { ...item, ...updated } : item,
+          ),
+        );
+      } else {
+        await fetchTeachers();
       }
+
+      await fetchClasses();
+      toast.success("শিক্ষকের তথ্য সফলভাবে আপডেট হয়েছে।");
+      setEditingTeacher(null);
+      setForm(null);
+      setNewPhoto(null);
+      setPhotoName("");
     } catch (err: any) {
-      alert(
-        err.response?.data?.message ||
-          "শিক্ষকের তথ্য আপডেট করা সম্ভব হয়নি।"
+      toast.error(
+        err.response?.data?.message || "শিক্ষকের তথ্য আপডেট করা সম্ভব হয়নি।",
       );
     } finally {
       setIsUpdating(false);
     }
   };
 
-  // Filter teachers by search query
+  const confirmDeleteTeacher = async () => {
+    if (!deletingTeacher) return;
+
+    try {
+      setDeletingId(deletingTeacher.id);
+      await axiosInstance.delete(`/teachers/${deletingTeacher.id}`);
+      setTeachers((prev) =>
+        prev.filter((item) => item.id !== deletingTeacher.id),
+      );
+      await fetchClasses();
+      toast.success("শিক্ষকের প্রোফাইল মুছে ফেলা হয়েছে।");
+      setDeletingTeacher(null);
+    } catch (err: any) {
+      toast.error(
+        err.response?.data?.message ||
+          "শিক্ষকের প্রোফাইল ডিলিট করা সম্ভব হয়নি।",
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const filteredTeachers = teachers.filter((teacher) => {
-    const term = searchTerm.toLowerCase();
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
     return (
       teacher.name?.toLowerCase().includes(term) ||
-      teacher.user?.email?.toLowerCase().includes(term) ||
+      teacher.designation?.toLowerCase().includes(term) ||
+      teacher.classTeacherOf?.name?.toLowerCase().includes(term) ||
       teacher.phone?.includes(term) ||
-      (teacher.department &&
-        teacher.department.toLowerCase().includes(term)) ||
-      teacher.designation?.toLowerCase().includes(term)
+      teacher.user?.email?.toLowerCase().includes(term)
     );
   });
 
@@ -164,15 +283,13 @@ export default function AllTeachersPage() {
             <span>শিক্ষক তালিকা (All Teachers)</span>
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
-            প্রতিষ্ঠানের সকল শিক্ষকমণ্ডলীর তালিকা, প্রোফাইল ও বিস্তারিত তথ্য একনজরে দেখুন।
+            প্রতিটি শিক্ষকের নাম, পদবী ও ক্লাস টিচারের দায়িত্ব দেখুন। সব তথ্য
+            এডিট করা যাবে।
           </p>
         </div>
 
-        {/* Total Stats */}
-        <div className="flex items-center gap-3">
-          <div className="px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-bold">
-            মোট শিক্ষক: {teachers.length}
-          </div>
+        <div className="px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-bold self-start md:self-auto">
+          মোট শিক্ষক: {teachers.length}
         </div>
       </div>
 
@@ -181,18 +298,20 @@ export default function AllTeachersPage() {
         <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
         <input
           type="text"
-          placeholder="নাম, ইমেইল, মোবাইল বা ডিপার্টমেন্ট দিয়ে খুঁজুন..."
+          placeholder="নাম, পদবী, ক্লাস, ফোন বা ইমেইল দিয়ে খুঁজুন..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-9 pr-4 py-2 rounded-xl border border-border bg-card text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
         />
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16 space-y-3">
           <FaSpinner className="animate-spin text-2xl text-[#c9a961]" />
-          <p className="text-xs text-muted-foreground">শিক্ষকদের তথ্য লোড হচ্ছে...</p>
+          <p className="text-xs text-muted-foreground">
+            শিক্ষকদের তথ্য লোড হচ্ছে...
+          </p>
         </div>
       ) : error ? (
         <Card className="border-destructive/20 bg-destructive/10 p-6 text-center text-xs text-destructive rounded-2xl">
@@ -201,9 +320,13 @@ export default function AllTeachersPage() {
       ) : filteredTeachers.length === 0 ? (
         <Card className="border-border bg-card/50 shadow-sm rounded-2xl p-12 text-center">
           <FaUser className="mx-auto text-4xl text-muted-foreground/40 mb-3" />
-          <h3 className="text-base font-bold text-foreground">কোনো শিক্ষক পাওয়া যায়নি</h3>
+          <h3 className="text-base font-bold text-foreground">
+            কোনো শিক্ষক পাওয়া যায়নি
+          </h3>
           <p className="text-xs text-muted-foreground mt-1">
-            {searchTerm ? "আপনার অনুসন্ধান অনুযায়ী কোনো তথ্য মেলেনি।" : "এখনো কোনো শিক্ষক নিবন্ধিত হয়নি।"}
+            {searchTerm
+              ? "আপনার অনুসন্ধান অনুযায়ী কোনো তথ্য মেলেনি।"
+              : "এখনো কোনো শিক্ষক অনুমোদিত হয়নি।"}
           </p>
         </Card>
       ) : (
@@ -218,71 +341,47 @@ export default function AllTeachersPage() {
             >
               <Card className="border-border shadow-md hover:shadow-lg transition-all rounded-2xl bg-card overflow-hidden">
                 <CardContent className="p-5 space-y-4">
-                  {/* Avatar & Status Header */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3.5 overflow-hidden">
-                      <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden shrink-0 border border-border flex items-center justify-center text-[#c9a961] font-bold text-lg">
-                        {teacher.photoUrl ? (
-                          <img
-                            src={teacher.photoUrl}
-                            alt={teacher.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          teacher.name?.charAt(0) || "T"
-                        )}
-                      </div>
-                      <div className="overflow-hidden">
-                        <h3 className="text-sm font-bold text-foreground truncate">{teacher.name}</h3>
-                        <p className="text-xs text-[#c9a961] font-semibold">{teacher.designation}</p>
-                      </div>
+                  <div className="flex items-center gap-3.5 overflow-hidden">
+                    <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden shrink-0 border border-border flex items-center justify-center text-[#c9a961] font-bold text-lg select-none">
+                      {teacher.photoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={teacher.photoUrl}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        initialOf(teacher.name)
+                      )}
                     </div>
-
-                    {/* Approval Badge */}
-                    {teacher.user?.isApproved ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-bold shrink-0">
-                        <FaCheckCircle className="text-[9px]" /> Active
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[10px] font-bold shrink-0">
-                        <FaClock className="text-[9px]" /> Pending
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Quick Info */}
-                  <div className="space-y-2 pt-2 border-t border-border text-xs text-muted-foreground">
-                    {teacher.department && (
-                      <div className="flex items-center gap-2 truncate">
-                        <FaBook className="text-[#c9a961] shrink-0" />
-                        <span className="truncate">{teacher.department}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 truncate">
-                      <FaEnvelope className="text-[#c9a961] shrink-0" />
-                      <span className="truncate">{teacher.user?.email || "N/A"}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <FaPhone className="text-[#c9a961] shrink-0" />
-                      <span>{teacher.phone}</span>
+                    <div className="overflow-hidden">
+                      <h3 className="text-sm font-bold text-foreground truncate">
+                        {teacher.name}
+                      </h3>
+                      <p className="text-xs text-[#c9a961] font-semibold truncate">
+                        {teacher.designation}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="pt-2 flex items-center gap-2">
+                  <div className="pt-3 border-t border-border text-xs">
+                    <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
+                      ক্লাস টিচার
+                    </span>
+                    <span className="font-semibold text-foreground flex items-center gap-1.5 mt-0.5">
+                      <FaChalkboardTeacher className="text-[#c9a961] shrink-0" />
+                      {teacher.classTeacherOf?.name || "নেই"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
                     <Button
-                      onClick={() => setSelectedTeacher(teacher)}
-                      className="flex-1 bg-card hover:bg-muted text-foreground border border-border h-9 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1.5"
-                    >
-                      <FaEye className="text-xs text-[#c9a961]" />
-                      <span>ভিউ</span>
-                    </Button>
-                    <Button
-                      onClick={() => setEditingTeacher(teacher)}
-                      className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 h-9 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1 px-3"
-                      title="শিক্ষক তথ্য এডিট করুন"
+                      onClick={() => openEdit(teacher)}
+                      className="flex-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 h-9 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1.5"
+                      title="শিক্ষকের তথ্য এডিট করুন"
                     >
                       <FaEdit className="text-xs" />
+                      <span>এডিট</span>
                     </Button>
                     <Button
                       onClick={() => setDeletingTeacher(teacher)}
@@ -299,137 +398,9 @@ export default function AllTeachersPage() {
         </div>
       )}
 
-      {/* Teacher Full Profile Modal */}
-      <AnimatePresence>
-        {selectedTeacher && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-card border border-border shadow-2xl rounded-2xl max-w-lg w-full overflow-hidden relative"
-            >
-              {/* Modal Header */}
-              <div className="p-5 bg-muted/40 border-b border-border flex items-center justify-between">
-                <div className="flex items-center gap-2 text-foreground font-bold text-base">
-                  <FaUser className="text-[#c9a961]" />
-                  <span>শিক্ষকের পূর্ণাঙ্গ প্রোফাইল</span>
-                </div>
-                <button
-                  onClick={() => setSelectedTeacher(null)}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  <FaTimes />
-                </button>
-              </div>
-
-              {/* Modal Body */}
-              <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-                <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border">
-                  <div className="w-16 h-16 rounded-xl bg-card border border-border overflow-hidden flex items-center justify-center text-[#c9a961] font-bold text-2xl shrink-0">
-                    {selectedTeacher.photoUrl ? (
-                      <img
-                        src={selectedTeacher.photoUrl}
-                        alt={selectedTeacher.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      selectedTeacher.name?.charAt(0) || "T"
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-base font-extrabold text-foreground">{selectedTeacher.name}</h3>
-                    <p className="text-xs text-[#c9a961] font-bold mt-0.5">{selectedTeacher.designation}</p>
-                    <div className="mt-1.5">
-                      {selectedTeacher.user?.isApproved ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
-                          <FaCheckCircle /> Approved Account
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[10px] font-bold">
-                          <FaClock /> Approval Pending
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#c9a961]">
-                    পেশাগত যোগ্যতা ও বিভাগ
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3 text-xs bg-card p-3 rounded-xl border border-border">
-                    <div>
-                      <span className="text-muted-foreground block text-[10px] uppercase font-semibold">ডিপার্টমেন্ট</span>
-                      <span className="font-medium text-foreground flex items-center gap-1.5 mt-0.5">
-                        <FaBuilding className="text-[#c9a961]" /> {selectedTeacher.department || "N/A"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block text-[10px] uppercase font-semibold">যোগ্যতা (Qualification)</span>
-                      <span className="font-medium text-foreground flex items-center gap-1.5 mt-0.5">
-                        <FaGraduationCap className="text-[#c9a961]" /> {selectedTeacher.qualification || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#c9a961]">
-                    ব্যক্তিগত ও যোগাযোগের তথ্য
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3 text-xs bg-card p-3 rounded-xl border border-border">
-                    <div>
-                      <span className="text-muted-foreground block text-[10px] uppercase font-semibold">ইমেইল</span>
-                      <span className="font-medium text-foreground flex items-center gap-1.5 mt-0.5 truncate">
-                        <FaEnvelope className="text-[#c9a961] shrink-0" /> {selectedTeacher.user?.email || "N/A"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block text-[10px] uppercase font-semibold">ফোন নম্বর</span>
-                      <span className="font-medium text-foreground flex items-center gap-1.5 mt-0.5">
-                        <FaPhone className="text-[#c9a961]" /> {selectedTeacher.phone}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block text-[10px] uppercase font-semibold">জেন্ডার</span>
-                      <span className="font-medium text-foreground flex items-center gap-1.5 mt-0.5">
-                        <FaVenusMars className="text-[#c9a961]" /> {selectedTeacher.gender}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block text-[10px] uppercase font-semibold">রক্তের গ্রুপ</span>
-                      <span className="font-medium text-foreground flex items-center gap-1.5 mt-0.5">
-                        <FaTint className="text-[#c9a961]" /> {selectedTeacher.bloodGroup || "N/A"}
-                      </span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-muted-foreground block text-[10px] uppercase font-semibold">NID / পাসপোর্ট নম্বর</span>
-                      <span className="font-medium text-foreground flex items-center gap-1.5 mt-0.5">
-                        <FaIdCard className="text-[#c9a961]" /> {selectedTeacher.nidOrPassport || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="p-4 bg-muted/40 border-t border-border flex items-center justify-end">
-                <Button
-                  onClick={() => setSelectedTeacher(null)}
-                  className="bg-card hover:bg-muted text-foreground border border-border text-xs px-5 h-9 rounded-xl font-semibold"
-                >
-                  বন্ধ করুন (Close)
-                </Button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
       {/* Edit Teacher Modal */}
       <AnimatePresence>
-        {editingTeacher && (
+        {editingTeacher && form && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -440,79 +411,174 @@ export default function AllTeachersPage() {
               <div className="p-5 bg-muted/40 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-2 text-foreground font-bold text-base">
                   <FaEdit className="text-[#c9a961]" />
-                  <span>শিক্ষকের তথ্য সম্পাদনা (Edit Teacher)</span>
+                  <span>শিক্ষকের তথ্য সম্পাদনা</span>
                 </div>
                 <button
-                  onClick={() => setEditingTeacher(null)}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  type="button"
+                  onClick={closeEdit}
+                  disabled={isUpdating}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                  aria-label="Close"
                 >
                   <FaTimes />
                 </button>
               </div>
 
-              <form onSubmit={handleUpdateTeacher} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              <form
+                onSubmit={handleUpdateTeacher}
+                className="p-6 space-y-4 max-h-[75vh] overflow-y-auto"
+              >
+                {/* Photo */}
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-xl bg-muted overflow-hidden shrink-0 border border-border flex items-center justify-center text-[#c9a961] font-bold text-2xl select-none">
+                    {newPhoto || editingTeacher.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={(newPhoto || editingTeacher.photoUrl) as string}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      initialOf(form.name)
+                    )}
+                  </div>
+                  <label className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-muted/40 text-xs text-foreground cursor-pointer hover:border-[#c9a961] transition-all">
+                    <FaCamera className="text-[#c9a961]" />
+                    <span>{photoName || "ছবি পরিবর্তন করুন"}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-foreground">
+                      শিক্ষকের নাম *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={form.name}
+                      onChange={(e) => setField("name", e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-foreground">
+                      পদবী (Designation) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={form.designation}
+                      onChange={(e) => setField("designation", e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-foreground">শিক্ষকের নাম</label>
-                  <input
-                    type="text"
-                    required
-                    value={editingTeacher.name}
-                    onChange={(e) => setEditingTeacher({ ...editingTeacher, name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  />
+                  <label className="text-xs font-semibold text-foreground">
+                    ক্লাস টিচার (কোন ক্লাসের)
+                  </label>
+                  <select
+                    value={form.classTeacherOfId}
+                    onChange={(e) =>
+                      setField("classTeacherOfId", e.target.value)
+                    }
+                    className={`${inputClass} cursor-pointer`}
+                  >
+                    <option value="">নেই (সাধারণ শিক্ষক)</option>
+                    {classes.map((cls) => {
+                      const takenByOther =
+                        Boolean(cls.hasClassTeacher) &&
+                        cls.id !== editingTeacher.classTeacherOf?.id;
+                      return (
+                        <option
+                          key={cls.id}
+                          value={cls.id}
+                          disabled={takenByOther}
+                        >
+                          {cls.name}
+                          {takenByOther
+                            ? " (ইতিমধ্যে ক্লাস টিচার নির্ধারিত)"
+                            : ""}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <p className="text-[10px] text-muted-foreground">
+                    একটি ক্লাসের একজনই ক্লাস টিচার হতে পারেন।
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-foreground">পদবী (Designation)</label>
+                    <label className="text-xs font-semibold text-foreground">
+                      ডিপার্টমেন্ট
+                    </label>
+                    <input
+                      type="text"
+                      value={form.department}
+                      onChange={(e) => setField("department", e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-foreground">
+                      যোগ্যতা (Qualification)
+                    </label>
+                    <input
+                      type="text"
+                      value={form.qualification}
+                      onChange={(e) =>
+                        setField("qualification", e.target.value)
+                      }
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-foreground">
+                      ফোন নম্বর *
+                    </label>
                     <input
                       type="text"
                       required
-                      value={editingTeacher.designation}
-                      onChange={(e) => setEditingTeacher({ ...editingTeacher, designation: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      value={form.phone}
+                      onChange={(e) => setField("phone", e.target.value)}
+                      className={inputClass}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-foreground">ডিপার্টমেন্ট</label>
+                    <label className="text-xs font-semibold text-foreground">
+                      ইমেইল (লগইন) *
+                    </label>
                     <input
-                      type="text"
-                      value={editingTeacher.department || ""}
-                      onChange={(e) => setEditingTeacher({ ...editingTeacher, department: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-foreground">ফোন নম্বর</label>
-                    <input
-                      type="text"
+                      type="email"
                       required
-                      value={editingTeacher.phone}
-                      onChange={(e) => setEditingTeacher({ ...editingTeacher, phone: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-foreground">যোগ্যতা (Qualification)</label>
-                    <input
-                      type="text"
-                      value={editingTeacher.qualification || ""}
-                      onChange={(e) => setEditingTeacher({ ...editingTeacher, qualification: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      value={form.email}
+                      onChange={(e) => setField("email", e.target.value)}
+                      className={inputClass}
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-foreground">জেন্ডার</label>
+                    <label className="text-xs font-semibold text-foreground">
+                      জেন্ডার
+                    </label>
                     <select
-                      value={editingTeacher.gender}
-                      onChange={(e) => setEditingTeacher({ ...editingTeacher, gender: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      value={form.gender}
+                      onChange={(e) => setField("gender", e.target.value)}
+                      className={inputClass}
                     >
                       <option value="MALE">MALE</option>
                       <option value="FEMALE">FEMALE</option>
@@ -520,30 +586,35 @@ export default function AllTeachersPage() {
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-foreground">রক্তের গ্রুপ</label>
+                    <label className="text-xs font-semibold text-foreground">
+                      রক্তের গ্রুপ
+                    </label>
                     <input
                       type="text"
-                      value={editingTeacher.bloodGroup || ""}
-                      onChange={(e) => setEditingTeacher({ ...editingTeacher, bloodGroup: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      value={form.bloodGroup}
+                      onChange={(e) => setField("bloodGroup", e.target.value)}
+                      className={inputClass}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-foreground">NID / পাসপোর্ট নম্বর</label>
+                  <label className="text-xs font-semibold text-foreground">
+                    NID / পাসপোর্ট নম্বর
+                  </label>
                   <input
                     type="text"
-                    value={editingTeacher.nidOrPassport || ""}
-                    onChange={(e) => setEditingTeacher({ ...editingTeacher, nidOrPassport: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    value={form.nidOrPassport}
+                    onChange={(e) => setField("nidOrPassport", e.target.value)}
+                    className={inputClass}
                   />
                 </div>
 
                 <div className="pt-4 border-t border-border flex items-center justify-end gap-2">
                   <Button
                     type="button"
-                    onClick={() => setEditingTeacher(null)}
+                    onClick={closeEdit}
+                    disabled={isUpdating}
                     className="bg-card hover:bg-muted text-foreground border border-border text-xs px-4 h-9 rounded-xl font-semibold"
                   >
                     বাতিল
@@ -572,7 +643,7 @@ export default function AllTeachersPage() {
         )}
       </AnimatePresence>
 
-      {/* 🔴 Custom Delete Confirmation Alert Modal */}
+      {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {deletingTeacher && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -592,13 +663,13 @@ export default function AllTeachersPage() {
                     শিক্ষক প্রোফাইল মুছে ফেলতে চান?
                   </h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    আপনি কি নিশ্চিত যে শিক্ষক <span className="font-bold text-foreground">"{deletingTeacher.name}"</span> এর প্রোফাইল এবং সম্পর্কিত ব্যবহারকারী অ্যাকাউন্টটি স্থায়ীভাবে মুছে ফেলতে চান?
+                    আপনি কি নিশ্চিত যে শিক্ষক{" "}
+                    <span className="font-bold text-foreground">
+                      &quot;{deletingTeacher.name}&quot;
+                    </span>{" "}
+                    ({deletingTeacher.designation}) এর প্রোফাইল এবং লগইন
+                    অ্যাকাউন্টটি স্থায়ীভাবে মুছে ফেলতে চান?
                   </p>
-                </div>
-
-                <div className="p-3 bg-muted/40 rounded-xl border border-border text-left text-xs space-y-1">
-                  <p className="text-muted-foreground"><span className="font-semibold text-foreground">ইমেইল:</span> {deletingTeacher.user?.email}</p>
-                  <p className="text-muted-foreground"><span className="font-semibold text-foreground">পদবী:</span> {deletingTeacher.designation}</p>
                 </div>
 
                 <p className="text-[11px] text-destructive font-medium">
