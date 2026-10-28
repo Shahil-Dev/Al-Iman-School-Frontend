@@ -380,7 +380,7 @@ const { language, toggleLanguage } = useLanguage();
           <div className="border-b-2 border-emerald-800 pb-4 mb-6 flex justify-between items-start">
             <div>
               <h1 className="text-2xl font-black text-emerald-900 tracking-tight">
-                AL-IMAN ACADEMY SCHOOL AND College 
+                Al-Iman School and College 
               </h1>
               <p className="text-xs text-slate-600 font-medium">
                 Official Student Admission Application Slip
