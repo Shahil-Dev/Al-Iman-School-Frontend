@@ -41,7 +41,9 @@ export default function ProfilePage() {
         setProfileData(res.data?.data || res.data);
       } catch (err: any) {
         toast.error(
-          isBn ? "প্রোফাইল তথ্য লোড করতে ব্যর্থ হয়েছে" : "Failed to load profile data"
+          isBn
+            ? "প্রোফাইল তথ্য লোড করতে ব্যর্থ হয়েছে"
+            : "Failed to load profile data",
         );
       } finally {
         setLoading(false);
@@ -56,14 +58,18 @@ export default function ProfilePage() {
 
     if (newPassword !== confirmPassword) {
       toast.error(
-        isBn ? "নতুন পাসওয়ার্ড ও কনফার্ম পাসওয়ার্ড মিলেনি!" : "New passwords do not match!"
+        isBn
+          ? "নতুন পাসওয়ার্ড ও কনফার্ম পাসওয়ার্ড মিলেনি!"
+          : "New passwords do not match!",
       );
       return;
     }
 
     if (newPassword.length < 6) {
       toast.error(
-        isBn ? "পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে" : "Password must be at least 6 characters"
+        isBn
+          ? "পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে"
+          : "Password must be at least 6 characters",
       );
       return;
     }
@@ -76,7 +82,9 @@ export default function ProfilePage() {
       });
 
       toast.success(
-        isBn ? "পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!" : "Password changed successfully!"
+        isBn
+          ? "পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!"
+          : "Password changed successfully!",
       );
 
       setOldPassword("");
@@ -130,8 +138,8 @@ export default function ProfilePage() {
               {student
                 ? `${student.firstName} ${student.lastName}`
                 : teacher
-                ? `${teacher.firstName} ${teacher.lastName}`
-                : user?.name || "User Profile"}
+                  ? teacher.name
+                  : user?.name || "User Profile"}
             </h1>
             <p className="text-xs text-primary-foreground/80 font-mono flex items-center justify-center sm:justify-start gap-2">
               <FaEnvelope className="text-[11px]" />
@@ -159,7 +167,9 @@ export default function ProfilePage() {
                   {isBn ? "ইউজার আইডি/কোড" : "User Code / ID"}
                 </span>
                 <p className="font-mono font-bold text-foreground">
-                  {student?.studentCode || teacher?.employeeId || profileData?.id}
+                  {student?.studentCode ||
+                    teacher?.employeeId ||
+                    profileData?.id}
                 </p>
               </div>
 
@@ -190,7 +200,8 @@ export default function ProfilePage() {
                       {isBn ? "শ্রেণী ও রোল" : "Class & Roll"}
                     </span>
                     <p className="font-semibold text-foreground">
-                      Class: {student.class?.name || "N/A"} | Roll: {student.rollNo}
+                      Class: {student.class?.name || "N/A"} | Roll:{" "}
+                      {student.rollNo}
                     </p>
                   </div>
                   <div className="p-3 rounded-xl bg-muted/40 space-y-1">
@@ -207,6 +218,27 @@ export default function ProfilePage() {
                     </span>
                     <p className="font-semibold text-primary font-bold">
                       {student.bloodGroup || "N/A"}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {teacher && (
+                <>
+                  <div className="p-3 rounded-xl bg-muted/40 space-y-1">
+                    <span className="text-muted-foreground text-[10px] uppercase font-semibold">
+                      {isBn ? "পদবী" : "Designation"}
+                    </span>
+                    <p className="font-semibold text-foreground">
+                      {teacher.designation || "N/A"}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-muted/40 space-y-1">
+                    <span className="text-muted-foreground text-[10px] uppercase font-semibold">
+                      {isBn ? "ক্লাস টিচার" : "Class Teacher Of"}
+                    </span>
+                    <p className="font-semibold text-foreground">
+                      {teacher.classTeacherOf?.name || (isBn ? "নেই" : "None")}
                     </p>
                   </div>
                 </>
@@ -254,7 +286,9 @@ export default function ProfilePage() {
 
               <div>
                 <label className="block font-semibold mb-1 text-muted-foreground">
-                  {isBn ? "নতুন পাসওয়ার্ড নিশ্চিত করুন" : "Confirm New Password"}
+                  {isBn
+                    ? "নতুন পাসওয়ার্ড নিশ্চিত করুন"
+                    : "Confirm New Password"}
                 </label>
                 <input
                   type="password"
@@ -277,7 +311,9 @@ export default function ProfilePage() {
                     {isBn ? "পরিবর্তন হচ্ছে..." : "Updating..."}
                   </span>
                 ) : (
-                  <span>{isBn ? "পাসওয়ার্ড সেভ করুন" : "Update Password"}</span>
+                  <span>
+                    {isBn ? "পাসওয়ার্ড সেভ করুন" : "Update Password"}
+                  </span>
                 )}
               </Button>
             </form>
