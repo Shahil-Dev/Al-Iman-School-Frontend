@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  FaChalkboardTeacher,
   FaCalendarCheck,
   FaClipboardList,
   FaClock,
@@ -15,6 +14,7 @@ import { Card, CardContent } from "@/src/components/ui/card";
 import axiosInstance from "@/src/lib/axiosInstance";
 import { useUser } from "@/src/context/UserContext";
 import { useLanguage } from "@/src/context/LanguageContext";
+import DashboardWelcomeHero from "@/src/components/ui/DashboardWelcomeHero";
 
 export default function TeacherDashboardPage() {
   const { user } = useUser();
@@ -28,8 +28,6 @@ export default function TeacherDashboardPage() {
     const fetchTeacherData = async () => {
       try {
         setLoading(true);
-
-        // Fetch Notices safely without triggering broken 404 routine endpoint
         const noticeRes = await axiosInstance.get("/notices");
         setNotices(noticeRes.data?.data?.slice(0, 3) || []);
       } catch (err) {
@@ -45,36 +43,27 @@ export default function TeacherDashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Teacher Welcome Banner */}
-      <div className="p-6 rounded-2xl bg-primary/10 border border-primary/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
-            <FaChalkboardTeacher className="text-primary" />
-            <span>
-              {isBn ? "السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ," : "السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ,"} {user?.name || "Teacher"}!
-            </span>
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            {isBn
-              ? "আল-ঈমান স্কুল এন্ড কলেজের শিক্ষক প্যানেলে আপনাকে স্বাগতম। আপনার দৈনিক ক্লাস ও একাডেমিক কার্যক্রম পরিচালনা করুন।"
-              : "Welcome to Al-Iman School & College Teacher Portal. Manage your daily classes & academic tasks."}
-          </p>
-        </div>
-
-        <div className="flex gap-2">
-          <Link
-            href="/Dashboard/attendance"
-            className="px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:opacity-90 transition-all shadow-sm flex items-center gap-1.5"
-          >
-            <FaCalendarCheck />
-            <span>{isBn ? "উপস্থিতি নিন" : "Take Attendance"}</span>
-          </Link>
-        </div>
+      <DashboardWelcomeHero
+        roleLabelEn="Teacher Portal"
+        roleLabelBn="শিক্ষক পোর্টাল"
+        userName={user?.name || "Teacher"}
+        subtitleEn="Welcome to Al-Iman School & College Teacher Portal. Manage your daily classes & academic tasks."
+        subtitleBn="আল-ঈমান স্কুল এন্ড কলেজের শিক্ষক প্যানেলে আপনাকে স্বাগতম। আপনার দৈনিক ক্লাস ও একাডেমিক কার্যক্রম পরিচালনা করুন।"
+      />
+      {/* Action Bar */}
+      <div className="flex justify-end">
+        <Link
+          href="/Dashboard/attendance"
+          className="px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:opacity-90 transition-all shadow-sm flex items-center gap-1.5"
+        >
+          <FaCalendarCheck />
+          <span>{isBn ? "উপস্থিতি নিন" : "Take Attendance"}</span>
+        </Link>
       </div>
 
       {/* Overview Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-border/60 shadow-sm rounded-2xl bg-card p-5 border-l-4 border-l-primary">
+        <Card className="border-border/60 shadow-sm rounded-2xl bg-card p-5 border-l-4 border-l-primary hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-medium">
@@ -90,7 +79,7 @@ export default function TeacherDashboardPage() {
           </div>
         </Card>
 
-        <Card className="border-border/60 shadow-sm rounded-2xl bg-card p-5 border-l-4 border-l-emerald-500">
+        <Card className="border-border/60 shadow-sm rounded-2xl bg-card p-5 border-l-4 border-l-emerald-500 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-medium">
@@ -106,7 +95,7 @@ export default function TeacherDashboardPage() {
           </div>
         </Card>
 
-        <Card className="border-border/60 shadow-sm rounded-2xl bg-card p-5 border-l-4 border-l-amber-500">
+        <Card className="border-border/60 shadow-sm rounded-2xl bg-card p-5 border-l-4 border-l-amber-500 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-medium">
@@ -122,7 +111,7 @@ export default function TeacherDashboardPage() {
           </div>
         </Card>
 
-        <Card className="border-border/60 shadow-sm rounded-2xl bg-card p-5 border-l-4 border-l-blue-500">
+        <Card className="border-border/60 shadow-sm rounded-2xl bg-card p-5 border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-medium">
@@ -147,16 +136,18 @@ export default function TeacherDashboardPage() {
             <CardContent className="p-6">
               <h2 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
                 <FaClock className="text-primary" />
-                <span>{isBn ? "শিক্ষক শর্টকাট একশন" : "Teacher Quick Actions"}</span>
+                <span>
+                  {isBn ? "শিক্ষক শর্টকাট একশন" : "Teacher Quick Actions"}
+                </span>
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Link
                   href="/Dashboard/attendance"
-                  className="p-4 rounded-xl bg-muted/40 border border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all flex items-center justify-between group"
+                  className="p-4 rounded-xl bg-muted/30 border border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-primary/10 text-primary rounded-lg group-hover:scale-105 transition-transform">
+                    <div className="p-2.5 bg-primary/10 text-primary rounded-lg group-hover:scale-110 transition-transform">
                       <FaCalendarCheck />
                     </div>
                     <div>
@@ -164,7 +155,9 @@ export default function TeacherDashboardPage() {
                         {isBn ? "শিক্ষার্থী উপস্থিতি" : "Take Attendance"}
                       </h4>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {isBn ? "দৈনিক উপস্থিতি ইনপুট ও অটো এসএমএস" : "Class attendance entry"}
+                        {isBn
+                          ? "দৈনিক উপস্থিতি ইনপুট"
+                          : "Class attendance entry"}
                       </p>
                     </div>
                   </div>
@@ -173,10 +166,10 @@ export default function TeacherDashboardPage() {
 
                 <Link
                   href="/Dashboard/marks"
-                  className="p-4 rounded-xl bg-muted/40 border border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all flex items-center justify-between group"
+                  className="p-4 rounded-xl bg-muted/30 border border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-amber-500/10 text-amber-600 rounded-lg group-hover:scale-105 transition-transform">
+                    <div className="p-2.5 bg-amber-500/10 text-amber-600 rounded-lg group-hover:scale-110 transition-transform">
                       <FaClipboardList />
                     </div>
                     <div>
@@ -184,7 +177,9 @@ export default function TeacherDashboardPage() {
                         {isBn ? "পরীক্ষার নম্বর এন্ট্রি" : "Marks Entry"}
                       </h4>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {isBn ? "সাবজেক্ট ভিত্তিক মার্কস সাবমিট" : "Input exam subject marks"}
+                        {isBn
+                          ? "সাবজেক্ট ভিত্তিক মার্কস সাবমিট"
+                          : "Input exam subject marks"}
                       </p>
                     </div>
                   </div>
@@ -221,7 +216,7 @@ export default function TeacherDashboardPage() {
                   notices.map((n) => (
                     <div
                       key={n.id}
-                      className="p-3.5 rounded-xl bg-muted/40 border border-border/50 hover:border-border transition-all"
+                      className="p-3.5 rounded-xl bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors"
                     >
                       <h4 className="text-xs font-bold text-foreground line-clamp-1">
                         {n.title}

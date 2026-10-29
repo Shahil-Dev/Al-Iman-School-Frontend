@@ -8,18 +8,18 @@ import {
   FaFileInvoiceDollar,
   FaUserClock,
   FaArrowUp,
+  FaPlus,
   FaUserCheck,
   FaReceipt,
   FaBell,
   FaSync,
+  FaMoneyCheckAlt,
   FaExclamationTriangle,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaClock,
 } from "react-icons/fa";
 import { Card, CardContent } from "@/src/components/ui/card";
 import axiosInstance from "@/src/lib/axiosInstance";
 import { useLanguage } from "@/src/context/LanguageContext";
+import DashboardWelcomeHero from "@/src/components/ui/DashboardWelcomeHero";
 
 interface IAnalyticsResponse {
   overview?: {
@@ -42,16 +42,6 @@ interface IAnalyticsResponse {
     createdAt: string;
     status: string;
   }>;
-  attendance?: {
-    present: number;
-    absent: number;
-    late: number;
-    classWise: Array<{
-      classId: string;
-      status: string;
-      _count: { _all: number };
-    }>;
-  };
 }
 
 export default function AdminOverviewPage() {
@@ -120,18 +110,16 @@ export default function AdminOverviewPage() {
   return (
     <div className="space-y-6">
       {/* Top Header & Refresh */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">
-            {isBn ? "অ্যাডমিন ড্যাশবোর্ড ওভারভিউ" : "Admin Dashboard Overview"}
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            {isBn
-              ? "আল-ঈমান স্কুল এবং কলেজর আজকের সার্বিক তথ্য ও রিয়েলটাইম অ্যানালিটিক্স।"
-              : "Welcome back! Here is what is happening in Al-Iman School and Collegetoday."}
-          </p>
-        </div>
+       <DashboardWelcomeHero
+        roleLabelEn="Super Admin"
+        roleLabelBn="সুপার অ্যাডমিন"
+        userName="Administrator"
+        subtitleEn="Welcome to Al-Iman School & College management portal."
+        subtitleBn="আল-ঈমান স্কুল এবং কলেজের ম্যানেজমেন্ট পোর্টালে স্বাগতম।"
+      />
 
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+     
         <button
           onClick={fetchAnalytics}
           disabled={loading}
@@ -179,73 +167,6 @@ export default function AdminOverviewPage() {
           );
         })}
       </div>
-
-      {/* Daily Attendance Card */}
-      <Card className="border-border/60 shadow-sm rounded-2xl bg-card">
-        <CardContent className="p-5 sm:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-foreground">
-              {isBn ? "আজকের উপস্থিতি" : "Today's Attendance"}
-            </h3>
-            <Link
-              href="/Dashboard/attendance/records"
-              className="text-xs font-semibold text-primary hover:underline"
-            >
-              {isBn ? "বিস্তারিত দেখুন" : "View Details"}
-            </Link>
-          </div>
-
-          {loading ? (
-            <p className="text-xs text-muted-foreground py-4">
-              {isBn ? "ডাটা লোড হচ্ছে..." : "Loading attendance data..."}
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                <div className="p-3 rounded-lg bg-emerald-500 text-white">
-                  <FaCheckCircle className="text-lg" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                    {isBn ? "উপস্থিত" : "Present"}
-                  </p>
-                  <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
-                    {analytics?.attendance?.present ?? 0}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20">
-                <div className="p-3 rounded-lg bg-destructive text-white">
-                  <FaTimesCircle className="text-lg" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-destructive">
-                    {isBn ? "অনুপস্থিত" : "Absent"}
-                  </p>
-                  <p className="text-2xl font-bold text-destructive">
-                    {analytics?.attendance?.absent ?? 0}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                <div className="p-3 rounded-lg bg-amber-500 text-white">
-                  <FaClock className="text-lg" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-                    {isBn ? "দেরি" : "Late"}
-                  </p>
-                  <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">
-                    {analytics?.attendance?.late ?? 0}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Financial Overview Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -309,12 +230,14 @@ export default function AdminOverviewPage() {
               <span>{isBn ? "অনলাইন আবেদন যাচাই" : "Approve Admissions"}</span>
             </Link>
 
+          
+
             <Link
               href="/Dashboard/payments/create-invoice"
               className="px-4 py-2.5 bg-muted text-foreground text-xs font-semibold rounded-xl hover:bg-muted/80 transition-all flex items-center gap-2 border border-border/50"
             >
               <FaReceipt className="text-xs text-purple-500" />
-              <span>{isBn ? "ফি ইনভয়েস তৈরি করুন" : "Create Fee Invoice"}</span>
+              <span>{isBn ? "ফি ইনভয়েস তৈরি করুন" : "Create Fee Invoice"}</span>
             </Link>
 
             <Link

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import {
-  FaUserGraduate,
   FaCalendarCheck,
   FaPoll,
   FaSpinner,
@@ -14,6 +13,7 @@ import axiosInstance from "@/src/lib/axiosInstance";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useUser } from "@/src/context/UserContext";
 import Link from "next/link";
+import DashboardWelcomeHero from "@/src/components/ui/DashboardWelcomeHero";
 
 export default function StudentOverviewPage() {
   const { language } = useLanguage();
@@ -35,7 +35,6 @@ export default function StudentOverviewPage() {
         const profile = res.data?.data || res.data;
         setStudent(profile);
 
-        // Fetch attendance summary
         if (profile?.id) {
           const attRes = await axiosInstance
             .get(`/attendances/summary/${profile.id}`)
@@ -63,32 +62,21 @@ export default function StudentOverviewPage() {
 
   return (
     <div className="space-y-6 font-sans">
-      {/* Header Banner */}
-      <div className="bg-card border border-border p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <span className="bg-primary/10 text-primary text-[11px] px-3 py-1 rounded-full font-semibold uppercase tracking-wider">
-            {isBn ? "শিক্ষার্থী পোর্টাল" : "Student Portal"}
-          </span>
-          <h1 className="text-xl md:text-2xl font-bold text-foreground mt-2">
-            {isBn
-              ? `السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ, ${student?.firstName || ""} ${student?.lastName || ""}!`
-              : `السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ, ${student?.firstName || ""} ${student?.lastName || ""}!`}
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            {isBn
-              ? "তোমার অ্যাকাডেমিক প্রোফাইল, উপস্থিতি, ফলাফল এবং রুটিন একনজরে দেখো।"
-              : "View your academic profile, attendance, exam results, and schedule."}
-          </p>
-        </div>
-      </div>
-
       {/* Main Student Profile Info Card */}
+          <DashboardWelcomeHero
+        roleLabelEn="Student Portal"
+        roleLabelBn="শিক্ষার্থী পোর্টাল"
+        userName={`${student?.firstName || ""} ${student?.lastName || ""}`.trim() || "Student"}
+        subtitleEn="View your academic profile, attendance, exam results, and schedule."
+        subtitleBn="তোমার অ্যাকাডেমিক প্রোফাইল, উপস্থিতি, ফলাফল এবং রুটিন একনজরে দেখো।"
+      />
+
       {student && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="md:col-span-2 border-border/60 shadow-sm rounded-2xl bg-card overflow-hidden">
+          <Card className="md:col-span-2 border-border/60 shadow-sm rounded-2xl bg-card overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center gap-4 border-b border-border/50 pb-4">
-                <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-2xl ring-1 ring-primary/20 shrink-0">
+                <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-2xl ring-2 ring-primary/20 shrink-0">
                   {student.photoUrl ? (
                     <img
                       src={student.photoUrl}
@@ -125,20 +113,20 @@ export default function StudentOverviewPage() {
 
               {/* Personal Details */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
-                  <span className="text-[10px] text-muted-foreground block font-medium">
+                <div className="p-3.5 rounded-xl bg-muted/30 border border-border/50">
+                  <span className="text-[10px] text-muted-foreground block font-medium mb-1">
                     {isBn ? "রক্তের গ্রুপ" : "Blood Group"}
                   </span>
                   <strong className="text-foreground">{student.bloodGroup || "N/A"}</strong>
                 </div>
-                <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
-                  <span className="text-[10px] text-muted-foreground block font-medium">
+                <div className="p-3.5 rounded-xl bg-muted/30 border border-border/50">
+                  <span className="text-[10px] text-muted-foreground block font-medium mb-1">
                     {isBn ? "ধর্ম" : "Religion"}
                   </span>
                   <strong className="text-foreground">{student.religion || "N/A"}</strong>
                 </div>
-                <div className="p-3 rounded-xl bg-muted/40 border border-border/50">
-                  <span className="text-[10px] text-muted-foreground block font-medium">
+                <div className="p-3.5 rounded-xl bg-muted/30 border border-border/50">
+                  <span className="text-[10px] text-muted-foreground block font-medium mb-1">
                     {isBn ? "মোবাইল নম্বর" : "Contact Phone"}
                   </span>
                   <strong className="text-foreground font-mono">{student.phone || "N/A"}</strong>
@@ -148,36 +136,36 @@ export default function StudentOverviewPage() {
           </Card>
 
           {/* Attendance Stats Quick View */}
-          <Card className="border-border/60 shadow-sm rounded-2xl bg-card">
+          <Card className="border-border/60 shadow-sm rounded-2xl bg-card hover:shadow-md transition-shadow">
             <CardContent className="p-6 space-y-4">
               <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border/50 pb-3">
                 <FaCalendarCheck className="text-primary" />
                 <span>{isBn ? "উপস্থিতির হার" : "Attendance Rate"}</span>
               </h3>
 
-              <div className="text-center p-4 bg-primary/5 rounded-2xl border border-primary/10">
-                <span className="text-3xl font-extrabold text-primary font-mono">
+              <div className="text-center p-5 bg-primary/5 rounded-2xl border border-primary/10">
+                <span className="text-4xl font-extrabold text-primary font-mono">
                   {attendanceSummary?.percentage ?? 100}%
                 </span>
-                <p className="text-[11px] text-muted-foreground mt-1">
+                <p className="text-[11px] text-muted-foreground mt-2">
                   {isBn ? "মোট উপস্থিতির পার্সেন্টেজ" : "Overall Attendance"}
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                <div className="p-2.5 rounded-xl bg-muted/40 border border-border/50">
-                  <span className="text-[10px] text-muted-foreground block">
+              <div className="grid grid-cols-2 gap-3 text-center text-xs">
+                <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <span className="text-[10px] text-muted-foreground block mb-1">
                     {isBn ? "উপস্থিত" : "Present"}
                   </span>
-                  <strong className="text-primary font-mono">
+                  <strong className="text-primary font-mono text-sm">
                     {attendanceSummary?.presentDays ?? attendanceSummary?.totalPresence ?? 0}
                   </strong>
                 </div>
-                <div className="p-2.5 rounded-xl bg-muted/40 border border-border/50">
-                  <span className="text-[10px] text-muted-foreground block">
+                <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <span className="text-[10px] text-muted-foreground block mb-1">
                     {isBn ? "অনুপস্থিত" : "Absent"}
                   </span>
-                  <strong className="text-destructive font-mono">
+                  <strong className="text-destructive font-mono text-sm">
                     {attendanceSummary?.absentDays ?? attendanceSummary?.totalAbsent ?? 0}
                   </strong>
                 </div>
@@ -189,9 +177,9 @@ export default function StudentOverviewPage() {
 
       {/* Navigation Quick Access Links Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Link href="/Dashboard/student/routine">
-          <Card className="border-border/60 hover:border-primary/50 shadow-sm transition-all rounded-2xl bg-card p-5 flex items-center gap-4 group h-full">
-            <div className="p-3 rounded-xl bg-primary/10 text-primary text-xl group-hover:scale-105 transition-transform shrink-0">
+        <Link href="/Dashboard/studentDashboard/routine">
+          <Card className="border-border/60 hover:border-primary/50 hover:shadow-md shadow-sm transition-all rounded-2xl bg-card p-5 flex items-center gap-4 group h-full">
+            <div className="p-3 rounded-xl bg-primary/10 text-primary text-xl group-hover:scale-110 transition-transform shrink-0">
               <FaClock />
             </div>
             <div>
@@ -205,9 +193,9 @@ export default function StudentOverviewPage() {
           </Card>
         </Link>
 
-        <Link href="/Dashboard/student/results">
-          <Card className="border-border/60 hover:border-primary/50 shadow-sm transition-all rounded-2xl bg-card p-5 flex items-center gap-4 group h-full">
-            <div className="p-3 rounded-xl bg-primary/10 text-primary text-xl group-hover:scale-105 transition-transform shrink-0">
+        <Link href="/Dashboard/studentDashboard/results">
+          <Card className="border-border/60 hover:border-primary/50 hover:shadow-md shadow-sm transition-all rounded-2xl bg-card p-5 flex items-center gap-4 group h-full">
+            <div className="p-3 rounded-xl bg-primary/10 text-primary text-xl group-hover:scale-110 transition-transform shrink-0">
               <FaPoll />
             </div>
             <div>
@@ -221,9 +209,9 @@ export default function StudentOverviewPage() {
           </Card>
         </Link>
 
-        <Link href="/Dashboard/student/id-card">
-          <Card className="border-border/60 hover:border-primary/50 shadow-sm transition-all rounded-2xl bg-card p-5 flex items-center gap-4 group h-full">
-            <div className="p-3 rounded-xl bg-primary/10 text-primary text-xl group-hover:scale-105 transition-transform shrink-0">
+        <Link href="/Dashboard/studentDashboard/id-card">
+          <Card className="border-border/60 hover:border-primary/50 hover:shadow-md shadow-sm transition-all rounded-2xl bg-card p-5 flex items-center gap-4 group h-full">
+            <div className="p-3 rounded-xl bg-primary/10 text-primary text-xl group-hover:scale-110 transition-transform shrink-0">
               <FaIdCard />
             </div>
             <div>
