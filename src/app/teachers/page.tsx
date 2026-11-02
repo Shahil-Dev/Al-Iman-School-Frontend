@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   FaChalkboardTeacher,
   FaSpinner,
@@ -41,26 +41,49 @@ export default function PublicTeachersPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchTeachers = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await axiosInstance.get("/teachers");
-        setTeachers(res.data?.data || []);
-      } catch (err: any) {
-        setError(
-          err.response?.data?.message ||
-            (isBn
-              ? "শিক্ষকদের তালিকা লোড করা যায়নি।"
-              : "Failed to load teachers list."),
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTeachers();
+  const fetchTeachers = useCallback(async (showLoading = true) => {
+    try {
+      if (showLoading) setLoading(true);
+      setError(null);
+      
+      // Date.now() and no-cache headers bypass Next.js caching and browser caching
+      const res = await axiosInstance.get(`/teachers?t=${Date.now()}`, {
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
+      
+      setTeachers(res.data?.data || []);
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          (isBn
+            ? "শিক্ষকদের তালিকা লোড করা যায়নি।"
+            : "Failed to load teachers list."),
+      );
+    } finally {
+      if (showLoading) setLoading(false);
+    }
   }, [isBn]);
+
+  // Initial Fetch
+  useEffect(() => {
+    fetchTeachers();
+  }, [fetchTeachers]);
+
+  // Auto-refresh when user comes back to the tab (e.g., after updating from admin panel)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchTeachers(false); // Silent refresh without showing the loading spinner
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [fetchTeachers]);
 
   // Identify Head Teacher / Principal
   const isHeadOrPrincipal = (designation: string) => {

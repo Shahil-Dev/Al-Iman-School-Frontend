@@ -198,21 +198,24 @@ export default function AllTeachersPage() {
     try {
       setIsUpdating(true);
 
+      // Ensure empty strings become null for optional fields
       const payload: Record<string, unknown> = {
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
         designation: form.designation.trim(),
-        department: form.department.trim(),
-        qualification: form.qualification.trim(),
+        department: form.department.trim() || null,
+        qualification: form.qualification.trim() || null,
         gender: form.gender,
-        bloodGroup: form.bloodGroup.trim(),
-        nidOrPassport: form.nidOrPassport.trim(),
+        bloodGroup: form.bloodGroup.trim() || null,
+        nidOrPassport: form.nidOrPassport.trim() || null,
         // null removes the class teacher assignment
         classTeacherOfId: form.classTeacherOfId || null,
         // if true, forces the class to be reassigned to this teacher even if taken by another
         replaceClassTeacher: true,
       };
+      
+      // Only add photoUrl if a new photo was selected
       if (newPhoto) payload.photoUrl = newPhoto;
 
       const res = await axiosInstance.patch(
@@ -224,7 +227,9 @@ export default function AllTeachersPage() {
       if (updated) {
         setTeachers((prev) =>
           prev.map((item) =>
-            item.id === editingTeacher.id ? { ...item, ...updated } : item,
+            item.id === editingTeacher.id
+              ? { ...item, ...updated, user: updated.user || item.user }
+              : item,
           ),
         );
       } else {
@@ -238,6 +243,7 @@ export default function AllTeachersPage() {
       setNewPhoto(null);
       setPhotoName("");
     } catch (err: any) {
+      console.error("Update error:", err);
       toast.error(
         err.response?.data?.message || "শিক্ষকের তথ্য আপডেট করা সম্ভব হয়নি।",
       );
