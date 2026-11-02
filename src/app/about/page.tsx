@@ -40,7 +40,7 @@ const pageTranslations = {
     // 3. Principal Video
     videoBadge: "অধ্যক্ষের বক্তব্য",
     videoTitle: "আমাদের লক্ষ্য ও কার্যক্রম নিয়ে কিছু কথা",
-    principalName: "মুফতি শায়েক হারুন ইজহার",
+    principalName: "শাইখ হারুন ইজহার",
     principalTitle: "অধ্যক্ষ ও প্রতিষ্ঠাতা, আল-ঈমান স্কুল",
     principalQuote:
       "দ্বীনি আকীদা ও যুগের চাহিদার সমন্বয়ে একঝাঁক সৎ ও যোগ্য সন্তান গড়াই আমাদের মূল লক্ষ্য।",
@@ -72,16 +72,16 @@ const pageTranslations = {
   en: {
     // 1. Hero
     heroBadge: "Blend of Deen & Modern Education",
-    heroTitle: "Purpose of Establishing Al-Eman School",
+    heroTitle: "Purpose of Establishing Al-Iman School and College",
     heroSubtitle:
       "A pioneering ideological educational institution for protecting Faith, Creed, and Moral Education.",
 
     // 2. Statement
     statementTitle: "Background & Core Purpose of Establishment",
     statementQuote:
-      "The primary purpose of establishing Al-Eman School is not merely to deliver conventional lessons; rather, it is to bring about positive reform in the national curriculum through a synthesis of Islamic consciousness and modern education.",
+      "The primary purpose of establishing Al-Iman School and College is not merely to deliver conventional lessons; rather, it is to bring about positive reform in the national curriculum through a synthesis of Islamic consciousness and modern education.",
     para1:
-      "In conventional educational systems, worldly ideologies have often been prioritized in ways that weaken the depth of students' relationship with Allah Almighty and obscure pure Islamic Aqeedah. Through Al-Eman School, we aim to clarify why an ideological educational institution is essential today to protect Faith, Creed, and Moral Values.",
+      "In conventional educational systems, worldly ideologies have often been prioritized in ways that weaken the depth of students' relationship with Allah Almighty and obscure pure Islamic Aqeedah. Through Al-Iman School and College, we aim to clarify why an ideological educational institution is essential today to protect Faith, Creed, and Moral Values.",
     para2:
       "We incorporate the national curriculum so that our students remain connected to the national mainstream. Through this practical experience, we aim to present logical proposals to the state for transforming education based on Islamic values.",
     para3:
@@ -91,7 +91,7 @@ const pageTranslations = {
     videoBadge: "Principal's Speech",
     videoTitle: "Insights into Our Vision & Journey",
     principalName: "Mufti Shaykh Harun Izhar",
-    principalTitle: "Principal & Founder, Al-Eman School",
+    principalTitle: "Principal & Founder, Al-Iman School and College",
     principalQuote:
       "Our main goal is to nurture righteous and capable leaders through the blend of authentic Islamic creed and modern education.",
     videoPlaceholderText: "Click play button to watch the video message",
@@ -293,7 +293,7 @@ const MergedAboutRoute = memo(() => {
                 {t.statementQuote}
               </blockquote>
               <figcaption className="mt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                <cite className="not-italic">Al-Eman School</cite>
+                <cite className="not-italic">Al-Iman School and College</cite>
               </figcaption>
             </div>
           </motion.figure>

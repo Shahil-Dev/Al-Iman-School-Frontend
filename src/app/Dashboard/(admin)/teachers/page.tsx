@@ -12,6 +12,11 @@ import {
   FaSave,
   FaCamera,
   FaExclamationTriangle,
+  FaCrown,
+  FaEnvelope,
+  FaPhoneAlt,
+  FaGraduationCap,
+  FaBookOpen,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -261,7 +266,8 @@ export default function AllTeachersPage() {
     }
   };
 
-  const filteredTeachers = teachers.filter((teacher) => {
+  // Search Filtering
+  const searchedTeachers = teachers.filter((teacher) => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return true;
     return (
@@ -272,6 +278,20 @@ export default function AllTeachersPage() {
       teacher.user?.email?.toLowerCase().includes(term)
     );
   });
+
+  // Identify Head Teacher / Principal
+  const isHeadOrPrincipal = (designation: string) => {
+    const d = (designation || "").toLowerCase();
+    return (
+      d.includes("principal") || 
+      d.includes("head") || 
+      d.includes("অধ্যক্ষ") || 
+      d.includes("প্রধান")
+    );
+  };
+
+  const headTeachers = searchedTeachers.filter((t) => isHeadOrPrincipal(t.designation));
+  const otherTeachers = searchedTeachers.filter((t) => !isHeadOrPrincipal(t.designation)).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans">
@@ -301,7 +321,7 @@ export default function AllTeachersPage() {
           placeholder="নাম, পদবী, ক্লাস, ফোন বা ইমেইল দিয়ে খুঁজুন..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 rounded-xl border border-border bg-card text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+          className="w-full pl-9 pr-4 py-2 rounded-xl border border-border bg-card text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all shadow-sm"
         />
       </div>
 
@@ -317,7 +337,7 @@ export default function AllTeachersPage() {
         <Card className="border-destructive/20 bg-destructive/10 p-6 text-center text-xs text-destructive rounded-2xl">
           {error}
         </Card>
-      ) : filteredTeachers.length === 0 ? (
+      ) : searchedTeachers.length === 0 ? (
         <Card className="border-border bg-card/50 shadow-sm rounded-2xl p-12 text-center">
           <FaUser className="mx-auto text-4xl text-muted-foreground/40 mb-3" />
           <h3 className="text-base font-bold text-foreground">
@@ -330,71 +350,165 @@ export default function AllTeachersPage() {
           </p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredTeachers.map((teacher) => (
-            <motion.div
-              key={teacher.id}
-              layout
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Card className="border-border shadow-md hover:shadow-lg transition-all rounded-2xl bg-card overflow-hidden">
-                <CardContent className="p-5 space-y-4">
-                  <div className="flex items-center gap-3.5 overflow-hidden">
-                    <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden shrink-0 border border-border flex items-center justify-center text-[#c9a961] font-bold text-lg select-none">
-                      {teacher.photoUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={teacher.photoUrl}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        initialOf(teacher.name)
-                      )}
-                    </div>
-                    <div className="overflow-hidden">
-                      <h3 className="text-sm font-bold text-foreground truncate">
-                        {teacher.name}
-                      </h3>
-                      <p className="text-xs text-[#c9a961] font-semibold truncate">
-                        {teacher.designation}
-                      </p>
-                    </div>
-                  </div>
+        <div className="space-y-8">
+          
+          {/* HEAD TEACHER / PRINCIPAL ROW */}
+          {headTeachers.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border/50 pb-2">
+                <FaCrown className="text-[#c9a961]" />
+                <span>প্রধান শিক্ষক / অধ্যক্ষ</span>
+              </h2>
+              {headTeachers.map((teacher) => (
+                <motion.div
+                  key={teacher.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Card className="border-[#c9a961] bg-gradient-to-r from-[#c9a961]/10 to-transparent shadow-md rounded-2xl overflow-hidden ring-1 ring-[#c9a961]/30">
+                    <CardContent className="p-6 sm:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                      {/* Large Avatar */}
+                      <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden shrink-0 border-4 border-[#c9a961] bg-muted flex items-center justify-center text-[#c9a961] font-bold text-4xl shadow-lg">
+                        {teacher.photoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={teacher.photoUrl} alt={teacher.name} className="w-full h-full object-cover" />
+                        ) : (
+                          initialOf(teacher.name)
+                        )}
+                      </div>
+                      
+                      {/* Details */}
+                      <div className="flex-1 text-center sm:text-left space-y-3 w-full">
+                        <div>
+                          <h3 className="text-2xl font-bold text-foreground">{teacher.name}</h3>
+                          <p className="text-sm font-semibold text-[#c9a961] mt-1">{teacher.designation}</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
+                          {teacher.department && (
+                            <span className="flex items-center justify-center sm:justify-start gap-1.5">
+                              <FaBookOpen className="text-[#c9a961]" /> {teacher.department}
+                            </span>
+                          )}
+                          {teacher.qualification && (
+                            <span className="flex items-center justify-center sm:justify-start gap-1.5">
+                              <FaGraduationCap className="text-[#c9a961]" /> {teacher.qualification}
+                            </span>
+                          )}
+                          <span className="flex items-center justify-center sm:justify-start gap-1.5">
+                            <FaPhoneAlt className="text-[#c9a961]" /> {teacher.phone}
+                          </span>
+                          <span className="flex items-center justify-center sm:justify-start gap-1.5">
+                            <FaEnvelope className="text-[#c9a961]" /> {teacher.user?.email}
+                          </span>
+                        </div>
 
-                  <div className="pt-3 border-t border-border text-xs">
-                    <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
-                      ক্লাস টিচার
-                    </span>
-                    <span className="font-semibold text-foreground flex items-center gap-1.5 mt-0.5">
-                      <FaChalkboardTeacher className="text-[#c9a961] shrink-0" />
-                      {teacher.classTeacherOf?.name || "নেই"}
-                    </span>
-                  </div>
+                        {teacher.classTeacherOf && (
+                          <div className="inline-block bg-[#c9a961]/10 px-3 py-1 rounded-lg text-xs font-semibold text-[#c9a961] border border-[#c9a961]/20 mt-2">
+                            ক্লাস টিচার: {teacher.classTeacherOf.name}
+                          </div>
+                        )}
+                      </div>
 
-                  <div className="flex items-center gap-2">
-                    <Button
-                      onClick={() => openEdit(teacher)}
-                      className="flex-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 h-9 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1.5"
-                      title="শিক্ষকের তথ্য এডিট করুন"
-                    >
-                      <FaEdit className="text-xs" />
-                      <span>এডিট</span>
-                    </Button>
-                    <Button
-                      onClick={() => setDeletingTeacher(teacher)}
-                      className="bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 h-9 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1 px-3"
-                      title="শিক্ষক অ্যাকাউন্ট মুছে ফেলুন"
-                    >
-                      <FaTrashAlt className="text-xs" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                      {/* Actions */}
+                      <div className="flex sm:flex-col gap-2 shrink-0 w-full sm:w-auto mt-4 sm:mt-0">
+                        <Button
+                          onClick={() => openEdit(teacher)}
+                          className="flex-1 sm:flex-none bg-[#c9a961]/10 hover:bg-[#c9a961]/20 text-[#c9a961] border border-[#c9a961]/30 h-9 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
+                        >
+                          <FaEdit /> এডিট
+                        </Button>
+                        <Button
+                          onClick={() => setDeletingTeacher(teacher)}
+                          className="flex-1 sm:flex-none bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 h-9 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
+                        >
+                          <FaTrashAlt /> ডিলিট
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* OTHER TEACHERS GRID (3 Columns) */}
+          {otherTeachers.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border/50 pb-2">
+                <FaUser className="text-[#c9a961]" />
+                <span>সহকারী শিক্ষকমণ্ডলী</span>
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {otherTeachers.map((teacher) => (
+                  <motion.div
+                    key={teacher.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Card className="border-border shadow-sm hover:shadow-md transition-all rounded-2xl bg-card overflow-hidden h-full flex flex-col">
+                      <CardContent className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                        <div className="flex items-center gap-3.5 overflow-hidden">
+                          <div className="w-14 h-14 rounded-xl bg-muted overflow-hidden shrink-0 border border-border flex items-center justify-center text-[#c9a961] font-bold text-lg select-none">
+                            {teacher.photoUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={teacher.photoUrl}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              initialOf(teacher.name)
+                            )}
+                          </div>
+                          <div className="overflow-hidden">
+                            <h3 className="text-sm font-bold text-foreground truncate">
+                              {teacher.name}
+                            </h3>
+                            <p className="text-xs text-[#c9a961] font-semibold truncate">
+                              {teacher.designation}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-border text-xs">
+                          <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
+                            ক্লাস টিচার
+                          </span>
+                          <span className="font-semibold text-foreground flex items-center gap-1.5 mt-0.5">
+                            <FaChalkboardTeacher className="text-[#c9a961] shrink-0" />
+                            {teacher.classTeacherOf?.name || "নেই"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 mt-auto pt-2">
+                          <Button
+                            onClick={() => openEdit(teacher)}
+                            className="flex-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 h-8 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1.5"
+                            title="শিক্ষকের তথ্য এডিট করুন"
+                          >
+                            <FaEdit className="text-[10px]" />
+                            <span>এডিট</span>
+                          </Button>
+                          <Button
+                            onClick={() => setDeletingTeacher(teacher)}
+                            className="bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 h-8 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 px-2.5"
+                            title="শিক্ষক অ্যাকাউন্ট মুছে ফেলুন"
+                          >
+                            <FaTrashAlt className="text-[10px]" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

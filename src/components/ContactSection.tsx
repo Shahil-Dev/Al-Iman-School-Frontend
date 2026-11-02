@@ -74,7 +74,7 @@ const contactTranslations = {
     whatsappBtn: "Chat on WhatsApp",
 
     // Pre-filled WhatsApp Message
-    whatsappDefaultMsg: "Assalamu Alaikum, I would like to know more about Al-Eman School.",
+    whatsappDefaultMsg: "Assalamu Alaikum, I would like to know more about Al-Iman School and College.",
   },
 } as const;
 

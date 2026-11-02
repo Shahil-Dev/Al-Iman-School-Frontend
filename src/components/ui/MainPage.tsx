@@ -52,11 +52,11 @@ const slidesData = {
     {
       id: 3,
       type: "speaker",
-      image: "/Image/Shayek Harun Izhar.png",
+      image: "/Image/Sheikh-Harun-izhar.png", // Fixed Image Name
       speaker: {
         quote:
           "True education expands the intellect while purifying the soul. Our goal is to craft future leaders who shine in both Dunya and Akhirah.",
-        name: "Shayek Harun Izhar",
+        name: "Sheikh Harun izhar",
         role: "Islamic Scholar & Principal",
       },
     },
@@ -101,11 +101,11 @@ const slidesData = {
     {
       id: 3,
       type: "speaker",
-      image: "/Image/Shayek Harun Izhar.png",
+      image: "/Image/Sheikh-Harun-izhar.png", // Fixed Image Name matching English version
       speaker: {
         quote:
           "আমরা আল-ঈমান স্কুল প্রতিষ্ঠা করেছি জাতীয় মূল সিলেবাসকে প্রভাবিত করে সংস্কারের উদ্দেশ্যে। আমাদের লক্ষ্য হলো এমন শিক্ষার্থীদের গড়ে তোলা যারা দুনিয়াতেও এবং আখিরাতেও আলোকিত হবে।",
-        name: "শায়েক হারুন ইজহার",
+        name: "শাইখ হারুন ইজহার",
         role: "অধ্যক্ষ আল ঈমান স্কুল অ্যান্ড কলেজ",
       },
     },

@@ -2,146 +2,271 @@
 
 import React, { useEffect, useState } from "react";
 import {
-  FaUserTie,
-  FaSpinner,
-  FaSearch,
   FaChalkboardTeacher,
+  FaSpinner,
+  FaUser,
+  FaCrown,
+  FaEnvelope,
+  FaPhoneAlt,
+  FaGraduationCap,
+  FaBookOpen,
 } from "react-icons/fa";
-import { Card, CardContent } from "@/src/components/ui/card";
+import { motion } from "framer-motion";
 import axiosInstance from "@/src/lib/axiosInstance";
+import { Card, CardContent } from "@/src/components/ui/card";
 import { useLanguage } from "@/src/context/LanguageContext";
 
-type PublicTeacher = {
+type Teacher = {
   id: string;
   name: string;
   designation: string;
+  department?: string | null;
+  qualification?: string | null;
+  phone: string;
+  photoUrl?: string | null;
   classTeacherOf?: { id: string; name: string } | null;
+  user: {
+    email: string;
+  };
 };
 
-export default function TeachersPage() {
+const initialOf = (name?: string) =>
+  (Array.from((name || "").trim())[0] || "T").toUpperCase();
+
+export default function PublicTeachersPage() {
   const { language } = useLanguage();
   const isBn = language === "bn";
 
-  const [teachers, setTeachers] = useState<PublicTeacher[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
-    axiosInstance
-      .get("/teachers")
-      .then((res) => {
-        const loaded = res.data?.data || [];
-        setTeachers(Array.isArray(loaded) ? loaded : []);
-      })
-      .catch((err) => console.error("Failed to load teachers", err))
-      .finally(() => setLoading(false));
-  }, []);
+    const fetchTeachers = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await axiosInstance.get("/teachers");
+        setTeachers(res.data?.data || []);
+      } catch (err: any) {
+        setError(
+          err.response?.data?.message ||
+            (isBn
+              ? "শিক্ষকদের তালিকা লোড করা যায়নি।"
+              : "Failed to load teachers list."),
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTeachers();
+  }, [isBn]);
 
-  const filteredTeachers = teachers.filter((teacher) => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return true;
-    return [teacher.name, teacher.designation, teacher.classTeacherOf?.name].some(
-      (value) => value?.toLowerCase().includes(term),
+  // Identify Head Teacher / Principal
+  const isHeadOrPrincipal = (designation: string) => {
+    const d = (designation || "").toLowerCase();
+    return (
+      d.includes("principal") ||
+      d.includes("head") ||
+      d.includes("অধ্যক্ষ") ||
+      d.includes("প্রধান")
     );
-  });
+  };
+
+  const headTeachers = teachers.filter((t) => isHeadOrPrincipal(t.designation));
+  const otherTeachers = teachers
+    .filter((t) => !isHeadOrPrincipal(t.designation))
+    .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
   return (
-    <div className="min-h-screen bg-background py-10 px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header Banner */}
-        <div className="bg-gradient-to-r from-emerald-800 to-teal-900 text-white p-8 rounded-3xl shadow-lg relative overflow-hidden">
-          <div className="relative z-10 space-y-2">
-            <span className="bg-emerald-500/20 text-emerald-300 text-xs px-3 py-1 rounded-full font-semibold uppercase tracking-wider">
-              {isBn ? "আমাদের শিক্ষকমণ্ডলী" : "Faculty Members"}
-            </span>
-            <h1 className="text-2xl md:text-4xl font-extrabold flex items-center gap-3">
-              <FaUserTie className="text-amber-400" />
-              <span>{isBn ? "শ্রদ্ধেয় শিক্ষকবৃন্দ" : "Our Honorable Teachers"}</span>
-            </h1>
-            <p className="text-xs md:text-sm text-emerald-100/90 max-w-2xl">
-              {isBn
-                ? "অভিজ্ঞ ও নিবেদিতপ্রাণ শিক্ষকবৃন্দের তত্ত্বাবধানে আল-ঈমান স্কুলের শিক্ষার্থীরা গড়ে উঠছে।"
-                : "Meet our qualified and dedicated educators guiding the students of Al-Iman School and College."}
+    <div className="min-h-screen bg-muted/20 pt-28 pb-16 font-sans">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        {/* Page Header */}
+        <div className="text-center max-w-2xl mx-auto space-y-3">
+          <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-semibold tracking-wider uppercase">
+            {isBn ? "আমাদের শিক্ষকমণ্ডলী" : "Our Faculty"}
+          </span>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight flex items-center justify-center gap-3">
+            <FaChalkboardTeacher className="text-[#c9a961]" />
+            {isBn ? "শিক্ষক ও কর্মচারী" : "Teachers & Staff"}
+          </h1>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {isBn
+              ? "আল-ঈমান স্কুল এন্ড কলেজের অভিজ্ঞ, দক্ষ এবং নিবেদিতপ্রাণ শিক্ষকমণ্ডলীর সাথে পরিচিত হোন।"
+              : "Meet the experienced, skilled, and dedicated faculty members of Al-Iman School & College."}
+          </p>
+        </div>
+
+        {/* Main Content */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 space-y-3">
+            <FaSpinner className="animate-spin text-3xl text-[#c9a961]" />
+            <p className="text-sm text-muted-foreground">
+              {isBn ? "শিক্ষকদের তথ্য লোড হচ্ছে..." : "Loading teachers..."}
             </p>
           </div>
-        </div>
-
-        {/* Search Bar */}
-        <div className="flex justify-between items-center bg-card p-4 rounded-2xl border border-border shadow-sm">
-          <div className="relative w-full max-w-md">
-            <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs" />
-            <input
-              type="text"
-              placeholder={
-                isBn
-                  ? "নাম, পদবী বা শ্রেণি দিয়ে খুঁজুন..."
-                  : "Search by name, designation or class..."
-              }
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-muted/50 border border-border rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
-          <span className="text-xs font-semibold text-muted-foreground hidden sm:inline">
-            {isBn
-              ? `মোট শিক্ষক: ${filteredTeachers.length}`
-              : `Total Faculty: ${filteredTeachers.length}`}
-          </span>
-        </div>
-
-        {/* Teachers Grid */}
-        {loading ? (
-          <div className="p-12 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
-            <FaSpinner className="animate-spin text-emerald-600 text-lg" />
-            <span>
-              {isBn ? "শিক্ষকদের তালিকা লোড হচ্ছে..." : "Loading faculty list..."}
-            </span>
-          </div>
-        ) : filteredTeachers.length === 0 ? (
-          <Card className="border-border shadow-sm rounded-2xl p-8 text-center text-muted-foreground text-xs">
-            {isBn ? "কোনো শিক্ষকের তথ্য পাওয়া যায়নি।" : "No faculty members found."}
+        ) : error ? (
+          <Card className="border-destructive/20 bg-destructive/10 p-6 text-center text-sm text-destructive rounded-2xl max-w-lg mx-auto">
+            {error}
+          </Card>
+        ) : teachers.length === 0 ? (
+          <Card className="border-border bg-card/50 shadow-sm rounded-2xl p-12 text-center max-w-lg mx-auto">
+            <FaUser className="mx-auto text-5xl text-muted-foreground/40 mb-4" />
+            <h3 className="text-lg font-bold text-foreground">
+              {isBn ? "কোনো শিক্ষক পাওয়া যায়নি" : "No teachers found"}
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              {isBn
+                ? "বর্তমানে কোনো শিক্ষকের তথ্য যুক্ত করা নেই।"
+                : "No teachers data available right now."}
+            </p>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredTeachers.map((teacher) => {
-              const initial = Array.from(teacher.name.trim())[0] || "T";
+          <div className="space-y-12">
+            {/* HEAD TEACHER / PRINCIPAL ROW */}
+            {headTeachers.length > 0 && (
+              <div className="space-y-5">
+                <div className="flex items-center gap-2 border-b border-border/60 pb-3">
+                  <FaCrown className="text-[#c9a961] text-lg" />
+                  <h2 className="text-base font-bold text-foreground uppercase tracking-wider">
+                    {isBn
+                      ? "প্রধান শিক্ষক / অধ্যক্ষ"
+                      : "Principal / Head Teacher"}
+                  </h2>
+                </div>
 
-              return (
-                <Card
-                  key={teacher.id}
-                  className="border-border/60 hover:border-primary/50 shadow-sm hover:shadow-md transition-all rounded-2xl bg-card overflow-hidden text-center group"
-                >
-                  <CardContent className="p-6 space-y-3">
-                    <div
-                      aria-hidden="true"
-                      className="w-20 h-20 mx-auto rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-2xl shadow-inner border-2 border-emerald-500/20 group-hover:scale-105 transition-transform select-none"
+                {headTeachers.map((teacher) => (
+                  <motion.div
+                    key={teacher.id}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                  >
+                    <Card className="border-[#c9a961] bg-gradient-to-r from-[#c9a961]/10 to-transparent shadow-md rounded-2xl overflow-hidden ring-1 ring-[#c9a961]/30">
+                      <CardContent className="p-6 sm:p-10 flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-10">
+                        {/* Large Avatar */}
+                        <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden shrink-0 border-4 border-[#c9a961] bg-muted flex items-center justify-center text-[#c9a961] font-bold text-5xl shadow-lg">
+                          {teacher.photoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={teacher.photoUrl}
+                              alt={teacher.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            initialOf(teacher.name)
+                          )}
+                        </div>
+
+                        {/* Details */}
+                        <div className="flex-1 text-center sm:text-left space-y-4 w-full">
+                          <div>
+                            <h3 className="text-2xl md:text-3xl font-bold text-foreground">
+                              {teacher.name}
+                            </h3>
+                            <p className="text-base font-semibold text-[#c9a961] mt-1">
+                              {teacher.designation}
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-muted-foreground max-w-lg mx-auto sm:mx-0">
+                            {teacher.department && (
+                              <span className="flex items-center justify-center sm:justify-start gap-2">
+                                <FaBookOpen className="text-[#c9a961]" />{" "}
+                                {teacher.department}
+                              </span>
+                            )}
+                            {teacher.qualification && (
+                              <span className="flex items-center justify-center sm:justify-start gap-2">
+                                <FaGraduationCap className="text-[#c9a961]" />{" "}
+                                {teacher.qualification}
+                              </span>
+                            )}
+                            <span className="flex items-center justify-center sm:justify-start gap-2">
+                              <FaPhoneAlt className="text-[#c9a961]" />{" "}
+                              {teacher.phone}
+                            </span>
+                            <span className="flex items-center justify-center sm:justify-start gap-2">
+                              <FaEnvelope className="text-[#c9a961]" />{" "}
+                              {teacher.user?.email}
+                            </span>
+                          </div>
+
+                          {teacher.classTeacherOf && (
+                            <div className="inline-block bg-[#c9a961]/10 px-4 py-1.5 rounded-lg text-xs font-semibold text-[#c9a961] border border-[#c9a961]/20 mt-2">
+                              {isBn ? "ক্লাস টিচার:" : "Class Teacher:"}{" "}
+                              {teacher.classTeacherOf.name}
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+
+            {/* OTHER TEACHERS GRID (3 Columns) */}
+            {otherTeachers.length > 0 && (
+              <div className="space-y-5">
+                <div className="flex items-center gap-2 border-b border-border/60 pb-3">
+                  <FaUser className="text-[#c9a961] text-lg" />
+                  <h2 className="text-base font-bold text-foreground uppercase tracking-wider">
+                    {isBn ? "সহকারী শিক্ষকমণ্ডলী" : "Assistant Teachers"}
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {otherTeachers.map((teacher) => (
+                    <motion.div
+                      key={teacher.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3 }}
                     >
-                      {initial.toUpperCase()}
-                    </div>
+                      <Card className="border-border shadow-sm hover:shadow-md hover:border-[#c9a961]/40 transition-all rounded-2xl bg-card overflow-hidden h-full flex flex-col">
+                        <CardContent className="p-6 flex-1 flex flex-col justify-between space-y-5">
+                          <div className="flex items-center gap-4 overflow-hidden">
+                            <div className="w-16 h-16 rounded-xl bg-muted overflow-hidden shrink-0 border border-border flex items-center justify-center text-[#c9a961] font-bold text-xl select-none">
+                              {teacher.photoUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={teacher.photoUrl}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                initialOf(teacher.name)
+                              )}
+                            </div>
+                            <div className="overflow-hidden">
+                              <h3 className="text-base font-bold text-foreground truncate">
+                                {teacher.name}
+                              </h3>
+                              <p className="text-sm text-[#c9a961] font-semibold truncate mt-0.5">
+                                {teacher.designation}
+                              </p>
+                            </div>
+                          </div>
 
-                    <div>
-                      <h3 className="font-bold text-sm text-foreground">
-                        {teacher.name}
-                      </h3>
-                      <p className="text-[11px] font-semibold text-emerald-600 mt-0.5">
-                        {teacher.designation}
-                      </p>
-                    </div>
-
-                    {teacher.classTeacherOf && (
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted text-foreground text-[10px] font-semibold">
-                        <FaChalkboardTeacher className="text-emerald-600" />
-                        <span>
-                          {isBn ? "শ্রেণি শিক্ষক: " : "Class Teacher: "}
-                          {teacher.classTeacherOf.name}
-                        </span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+                          <div className="pt-3 border-t border-border text-sm">
+                            <span className="text-muted-foreground block text-[11px] uppercase font-semibold">
+                              {isBn ? "ক্লাস টিচার" : "Class Teacher"}
+                            </span>
+                            <span className="font-semibold text-foreground flex items-center gap-1.5 mt-1">
+                              <FaChalkboardTeacher className="text-[#c9a961] shrink-0" />
+                              {teacher.classTeacherOf?.name ||
+                                (isBn ? "নেই" : "None")}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
