@@ -210,6 +210,8 @@ export default function AllTeachersPage() {
         nidOrPassport: form.nidOrPassport.trim(),
         // null removes the class teacher assignment
         classTeacherOfId: form.classTeacherOfId || null,
+        // if true, forces the class to be reassigned to this teacher even if taken by another
+        replaceClassTeacher: true,
       };
       if (newPhoto) payload.photoUrl = newPhoto;
 
@@ -283,15 +285,19 @@ export default function AllTeachersPage() {
   const isHeadOrPrincipal = (designation: string) => {
     const d = (designation || "").toLowerCase();
     return (
-      d.includes("principal") || 
-      d.includes("head") || 
-      d.includes("অধ্যক্ষ") || 
+      d.includes("principal") ||
+      d.includes("head") ||
+      d.includes("অধ্যক্ষ") ||
       d.includes("প্রধান")
     );
   };
 
-  const headTeachers = searchedTeachers.filter((t) => isHeadOrPrincipal(t.designation));
-  const otherTeachers = searchedTeachers.filter((t) => !isHeadOrPrincipal(t.designation)).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  const headTeachers = searchedTeachers.filter((t) =>
+    isHeadOrPrincipal(t.designation),
+  );
+  const otherTeachers = searchedTeachers
+    .filter((t) => !isHeadOrPrincipal(t.designation))
+    .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans">
@@ -351,7 +357,6 @@ export default function AllTeachersPage() {
         </Card>
       ) : (
         <div className="space-y-8">
-          
           {/* HEAD TEACHER / PRINCIPAL ROW */}
           {headTeachers.length > 0 && (
             <div className="space-y-4">
@@ -372,35 +377,47 @@ export default function AllTeachersPage() {
                       <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden shrink-0 border-4 border-[#c9a961] bg-muted flex items-center justify-center text-[#c9a961] font-bold text-4xl shadow-lg">
                         {teacher.photoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={teacher.photoUrl} alt={teacher.name} className="w-full h-full object-cover" />
+                          <img
+                            src={teacher.photoUrl}
+                            alt={teacher.name}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           initialOf(teacher.name)
                         )}
                       </div>
-                      
+
                       {/* Details */}
                       <div className="flex-1 text-center sm:text-left space-y-3 w-full">
                         <div>
-                          <h3 className="text-2xl font-bold text-foreground">{teacher.name}</h3>
-                          <p className="text-sm font-semibold text-[#c9a961] mt-1">{teacher.designation}</p>
+                          <h3 className="text-2xl font-bold text-foreground">
+                            {teacher.name}
+                          </h3>
+                          <p className="text-sm font-semibold text-[#c9a961] mt-1">
+                            {teacher.designation}
+                          </p>
                         </div>
-                        
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
                           {teacher.department && (
                             <span className="flex items-center justify-center sm:justify-start gap-1.5">
-                              <FaBookOpen className="text-[#c9a961]" /> {teacher.department}
+                              <FaBookOpen className="text-[#c9a961]" />{" "}
+                              {teacher.department}
                             </span>
                           )}
                           {teacher.qualification && (
                             <span className="flex items-center justify-center sm:justify-start gap-1.5">
-                              <FaGraduationCap className="text-[#c9a961]" /> {teacher.qualification}
+                              <FaGraduationCap className="text-[#c9a961]" />{" "}
+                              {teacher.qualification}
                             </span>
                           )}
                           <span className="flex items-center justify-center sm:justify-start gap-1.5">
-                            <FaPhoneAlt className="text-[#c9a961]" /> {teacher.phone}
+                            <FaPhoneAlt className="text-[#c9a961]" />{" "}
+                            {teacher.phone}
                           </span>
                           <span className="flex items-center justify-center sm:justify-start gap-1.5">
-                            <FaEnvelope className="text-[#c9a961]" /> {teacher.user?.email}
+                            <FaEnvelope className="text-[#c9a961]" />{" "}
+                            {teacher.user?.email}
                           </span>
                         </div>
 
@@ -440,7 +457,7 @@ export default function AllTeachersPage() {
                 <FaUser className="text-[#c9a961]" />
                 <span>সহকারী শিক্ষকমণ্ডলী</span>
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {otherTeachers.map((teacher) => (
                   <motion.div
