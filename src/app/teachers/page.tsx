@@ -46,13 +46,8 @@ export default function PublicTeachersPage() {
       if (showLoading) setLoading(true);
       setError(null);
       
-   
-      const res = await axiosInstance.get(`/teachers?t=${Date.now()}`, {
-        headers: {
-          "Cache-Control": "no-cache",
-          "Pragma": "no-cache",
-        },
-      });
+      // ?t=${Date.now()} ব্রাউজার এবং Next.js ক্যাশ বাইপাস করে
+      const res = await axiosInstance.get(`/teachers?t=${Date.now()}`);
       
       setTeachers(res.data?.data || []);
     } catch (err: any) {
