@@ -46,12 +46,11 @@ export default function PublicTeachersPage() {
       if (showLoading) setLoading(true);
       setError(null);
       
-      // Date.now() and no-cache headers bypass Next.js caching and browser caching
+   
       const res = await axiosInstance.get(`/teachers?t=${Date.now()}`, {
         headers: {
           "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-          Expires: "0",
+          "Pragma": "no-cache",
         },
       });
       
@@ -73,10 +72,10 @@ export default function PublicTeachersPage() {
     fetchTeachers();
   }, [fetchTeachers]);
 
-  // Auto-refresh when user comes back to the tab (e.g., after updating from admin panel)
+  // Auto-refresh when user comes back to the tab
   useEffect(() => {
     const handleFocus = () => {
-      fetchTeachers(false); // Silent refresh without showing the loading spinner
+      fetchTeachers(false); // Silent refresh
     };
 
     window.addEventListener("focus", handleFocus);
