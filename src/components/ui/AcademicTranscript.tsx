@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { FaPrint, FaMapMarkerAlt, FaPhoneAlt } from "react-icons/fa";
+import React, { useRef } from "react";
+import { FaPrint, FaMapMarkerAlt, FaPhoneAlt, FaDownload } from "react-icons/fa";
 import { useLanguage } from "@/src/context/LanguageContext";
 
 export interface ITranscriptMark {
@@ -28,24 +28,6 @@ export interface ITranscriptProps {
   hideHeader?: boolean;
 }
 
-// Custom SVG Logo matching the image
-const SchoolLogo = ({ className = "w-16 h-16" }: { className?: string }) => (
-  <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="50" r="48" fill="#0B4F8A" />
-    <circle cx="50" cy="50" r="42" fill="none" stroke="#fff" strokeWidth="1" />
-    <circle cx="50" cy="50" r="38" fill="#fff" />
-    <path id="curve" d="M 20 50 A 30 30 0 0 1 80 50" fill="transparent" />
-    <text fontSize="8" fill="#0B4F8A" fontWeight="bold">
-      <textPath href="#curve" startOffset="50%" textAnchor="middle">
-        AL-IMAN SCHOOL & COLLEGE
-      </textPath>
-    </text>
-    <rect x="35" y="45" width="30" height="20" fill="#0B4F8A" rx="2" />
-    <text x="50" y="58" fill="#fff" fontSize="8" textAnchor="middle" fontWeight="bold">AL-IMAN</text>
-    <text x="50" y="85" fill="#0B4F8A" fontSize="7" textAnchor="middle" fontWeight="bold">ESTD - 2009</text>
-  </svg>
-);
-
 export default function AcademicTranscript({
   studentName,
   className = "N/A",
@@ -61,6 +43,9 @@ export default function AcademicTranscript({
   const { language } = useLanguage();
   const isBn = language === "bn";
   const t = (en: string, bn: string) => (isBn ? bn : en);
+  
+  // Ref for the transcript area to be captured in PDF
+  const transcriptRef = useRef<HTMLDivElement>(null);
 
   // Calculations
   const totalFullMarks = marks.reduce((acc, curr) => acc + curr.fullMarks, 0);
@@ -75,40 +60,78 @@ export default function AcademicTranscript({
   // Current Date for the top right header
   const today = new Date().toLocaleDateString("en-GB").replace(/\//g, " | ");
 
+  // PDF Download Handler
+  const handleDownloadPDF = async () => {
+    if (!transcriptRef.current) return;
+
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+
+      // Temporarily hide the action buttons for clean PDF
+      const actionsDiv = document.getElementById("transcript-actions");
+      if (actionsDiv) actionsDiv.style.display = "none";
+
+      const canvas = await html2canvas(transcriptRef.current, {
+        scale: 2, // High quality
+        useCORS: true,
+        backgroundColor: "#FCFDF9",
+      });
+
+      if (actionsDiv) actionsDiv.style.display = "flex";
+
+      const imgData = canvas.toDataURL("image/jpeg", 1.0);
+      
+      // A4 Size ratio calculation
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${studentName.replace(/\s+/g, "_")}_Transcript.pdf`);
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+    }
+  };
+
   return (
     <div className="w-full max-w-5xl mx-auto bg-white text-black p-2 sm:p-6 print:p-0 print:m-0 font-sans">
       
-      {/* Print Button */}
-      {!hideHeader && onPrint && (
-        <div className="flex justify-end mb-4 print:hidden">
+      {/* Action Buttons (Print & Download) */}
+      {!hideHeader && (
+        <div id="transcript-actions" className="flex justify-end gap-3 mb-4 print:hidden">
+          {onPrint && (
+            <button
+              onClick={onPrint}
+              className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg shadow hover:bg-slate-900 text-sm font-semibold transition-all"
+            >
+              <FaPrint /> {t("Print Transcript", "প্রিন্ট করুন")}
+            </button>
+          )}
           <button
-            onClick={onPrint}
+            onClick={handleDownloadPDF}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 text-sm font-semibold transition-all"
           >
-            <FaPrint /> {t("Print Transcript", "প্রিন্ট করুন")}
+            <FaDownload /> {t("Download PDF", "পিডিএফ ডাউনলোড")}
           </button>
         </div>
       )}
 
-      {/* --- OFFICIAL TRANSCRIPT START --- */}
-      <div className="relative bg-[#FCFDF9] border-[1.5px] border-black overflow-hidden flex flex-col min-h-[1000px] print:min-h-[1050px] print:border-none">
+      {/* --- OFFICIAL TRANSCRIPT START (This area is captured in PDF) --- */}
+      <div 
+        ref={transcriptRef}
+        className="relative bg-[#FCFDF9] border-[1.5px] border-black overflow-hidden flex flex-col min-h-[1000px] print:min-h-[1050px] print:border-none"
+      >
         
-        {/* WATERMARK (Background) */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 mt-32 opacity-[0.05]">
-          <div className="relative flex items-center justify-center w-[600px] h-[600px]">
-            {/* Circular Text Watermark */}
-            <svg viewBox="0 0 200 200" className="w-full h-full text-black">
-              <path id="circlePath" d="M 100, 100 m -75, 0 a 75,75 0 1,1 150,0 a 75,75 0 1,1 -150,0" fill="transparent" />
-              <text className="font-bold text-[14px] tracking-[0.2em] uppercase" fill="currentColor">
-                <textPath href="#circlePath" startOffset="50%" textAnchor="middle">
-                  AL-IMAN SCHOOL & COLLEGE • ESTD - 2009 •
-                </textPath>
-              </text>
-            </svg>
-            {/* Central Logo */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <SchoolLogo className="w-48 h-48 text-black" />
-            </div>
+        {/* WATERMARK (Background) - Image from Public Folder */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 mt-32 opacity-[0.06]">
+          <div className="relative w-[600px] h-[600px] flex items-center justify-center">
+            {/* 👇 এখানে আপনার ওয়াটারমার্ক ইমেজের নাম দিন (public ফোল্ডারে রাখুন) 👇 */}
+            <img 
+              src="/Image/logo aliman.jpg" 
+              alt="Watermark" 
+              className="w-full h-full object-contain select-none grayscale"
+            />
           </div>
         </div>
 
@@ -117,7 +140,6 @@ export default function AcademicTranscript({
           {/* Top Strip */}
           <div className="flex flex-col sm:flex-row items-center justify-between px-6 pt-6 pb-2">
             <div className="flex items-center gap-4">
-              <SchoolLogo className="w-20 h-20 shrink-0" />
               <div className="text-center sm:text-left">
                 <h1 className="text-[#F3A900] text-2xl md:text-3xl font-black tracking-tight uppercase">
                   AL-IMAN SCHOOL & COLLEGE
@@ -139,7 +161,7 @@ export default function AcademicTranscript({
           <div className="bg-[#F3A900] flex flex-col sm:flex-row justify-between items-center px-4 py-2 text-white text-xs sm:text-sm font-semibold">
             <div className="flex items-center gap-2">
               <FaMapMarkerAlt className="text-black" />
-              <span className="text-black">কুমুমবাগ (আয়েশা মসজিদ সংলগ্ন), খুলনা, চট্টগ্রাম</span>
+              <span className="text-black">কুসুমবাগ(আয়েশা মসজিদ সংলগ্ন), খুলশী, চট্টগ্রাম</span>
             </div>
             <div className="flex items-center gap-2 mt-1 sm:mt-0">
               <FaPhoneAlt className="text-black" />
