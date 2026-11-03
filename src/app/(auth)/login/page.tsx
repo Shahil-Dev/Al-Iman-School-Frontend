@@ -121,7 +121,7 @@ function LoginFormContent() {
   const [selectedRole, setSelectedRole] = useState<RoleType>("ADMIN");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // Password Visibility Toggle State
+  const [showPassword, setShowPassword] = useState(false);
   const [studentCode, setStudentCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -152,11 +152,19 @@ function LoginFormContent() {
     const serverMsg = err.response?.data?.message || "";
 
     if (selectedRole === "STUDENT") {
-      if (status === 404 || status === 401 || serverMsg.toLowerCase().includes("not found")) {
+      if (
+        status === 404 ||
+        status === 401 ||
+        serverMsg.toLowerCase().includes("not found")
+      ) {
         return "স্টুডেন্ট কোডটি সঠিক নয়। অনুগ্রহ করে আপনার আইডি কার্ডের কোডটি দিন।";
       }
     } else {
-      if (status === 401 || status === 400 || serverMsg.toLowerCase().includes("invalid")) {
+      if (
+        status === 401 ||
+        status === 400 ||
+        serverMsg.toLowerCase().includes("invalid")
+      ) {
         return "ইমেইল/ফোন নম্বর অথবা পাসওয়ার্ডটি সঠিক নয়।";
       }
       if (status === 404) {
@@ -194,39 +202,60 @@ function LoginFormContent() {
     setLoading(true);
 
     try {
-      const endpoint = selectedRole === "STUDENT" ? "/auth/student-login" : "/auth/login";
-      
+      const endpoint =
+        selectedRole === "STUDENT" ? "/auth/student-login" : "/auth/login";
+
       const payload =
         selectedRole === "STUDENT"
           ? { studentCode }
           : { email, password, role: selectedRole };
 
       const res = await axiosInstance.post(endpoint, payload);
-
       const { accessToken, user } = res.data.data;
 
-      const cookieExpiry = rememberMe ? 30 : 7;
-      Cookies.set("accessToken", accessToken, { expires: cookieExpiry, path: "/" });
-      Cookies.set("userRole", user.role, { expires: cookieExpiry, path: "/" });
-
-      if (user?.studentProfile?.id) {
-        Cookies.set("studentId", user.studentProfile.id, { expires: cookieExpiry, path: "/" });
+      // 🛑 Determine correct role based on login endpoint
+      let finalRole = user.role;
+      if (selectedRole === "STUDENT") {
+        finalRole = "STUDENT";
       }
 
-      setUser(user);
+      const cookieExpiry = rememberMe ? 30 : 7;
+
+      // Clear old cookies first to avoid conflicts
+      Cookies.remove("accessToken", { path: "/" });
+      Cookies.remove("userRole", { path: "/" });
+      Cookies.remove("studentId", { path: "/" });
+
+      // Set new cookies
+      Cookies.set("accessToken", accessToken, {
+        expires: cookieExpiry,
+        path: "/",
+      });
+      Cookies.set("userRole", finalRole, { expires: cookieExpiry, path: "/" });
+
+      if (user?.studentProfile?.id) {
+        Cookies.set("studentId", user.studentProfile.id, {
+          expires: cookieExpiry,
+          path: "/",
+        });
+      }
+
+      // 🛑 Override user role explicitly and set state
+      setUser({ ...user, role: finalRole });
 
       toast.success("সফলভাবে লগইন হয়েছে! রিডাইরেক্ট করা হচ্ছে...");
 
+      // 🛑 Use `finalRole` instead of `user.role` for routing
       let targetRoute = "/Dashboard";
-      if (user.role === "STUDENT") {
+      if (finalRole === "STUDENT") {
         targetRoute = "/Dashboard/studentDashboard";
-      } else if (user.role === "PARENT") {
+      } else if (finalRole === "PARENT") {
         targetRoute = "/Dashboard/parentDashboard";
-      } else if (user.role === "TEACHER") {
+      } else if (finalRole === "TEACHER") {
         targetRoute = "/Dashboard/TeacherDashboard";
-      } else if (user.role === "ACCOUNTS") {
+      } else if (finalRole === "ACCOUNTS") {
         targetRoute = "/Dashboard/accounts";
-      } else if (user.role === "SUPER_ADMIN" || user.role === "ADMIN") {
+      } else if (finalRole === "SUPER_ADMIN" || finalRole === "ADMIN") {
         targetRoute = "/Dashboard/admin";
       }
 
@@ -433,7 +462,11 @@ function LoginFormContent() {
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
                         aria-label="Toggle password visibility"
                       >
-                        {showPassword ? <FaEyeSlash className="text-sm" /> : <FaEye className="text-sm" />}
+                        {showPassword ? (
+                          <FaEyeSlash className="text-sm" />
+                        ) : (
+                          <FaEye className="text-sm" />
+                        )}
                       </button>
                     </div>
                   </div>

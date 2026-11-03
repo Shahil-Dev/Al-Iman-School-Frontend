@@ -67,7 +67,9 @@ export const createRoutineSlot = async (payload: ICreateRoutineSlotPayload) => {
 };
 
 export const getClassRoutine = async (classId: string, sectionId: string) => {
-  const response = await axiosInstance.get(`/routines/${classId}/${sectionId}`);
+  const response = await axiosInstance.get("/routines", {
+    params: { classId, sectionId },
+  });
   return response.data;
 };
 

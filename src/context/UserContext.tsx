@@ -80,7 +80,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [profileLoading, setProfileLoading] = useState(false);
 
   // Sync user state with localStorage whenever user state changes
-  const handleSetUser = (
+    const handleSetUser = (
     newUser: User | null | ((prev: User | null) => User | null),
   ) => {
     setUser((prevUser) => {
@@ -128,13 +128,20 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     if (hasStoredUser) setLoading(false);
     setProfileLoading(true);
 
-    axiosInstance
+      axiosInstance
       .get("/auth/me", { timeout: 8000 })
       .then((res) => {
         if (cancelled) return;
         const fresh = res.data?.data || res.data;
+        
+        // 🛑 SECURITY CHECK: Do not override the current user role with a different one
         if (fresh && typeof fresh === "object") {
-          handleSetUser((prev) => ({ ...(prev || {}), ...fresh }));
+          const cookieRole = Cookies.get("userRole");
+          if (cookieRole && fresh.role && fresh.role !== cookieRole) {
+            console.warn("Role mismatch detected! Ignoring fresh data from /auth/me.");
+            return;
+          }
+          handleSetUser(fresh);
         }
       })
       .catch(() => {

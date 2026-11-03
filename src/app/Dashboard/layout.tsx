@@ -270,7 +270,7 @@ export default function DashboardLayout({
               href: "/Dashboard/payments/collect-fee",
               icon: FaMoneyCheckAlt,
             },
-          
+
             {
               label: isBn ? "বকেয়া রিপোর্ট" : "Due Fees Report",
               href: "/Dashboard/accounts/due-report",
@@ -388,6 +388,11 @@ export default function DashboardLayout({
           label: isBn ? "উপস্থিতি ট্র্যাকার" : "Attendance Summary",
           href: "/Dashboard/parentDashboard/attendance",
           icon: FaCalendarCheck,
+        },
+        {
+          label: isBn ? "ক্লাস রুটিন" : "Class Routine",
+          href: "/Dashboard/parentDashboard/Parentroutine",
+          icon: FaClock,
         },
         {
           label: isBn ? "ফলাফল ও মার্কশিট" : "Child Results",
