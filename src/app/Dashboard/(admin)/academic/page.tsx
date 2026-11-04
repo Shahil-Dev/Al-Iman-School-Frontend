@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   FaGraduationCap,
   FaPlus,
@@ -24,7 +24,12 @@ export default function AcademicManagementPage() {
   const [academicYears, setAcademicYears] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
   const [sections, setSections] = useState<any[]>([]);
-  const [subjects, setSubjects] = useState<any[]>([]);
+
+  // Routine Form Subjects (Filtered by class)
+  const [routineSubjects, setRoutineSubjects] = useState<any[]>([]);
+  // Edit Modal Subjects (Filtered by class)
+  const [editSubjects, setEditSubjects] = useState<any[]>([]);
+
   const [loading, setLoading] = useState(true);
 
   // Routine View State
@@ -66,23 +71,20 @@ export default function AcademicManagementPage() {
   const [submittingSection, setSubmittingSection] = useState(false);
   const [submittingRoutine, setSubmittingRoutine] = useState(false);
 
-  // Load All Initial Data
+  // Load All Initial Data (Only Years & Classes, no subjects here)
   const loadData = async () => {
     setLoading(true);
     try {
-      const [yearRes, classRes, subjectRes] = await Promise.all([
+      const [yearRes, classRes] = await Promise.all([
         academicService.getAllAcademicYears().catch(() => ({ data: [] })),
         academicService.getAllClasses().catch(() => ({ data: [] })),
-        axiosInstance.get("/subjects").catch(() => ({ data: { data: [] } })),
       ]);
 
       const loadedYears = yearRes?.data || yearRes || [];
       const loadedClasses = classRes?.data || classRes || [];
-      const loadedSubjects = subjectRes?.data?.data || [];
 
       setAcademicYears(loadedYears);
       setClasses(loadedClasses);
-      setSubjects(loadedSubjects);
 
       if (loadedYears.length > 0 && !classForm.academicYearId) {
         setClassForm((prev) => ({
@@ -112,30 +114,47 @@ export default function AcademicManagementPage() {
     loadData();
   }, []);
 
-
-   // Load Sections when Class selected in Routine Form
+  // -------------------------------------------------------------
+  // LOAD SECTIONS & SUBJECTS FOR ROUTINE FORM (Class Dependent)
+  // -------------------------------------------------------------
   useEffect(() => {
     const classId = routineForm.classId;
 
-    // Clear stale sections and selection as soon as the class changes
+    // Clear stale data
     setSections([]);
-    setRoutineForm((prev) => ({ ...prev, sectionId: "" }));
+    setRoutineSubjects([]);
+    setRoutineForm((prev) => ({ ...prev, sectionId: "", subjectId: "" }));
+
     if (!classId) return;
 
     let cancelled = false;
-    axiosInstance
-      .get(`/academic/sections?classId=${classId}`)
-      .then((res) => {
+
+    Promise.all([
+      axiosInstance.get(`/academic/sections?classId=${classId}`),
+      axiosInstance.get(`/subjects/class/${classId}`),
+    ])
+      .then(([secRes, subRes]) => {
         if (cancelled) return;
-        // Keep only sections that belong to the selected class
-        const secList = (res.data?.data || []).filter(
+
+        const secList = (secRes.data?.data || []).filter(
           (s: any) => s.classId === classId,
         );
+        const subList = subRes.data?.data || [];
+
         setSections(secList);
-        setRoutineForm((prev) => ({ ...prev, sectionId: secList[0]?.id ?? "" }));
+        setRoutineSubjects(subList);
+
+        setRoutineForm((prev) => ({
+          ...prev,
+          sectionId: secList[0]?.id ?? "",
+          subjectId: subList[0]?.id ?? "",
+        }));
       })
       .catch(() => {
-        if (!cancelled) setSections([]);
+        if (!cancelled) {
+          setSections([]);
+          setRoutineSubjects([]);
+        }
       });
 
     return () => {
@@ -143,10 +162,10 @@ export default function AcademicManagementPage() {
     };
   }, [routineForm.classId]);
 
- 
-   // Load Sections for View Routine Section Filter
+  // -------------------------------------------------------------
+  // LOAD SECTIONS FOR VIEW ROUTINE
+  // -------------------------------------------------------------
   useEffect(() => {
-    // Clear stale section options and routines as soon as the class changes
     setViewSections([]);
     setViewSectionId("");
     setRoutines([]);
@@ -157,7 +176,6 @@ export default function AcademicManagementPage() {
       .get(`/academic/sections?classId=${viewClassId}`)
       .then((res) => {
         if (cancelled) return;
-        // Keep only sections that belong to the selected class
         const secList = (res.data?.data || []).filter(
           (s: any) => s.classId === viewClassId,
         );
@@ -178,7 +196,10 @@ export default function AcademicManagementPage() {
     if (!viewClassId || !viewSectionId) return;
     setLoadingRoutines(true);
     try {
-      const res = await academicService.getClassRoutine(viewClassId, viewSectionId);
+      const res = await academicService.getClassRoutine(
+        viewClassId,
+        viewSectionId,
+      );
       setRoutines(res?.data || []);
     } catch (err) {
       console.warn("No routine found or endpoint error", err);
@@ -204,7 +225,7 @@ export default function AcademicManagementPage() {
       loadData();
     } catch (err: any) {
       toast.error(
-        err?.response?.data?.message || "Failed to create academic year"
+        err?.response?.data?.message || "Failed to create academic year",
       );
     } finally {
       setSubmittingYear(false);
@@ -254,7 +275,11 @@ export default function AcademicManagementPage() {
   // Submit Class Routine Slot via academicService
   const handleCreateRoutineSlot = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!routineForm.classId || !routineForm.sectionId || !routineForm.subjectId) {
+    if (
+      !routineForm.classId ||
+      !routineForm.sectionId ||
+      !routineForm.subjectId
+    ) {
       toast.error("Please select Class, Section and Subject!");
       return;
     }
@@ -267,7 +292,7 @@ export default function AcademicManagementPage() {
       fetchRoutines();
     } catch (err: any) {
       toast.error(
-        err?.response?.data?.message || "Failed to create routine slot"
+        err?.response?.data?.message || "Failed to create routine slot",
       );
     } finally {
       setSubmittingRoutine(false);
@@ -275,7 +300,7 @@ export default function AcademicManagementPage() {
   };
 
   // Open Edit Modal for Routine Slot
-  const handleOpenEditModal = (item: any) => {
+  const handleOpenEditModal = async (item: any) => {
     setEditingRoutine(item);
     setEditForm({
       day: item.day || "SUNDAY",
@@ -283,45 +308,56 @@ export default function AcademicManagementPage() {
       endTime: item.endTime || "",
       subjectId: item.subjectId || item.subject?.id || "",
     });
+
+    // Load subjects for this class in edit modal
+    const classId = item.classId || routineForm.classId;
+    if (classId) {
+      try {
+        const res = await axiosInstance.get(`/subjects/class/${classId}`);
+        setEditSubjects(res.data?.data || []);
+      } catch (err) {
+        setEditSubjects([]);
+      }
+    }
   };
 
- // Submit Update Routine Slot
-const handleUpdateRoutineSlot = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!editingRoutine) return;
+  // Submit Update Routine Slot
+  const handleUpdateRoutineSlot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRoutine) return;
 
-  setUpdatingRoutine(true);
-  try {
-    await academicService.updateRoutineSlot(editingRoutine.id, editForm);
-    toast.success("Routine slot updated successfully!");
-    setEditingRoutine(null);
-    fetchRoutines();
-  } catch (err: any) {
-    toast.error(
-      err?.response?.data?.message || "Failed to update routine slot"
-    );
-  } finally {
-    setUpdatingRoutine(false);
-  }
-};
+    setUpdatingRoutine(true);
+    try {
+      await academicService.updateRoutineSlot(editingRoutine.id, editForm);
+      toast.success("Routine slot updated successfully!");
+      setEditingRoutine(null);
+      fetchRoutines();
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.message || "Failed to update routine slot",
+      );
+    } finally {
+      setUpdatingRoutine(false);
+    }
+  };
 
-// Delete Routine Slot Handler
-const handleDeleteRoutineSlot = async (id: string) => {
-  if (!confirm("Are you sure you want to delete this routine slot?")) return;
+  // Delete Routine Slot Handler
+  const handleDeleteRoutineSlot = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this routine slot?")) return;
 
-  setDeletingId(id);
-  try {
-    await academicService.deleteRoutineSlot(id);
-    toast.success("Routine slot deleted successfully!");
-    fetchRoutines();
-  } catch (err: any) {
-    toast.error(
-      err?.response?.data?.message || "Failed to delete routine slot"
-    );
-  } finally {
-    setDeletingId(null);
-  }
-};
+    setDeletingId(id);
+    try {
+      await academicService.deleteRoutineSlot(id);
+      toast.success("Routine slot deleted successfully!");
+      fetchRoutines();
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.message || "Failed to delete routine slot",
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans">
@@ -515,12 +551,17 @@ const handleDeleteRoutineSlot = async (id: string) => {
             <span>4. Create Class Routine Slot</span>
           </h3>
 
-          <form onSubmit={handleCreateRoutineSlot} className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+          <form
+            onSubmit={handleCreateRoutineSlot}
+            className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs"
+          >
             <div>
               <label className="block font-semibold mb-1">Day *</label>
               <select
                 value={routineForm.day}
-                onChange={(e) => setRoutineForm({ ...routineForm, day: e.target.value })}
+                onChange={(e) =>
+                  setRoutineForm({ ...routineForm, day: e.target.value })
+                }
                 className="w-full p-2.5 rounded-xl border border-input bg-background font-semibold"
               >
                 <option value="SUNDAY">Sunday</option>
@@ -536,7 +577,9 @@ const handleDeleteRoutineSlot = async (id: string) => {
               <select
                 required
                 value={routineForm.classId}
-                onChange={(e) => setRoutineForm({ ...routineForm, classId: e.target.value })}
+                onChange={(e) =>
+                  setRoutineForm({ ...routineForm, classId: e.target.value })
+                }
                 className="w-full p-2.5 rounded-xl border border-input bg-background font-semibold"
               >
                 <option value="">Select Class</option>
@@ -553,7 +596,9 @@ const handleDeleteRoutineSlot = async (id: string) => {
               <select
                 required
                 value={routineForm.sectionId}
-                onChange={(e) => setRoutineForm({ ...routineForm, sectionId: e.target.value })}
+                onChange={(e) =>
+                  setRoutineForm({ ...routineForm, sectionId: e.target.value })
+                }
                 className="w-full p-2.5 rounded-xl border border-input bg-background font-semibold"
               >
                 <option value="">Select Section</option>
@@ -570,36 +615,51 @@ const handleDeleteRoutineSlot = async (id: string) => {
               <select
                 required
                 value={routineForm.subjectId}
-                onChange={(e) => setRoutineForm({ ...routineForm, subjectId: e.target.value })}
+                onChange={(e) =>
+                  setRoutineForm({ ...routineForm, subjectId: e.target.value })
+                }
                 className="w-full p-2.5 rounded-xl border border-input bg-background font-semibold"
+                disabled={routineSubjects.length === 0}
               >
-                <option value="">Select Subject</option>
-                {subjects.map((sb) => (
+                <option value="">
+                  {routineSubjects.length === 0
+                    ? "No subjects for this class"
+                    : "Select Subject"}
+                </option>
+                {routineSubjects.map((sb) => (
                   <option key={sb.id} value={sb.id}>
-                    {sb.name}
+                    {sb.name} {sb.code ? `(${sb.code})` : ""}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block font-semibold mb-1">Start Time (e.g., 09:00 AM)</label>
+              <label className="block font-semibold mb-1">
+                Start Time (e.g., 09:00 AM)
+              </label>
               <input
                 type="text"
                 required
                 value={routineForm.startTime}
-                onChange={(e) => setRoutineForm({ ...routineForm, startTime: e.target.value })}
+                onChange={(e) =>
+                  setRoutineForm({ ...routineForm, startTime: e.target.value })
+                }
                 className="w-full p-2.5 rounded-xl border border-input bg-background font-mono"
               />
             </div>
 
             <div>
-              <label className="block font-semibold mb-1">End Time (e.g., 09:45 AM)</label>
+              <label className="block font-semibold mb-1">
+                End Time (e.g., 09:45 AM)
+              </label>
               <input
                 type="text"
                 required
                 value={routineForm.endTime}
-                onChange={(e) => setRoutineForm({ ...routineForm, endTime: e.target.value })}
+                onChange={(e) =>
+                  setRoutineForm({ ...routineForm, endTime: e.target.value })
+                }
                 className="w-full p-2.5 rounded-xl border border-input bg-background font-mono"
               />
             </div>
@@ -609,7 +669,9 @@ const handleDeleteRoutineSlot = async (id: string) => {
               <input
                 type="text"
                 value={routineForm.roomNo}
-                onChange={(e) => setRoutineForm({ ...routineForm, roomNo: e.target.value })}
+                onChange={(e) =>
+                  setRoutineForm({ ...routineForm, roomNo: e.target.value })
+                }
                 className="w-full p-2.5 rounded-xl border border-input bg-background font-mono"
               />
             </div>
@@ -620,7 +682,12 @@ const handleDeleteRoutineSlot = async (id: string) => {
                 disabled={submittingRoutine}
                 className="w-full bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold py-2.5"
               >
-                {submittingRoutine ? <FaSpinner className="animate-spin" /> : <FaPlus />} Add Routine Slot
+                {submittingRoutine ? (
+                  <FaSpinner className="animate-spin" />
+                ) : (
+                  <FaPlus />
+                )}{" "}
+                Add Routine Slot
               </Button>
             </div>
           </form>
@@ -670,7 +737,12 @@ const handleDeleteRoutineSlot = async (id: string) => {
                 disabled={loadingRoutines || !viewClassId || !viewSectionId}
                 className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs px-3 py-2 rounded-xl"
               >
-                {loadingRoutines ? <FaSpinner className="animate-spin" /> : <FaSearch />} Filter
+                {loadingRoutines ? (
+                  <FaSpinner className="animate-spin" />
+                ) : (
+                  <FaSearch />
+                )}{" "}
+                Filter
               </Button>
             </div>
           </div>
@@ -689,7 +761,10 @@ const handleDeleteRoutineSlot = async (id: string) => {
               <tbody className="divide-y divide-border/40">
                 {loadingRoutines ? (
                   <tr>
-                    <td colSpan={5} className="py-6 text-center text-muted-foreground">
+                    <td
+                      colSpan={5}
+                      className="py-6 text-center text-muted-foreground"
+                    >
                       <FaSpinner className="animate-spin inline mr-2 text-emerald-600" />
                       Loading class routines...
                     </td>
@@ -736,7 +811,10 @@ const handleDeleteRoutineSlot = async (id: string) => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="py-6 text-center text-muted-foreground">
+                    <td
+                      colSpan={5}
+                      className="py-6 text-center text-muted-foreground"
+                    >
                       No routine slots found for selected class and section.
                     </td>
                   </tr>
@@ -764,12 +842,17 @@ const handleDeleteRoutineSlot = async (id: string) => {
               </button>
             </div>
 
-            <form onSubmit={handleUpdateRoutineSlot} className="space-y-3 text-xs">
+            <form
+              onSubmit={handleUpdateRoutineSlot}
+              className="space-y-3 text-xs"
+            >
               <div>
                 <label className="block font-semibold mb-1">Day *</label>
                 <select
                   value={editForm.day}
-                  onChange={(e) => setEditForm({ ...editForm, day: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, day: e.target.value })
+                  }
                   className="w-full p-2.5 rounded-xl border border-input bg-background font-semibold"
                 >
                   <option value="SUNDAY">Sunday</option>
@@ -785,11 +868,18 @@ const handleDeleteRoutineSlot = async (id: string) => {
                 <select
                   required
                   value={editForm.subjectId}
-                  onChange={(e) => setEditForm({ ...editForm, subjectId: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, subjectId: e.target.value })
+                  }
                   className="w-full p-2.5 rounded-xl border border-input bg-background font-semibold"
+                  disabled={editSubjects.length === 0}
                 >
-                  <option value="">Select Subject</option>
-                  {subjects.map((sb) => (
+                  <option value="">
+                    {editSubjects.length === 0
+                      ? "No subjects for this class"
+                      : "Select Subject"}
+                  </option>
+                  {editSubjects.map((sb) => (
                     <option key={sb.id} value={sb.id}>
                       {sb.name}
                     </option>
@@ -798,23 +888,31 @@ const handleDeleteRoutineSlot = async (id: string) => {
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">Start Time (e.g., 09:00 AM)</label>
+                <label className="block font-semibold mb-1">
+                  Start Time (e.g., 09:00 AM)
+                </label>
                 <input
                   type="text"
                   required
                   value={editForm.startTime}
-                  onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, startTime: e.target.value })
+                  }
                   className="w-full p-2.5 rounded-xl border border-input bg-background font-mono"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold mb-1">End Time (e.g., 09:45 AM)</label>
+                <label className="block font-semibold mb-1">
+                  End Time (e.g., 09:45 AM)
+                </label>
                 <input
                   type="text"
                   required
                   value={editForm.endTime}
-                  onChange={(e) => setEditForm({ ...editForm, endTime: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, endTime: e.target.value })
+                  }
                   className="w-full p-2.5 rounded-xl border border-input bg-background font-mono"
                 />
               </div>
